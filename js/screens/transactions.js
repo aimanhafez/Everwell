@@ -2,7 +2,7 @@
 import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, TI, DD, heroBg, Navigate, Back, Replace, Notify, rerender, guard, save, api, SURFACE, HAIR,
   bal, acc, accByName, txn, byTxDesc, stStart, fmtD, fmtTime, Today, PLABEL, PSTART, PEND, Year, Month, addDays, addMonths, addYears, diffDays,
-  RM, sRM, Value, round2, mkTxn, txnId, nextTxSeq, CD
+  RM, sRM, Value, round2, mkTxn, txnId, nextTxSeq, CD, flowOf, catTypeOf
 } from '../core.js';
 import { TabHeader, NavBar, DetailHeader, SaveBar, DateBox, Calendar, Fab, FlowCard, MonthGrid, AuditRows } from '../shared.js';
 import { txnRow, openTxn } from './home.js';
@@ -21,11 +21,16 @@ export const scrTransactions = {
     const F = DB.txns.filter(t => !t.TxParent && t.TxType !== 'Opening Balance' &&
       ((!l.locTxAcc && !(t.TxType === 'Transfer' && t.TxDir === 'In')) || (l.locTxAcc && t.TxAcc === l.locTxAcc)) &&
       (G.gblTxAll || (t.TxDate >= G.gblTxFrom && t.TxDate <= G.gblTxTo)) &&
-      (l.locTxType === 'All' || t.TxType === l.locTxType) &&
+      (l.locTxType === 'All' || t.TxType === l.locTxType || (l.locTxType === 'Expense' && t.TxType === 'Refund')) &&
       (l.locTxCat === 'All' || t.TxCat === l.locTxCat) &&
       (!q || incl(t.TxDesc, q) || incl(t.TxPayee, q) || incl(t.TxCat, q) || incl(t.TxnId, q)));
-    const inV = round2(F.filter(t => t.TxType === 'Income' || (l.locTxAcc && t.TxType === 'Transfer' && t.TxDir === 'In')).reduce((s, t) => s + t.TxAmt, 0));
-    const outV = round2(F.filter(t => t.TxType === 'Expense' || (l.locTxAcc && t.TxType === 'Transfer' && t.TxDir === 'Out')).reduce((s, t) => s + t.TxAmt, 0));
+    let inV = 0, outV = 0;
+    for (const t of F) {
+      if (t.TxType === 'Transfer') { if (l.locTxAcc) { if (t.TxDir === 'In') inV += t.TxAmt; else outV += t.TxAmt; } continue; }
+      const f = flowOf(t); if (!f) continue;
+      if (f.side === 'In') inV += f.v; else outV += f.v;
+    }
+    inV = round2(inV); outV = round2(outV);
     const list = F.slice().sort(byTxDesc);
     const perOn = G.gblTxAll || G.gblTxFrom !== curMonthStart();
     const accOn = !!l.locTxAcc, catOn = l.locTxCat !== 'All';
@@ -152,8 +157,9 @@ export const scrTxnDetail = {
   view(l) {
     const T = txn(G.gblTxnId);
     if (!T) return html`<div>${DetailHeader('Transaction')}${L(12, 90, 366, 30, 'This transaction no longer exists.', { s: 10, c: K.mute, a: 'c' })}</div>`;
-    const typeC = T.TxType === 'Income' ? K.grn : T.TxType === 'Transfer' ? K.sub : T.TxType === 'Opening Balance' ? K.mute : K.or;
+    const typeC = T.TxType === 'Income' || T.TxType === 'Refund' ? K.grn : T.TxType === 'Transfer' ? K.sub : T.TxType === 'Opening Balance' ? K.mute : K.or;
     const other = T.TxTrf ? DB.txns.find(x => x.TxTrf === T.TxTrf && x.TxnId !== T.TxnId) : null;
+    const paidBack = T.TxType === 'Expense' ? round2(DB.txns.filter(x => (x.TxType === 'Refund' || x.TxType === 'Income') && x.TxRef === T.TxnId).reduce((s2, x) => s2 + x.TxAmt, 0)) : 0;
     const rule = DB.recurring.find(r => r.RcId === T.TxRule);
     const kv = [
       ['Date', fmtD(T.TxDate, 'dddd, dd mmmm yyyy')],
@@ -162,10 +168,15 @@ export const scrTxnDetail = {
       ['Category', ['Transfer', 'Opening Balance'].includes(T.TxType) ? '' : T.TxCat],
       [T.TxDir === 'In' ? 'Payer' : 'Payee', T.TxPayee],
       ['Description', T.TxDesc], ['Transfer ID', T.TxTrf], ['Split of', T.TxParent],
-      ['Recurring', rule ? rule.RcName : ''], ['Notes', T.TxNote], ['Reference', T.TxnId]
+      ['Recurring', rule ? rule.RcName : ''],
+      ['Payback for', (T.TxType === 'Refund' || T.TxType === 'Income') && T.TxRef && txn(T.TxRef) ? (txn(T.TxRef).TxPayee || txn(T.TxRef).TxDesc || txn(T.TxRef).TxCat) + ' · ' + RM(txn(T.TxRef).TxAmt) : ''],
+      ['Paid back', paidBack ? RM(paidBack) + '  ·  your share ' + RM(T.TxAmt - paidBack) : ''],
+      ['Notes', T.TxNote], ['Reference', T.TxnId]
     ].filter(x => x[1]);
     const lines = DB.txns.filter(x => x.TxParent === T.TxnId);
-    const canEdit = ['Income', 'Expense'].includes(T.TxType) && !T.TxParent;
+    const canEdit = ['Income', 'Expense', 'Refund'].includes(T.TxType) && !T.TxParent;
+    const canSplit = ['Income', 'Expense'].includes(T.TxType) && !T.TxParent;
+    const canPayback = T.TxType === 'Expense' && !T.TxParent;
     const canDel = !T.TxParent && T.TxType !== 'Opening Balance';
     const aud = (l.aud || []).slice().sort((a, b) => (a.AuWhen < b.AuWhen ? 1 : -1)).slice(0, 8);
     const note = T.TxType === 'Opening Balance' ? 'Opening balances are changed from the account screen.' : T.TxType === 'Transfer' ? 'Transfers can be deleted and recorded again. Deleting removes both sides and any fee.' : T.TxParent ? 'This is a split line. Open the original transaction to change it.' : '';
@@ -196,11 +207,13 @@ export const scrTxnDetail = {
           ${L(16, 0, 200, 42, x.TxCat, { s: 10 })}
           ${L(220, 0, 130, 42, RM(x.TxAmt), { s: 10, w: 6, a: 'r' })}
           ${R(16, 41, 334, 1, K.sep)}`)}`) : null}
-      ${Card(null, 0, 366, 148, html`
+      ${Card(null, 0, 366, canPayback ? 196 : 148, html`
         ${L(16, 14, 246, 22, 'Actions', { s: 11.5, w: 6 })}
+        ${canPayback ? B(16, 142, 334, 40, paidBack ? 'Add another payback' : 'Payback received', { fill: K.field, b: K.grn, c: K.grn, r: 20, s: 10, id: 'tdPayback',
+          onClick: () => { G.gblPrefill = { PfType: 'Income', PfAmt: '', PfCat: T.TxCat, PfAcc: T.TxAcc, PfPayee: '', PfDesc: 'Payback · ' + (T.TxPayee || T.TxDesc || T.TxCat), PfRule: '', PfRef: T.TxnId, PfDate: Today() }; G.gblEditMode = 'prefill'; Navigate('scrTxnEdit'); } }) : null}
         ${B(16, 46, 162, 40, 'Edit', { fill: K.or, c: '#FFFFFF', r: 20, s: 10, disabled: !canEdit, onClick: () => { G.gblEditMode = 'edit'; Navigate('scrTxnEdit'); }, id: 'tdEdit' })}
         ${B(188, 46, 162, 40, 'Duplicate', { fill: K.field, b: HAIR, r: 20, s: 10, disabled: !canEdit, onClick: () => { G.gblEditMode = 'dup'; Navigate('scrTxnEdit'); }, id: 'tdDup' })}
-        ${B(16, 94, 162, 40, T.TxIsSplit ? 'Edit split' : 'Split', { fill: K.field, b: HAIR, r: 20, s: 10, disabled: !canEdit, onClick: () => Navigate('scrSplit'), id: 'tdSplit' })}
+        ${B(16, 94, 162, 40, T.TxIsSplit ? 'Edit split' : 'Split', { fill: K.field, b: HAIR, r: 20, s: 10, disabled: !canSplit, onClick: () => Navigate('scrSplit'), id: 'tdSplit' })}
         ${B(188, 94, 162, 40, l.locConfirmDel ? 'Tap to confirm' : 'Delete', { fill: K.field, b: K.red, c: K.red, r: 20, s: 10, disabled: !canDel, onClick: del, id: 'tdDel' })}`)}
       ${note ? L(null, 0, 366, 30, note, { s: 8, c: K.mute, wrap: true, st: 'position:relative;flex:none;' }) : null}
       ${Card(null, 0, 366, 52 + aud.length * 44, html`
@@ -222,12 +235,19 @@ function payeeState(l) {
   const resolved = exact ? exact.PyName : (matches.length === 1 ? matches[0].PyName : '');
   return { q, exact, matches, resolved, searching: !!q && !exact };
 }
-function catOk(name, type) {
-  return DB.categories.some(c => c.CatName === name && c.CatActive && (c.CatType === type || (type === 'Expense' && c.CatType === 'Savings/Asset')));
+const CAT_TYPES = ['Expense', 'Savings/Asset', 'Income'];
+/** Both Income and Expense can use any category: the natural ones first, then the rest. */
+function catList(type) {
+  const nat = c => (type === 'Income' ? c.CatType === 'Income' : c.CatType !== 'Income') ? 0 : 1;
+  return DB.categories.filter(c => c.CatActive && CAT_TYPES.includes(c.CatType))
+    .sort((a, b) => nat(a) - nat(b) || a.CatName.localeCompare(b.CatName)).map(c => c.CatName);
+}
+function catOk(name) {
+  return DB.categories.some(c => c.CatName === name && c.CatActive && CAT_TYPES.includes(c.CatType));
 }
 function pickPayee(l, p) {
   l.locPayee = p.PyName; l.payeeQ = p.PyName;
-  if (catOk(p.PyCat, l.locType)) l.locCat = p.PyCat;
+  if (catOk(p.PyCat)) l.locCat = p.PyCat;
   rerender();
 }
 
@@ -236,7 +256,7 @@ export const scrTxnEdit = {
     const m = G.gblEditMode, P = G.gblPrefill;
     const T = ['edit', 'dup'].includes(m) ? txn(G.gblTxnId) : null;
     l.locT = T;
-    l.locType = m === 'prefill' ? P.PfType : m === 'new' ? 'Expense' : T.TxType;
+    l.locType = m === 'prefill' ? P.PfType : m === 'new' ? 'Expense' : T.TxType === 'Refund' ? 'Income' : T.TxType;
     l.locPayee = m === 'prefill' ? P.PfPayee : m === 'new' ? '' : T.TxPayee;
     l.locCat = m === 'prefill' ? P.PfCat : m === 'new' ? '' : T.TxCat;
     l.payeeQ = l.locPayee;
@@ -245,20 +265,26 @@ export const scrTxnEdit = {
     l.acc = m === 'prefill' ? ((acc(P.PfAcc) || {}).AccName || '') : m === 'new' ? openAcc(G.gblAccId) : ((acc(T.TxAcc) || {}).AccName || '');
     l.locD_teDate = m === 'prefill' ? P.PfDate : (m === 'new' || m === 'dup') ? Today() : T.TxDate;
     l.txt_teDate = undefined; l.locCalOpen_teDate = false;
-    l.desc = ['edit', 'dup'].includes(m) ? T.TxDesc : '';
+    l.desc = ['edit', 'dup'].includes(m) ? T.TxDesc : m === 'prefill' ? (P.PfDesc || '') : '';
     l.note = ['edit', 'dup'].includes(m) ? T.TxNote : '';
+    l.ref = m === 'prefill' ? (P.PfRef || '') : m === 'edit' ? (T.TxRef || '') : '';
   },
   view(l) {
     const mode = G.gblEditMode;
     const ps = payeeState(l);
     const income = l.locType === 'Income';
-    const cats = DB.categories.filter(c => c.CatActive && (c.CatType === l.locType || (l.locType === 'Expense' && c.CatType === 'Savings/Asset'))).map(c => c.CatName).sort();
+    const cats = catList(l.locType);
+    const orig = income && l.ref ? txn(l.ref) : null;
+    const refund = !!orig; // payback linked to an expense
+    const ct = catTypeOf(l.locCat);
+    const cross = !!l.locCat && !!ct && (income ? ct !== 'Income' : ct === 'Income');
+    const crossTxt = !cross ? '' : income ? 'Lowers your ' + l.locCat + ' spending  ·  not counted as income' : 'Reduces your ' + l.locCat + ' income  ·  not counted as spending';
     const accs = DB.accounts.filter(a => a.AccStatus !== 'Closed' && a.AccType !== 'System').map(a => a.AccName).sort();
     const accVal = l.acc || accs[0] || '';
     const seg = (t, x) => B(x, 3, 100, 32, t, { fill: l.locType === t ? K.or : 'transparent', c: l.locType === t ? '#FFFFFF' : K.sub, r: 16, s: 9.5, id: 'seg-' + t,
       onClick: () => {
         if (t === 'Transfer') { if (mode === 'edit') Notify('To make this a transfer, delete it and record a transfer.', 'warning'); else Replace('scrTransfer'); return; }
-        l.locType = t; l.locCat = ''; rerender();
+        l.locType = t; rerender();
       } });
     const row = (y, ic, cap, ctrl) => html`
       ${C(12, y, 32, K.field)}${I(19, y + 7, 18, 18, ic, K.or, { pad: 1 })}
@@ -272,9 +298,10 @@ export const scrTxnEdit = {
       ${L(0, 62, 366, 14, 'AMOUNT  ·  RM', { s: 7.5, w: 6, c: K.mute, a: 'c' })}
       ${TI(20, 78, 326, 56, l.amt, v => { l.amt = v; rerender(); }, { hint: '0.00', num: true, s: 26, w: 6, a: 'c', fill: 'transparent', bt: 0, c: income ? K.grn : K.text, pad: 0, id: 'amount' })}
       ${R(113, 136, 140, 2, income ? K.grn : K.or)}
-      ${L(0, 144, 366, 18, (income ? 'Received' : 'Spent') + '  ·  ' + fmtD(l.locD_teDate, 'dddd, dd mmmm yyyy'), { s: 8, c: K.sub, a: 'c' })}
+      ${L(0, refund || cross ? 140 : 144, 366, 18, (refund ? 'Paid back' : income ? 'Received' : 'Spent') + '  ·  ' + fmtD(l.locD_teDate, 'dddd, dd mmmm yyyy'), { s: 8, c: K.sub, a: 'c' })}
+      ${refund || cross ? L(0, 157, 366, 16, refund ? 'Paid back for ' + (orig.TxPayee || orig.TxDesc || orig.TxCat) + ' · ' + RM(orig.TxAmt) + ' on ' + fmtD(orig.TxDate, 'dd mmm') : crossTxt, { s: 7.5, w: 6, c: income ? K.grn : K.or, a: 'c', id: 'refundNote' }) : null}
       ${Card(0, 178, 366, 292, html`
-        ${row(13, 'Person', income ? 'PAYER' : 'PAYEE', null)}
+        ${row(13, 'Person', refund ? 'PAID BACK BY' : income ? 'PAYER' : 'PAYEE', null)}
         ${TI(54, 22, 266, 32, l.payeeQ, v => { l.payeeQ = v; rerender(); }, { hint: 'Type to search your payees', fill: K.card, bt: 0, pad: 6, id: 'payee',
           onChange: () => { const s = payeeState(l); if (s.exact) pickPayee(l, s.exact); else if (s.matches.length === 1) pickPayee(l, s.matches[0]); } })}
         ${ps.q && !ps.resolved ? I(322, 24, 28, 28, 'Cancel', K.mute, { pad: 6, onClick: () => { l.locPayee = ''; l.payeeQ = ''; rerender(); } }) : null}
@@ -307,17 +334,17 @@ export const scrTxnEdit = {
       if (ps.q && !PAYEE) return Notify('Tap a payee from the list (type a few more letters if several match), or leave it empty.', 'error');
       if (stStart() && d < stStart()) return Notify('This date is before your tracking start (' + fmtD(stStart(), 'dd mmm yyyy') + ').', 'error');
       if (mode === 'edit' && T.TxIsSplit && Math.abs(amt - T.TxAmt) >= 0.005) return Notify('This transaction is split. Remove the split before changing the amount.', 'error');
-      const dir = l.locType === 'Income' ? 'In' : 'Out';
+      const dir = income ? 'In' : 'Out';
       const detail = l.locType + ' RM ' + RM(amt).slice(3) + ' ' + cat;
       if (mode === 'edit') {
-        const ups = [{ ...T, TxAcc: a.AccId, TxDate: d, TxType: l.locType, TxDir: dir, TxAmt: round2(amt), TxCat: cat, TxPayee: PAYEE, TxDesc: (l.desc || '').trim(), TxNote: l.note || '' }];
+        const ups = [{ ...T, TxAcc: a.AccId, TxDate: d, TxType: l.locType, TxDir: dir, TxAmt: round2(amt), TxCat: cat, TxPayee: PAYEE, TxDesc: (l.desc || '').trim(), TxNote: l.note || '', TxRef: income ? (l.ref || '') : (T.TxType === 'Refund' || T.TxType === 'Income' ? '' : T.TxRef) }];
         DB.txns.filter(x => x.TxParent === T.TxnId).forEach(x => ups.push({ ...x, TxAcc: a.AccId, TxDate: d, TxType: l.locType, TxDir: dir, TxPayee: PAYEE }));
         await save({ up: { EW_Transactions: ups }, log: [{ AuAction: 'Edit transaction', AuRef: T.TxnId, AuDetail: detail }] });
         G.gblTxnId = T.TxnId;
       } else {
         const ts = nextTxSeq();
         const tid = txnId(d, ts);
-        const row = mkTxn({ TxnId: tid, TxSeq: ts, TxAcc: a.AccId, TxDate: d, TxType: l.locType, TxDir: dir, TxAmt: round2(amt), TxCat: cat, TxPayee: PAYEE, TxDesc: (l.desc || '').trim(), TxNote: l.note || '', TxRule: mode === 'prefill' ? G.gblPrefill.PfRule : '' });
+        const row = mkTxn({ TxnId: tid, TxSeq: ts, TxAcc: a.AccId, TxDate: d, TxType: l.locType, TxDir: dir, TxAmt: round2(amt), TxCat: cat, TxPayee: PAYEE, TxDesc: (l.desc || '').trim(), TxNote: l.note || '', TxRule: mode === 'prefill' ? G.gblPrefill.PfRule : '', TxRef: income ? (l.ref || '') : '' });
         const up = { EW_Transactions: [row] };
         if (mode === 'prefill' && G.gblPrefill.PfRule) {
           const r = DB.recurring.find(x => x.RcId === G.gblPrefill.PfRule);
@@ -421,8 +448,7 @@ export const scrSplit = {
     if (!P) return html`<div>${DetailHeader('Split transaction')}</div>`;
     const left = round2(P.TxAmt - l.lines.reduce((s, x) => s + x.SpAmt, 0));
     const ok = Math.abs(left) < 0.005;
-    const kind = P.TxType === 'Income' ? 'Income' : 'Expense';
-    const cats = DB.categories.filter(c => c.CatActive && (c.CatType === kind || (kind === 'Expense' && c.CatType === 'Savings/Asset'))).map(c => c.CatName).sort();
+    const cats = catList(P.TxType === 'Income' ? 'Income' : 'Expense');
     const catV = cats.includes(l.cat) ? l.cat : cats[0];
 
     const addLine = () => {

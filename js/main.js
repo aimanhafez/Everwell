@@ -1,6 +1,6 @@
 // Everwell — start-up: scale the 390 x 844 canvas to the device, register screens, load data (App.OnStart).
 import { html, render } from './vendor/preact-htm.js';
-import { NAV, CONN, mount, rerender, loadAll, loadCached, flush, beaconOutbox, Navigate, stStart, Notify, K } from './core.js';
+import { NAV, CONN, mount, rerender, loadAll, loadCached, flush, beaconOutbox, flushCache, Navigate, stStart, Notify, K } from './core.js';
 import { autoSweep } from './sweep.js';
 import { scrHome } from './screens/home.js';
 import { scrAccounts, scrAccountDetail, scrAccountEdit } from './screens/accounts.js';
@@ -59,6 +59,6 @@ async function boot() {
 }
 window.addEventListener('online', () => { flush(); rerender(); });
 window.addEventListener('offline', () => rerender());
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') beaconOutbox(); else flush(); });
-window.addEventListener('pagehide', beaconOutbox);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { flushCache(); beaconOutbox(); } else flush(); });
+window.addEventListener('pagehide', () => { flushCache(); beaconOutbox(); });
 boot();

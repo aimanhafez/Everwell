@@ -2,7 +2,7 @@
 import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, TI, DD, Tog, Brand, heroBg, Navigate, Back, Notify, rerender, guard, save, api,
   bal, acc, accByName, stStart, lowBal, fmtD, fmtTime, Today, PLABEL, PSTART, PEND, Year, Month, D, addDays, addMonths, addYears,
-  RM, sRM, n0, pct, Value, round2, mkTxn, txnId, nextTxSeq, catTotals, catSpend, psum, ordinal, setMonth, monthLabel, settingsRow,
+  RM, sRM, n0, pct, Value, round2, mkTxn, txnId, nextTxSeq, catTotals, catSpend, psum, flowSum, ordinal, setMonth, monthLabel, settingsRow,
   PALETTE, CONN, store, loadAll, NAV, VERSION, perKey, SURFACE, HAIR, SYNC, flush
 } from '../core.js';
 import { TabHeader, NavBar, DetailHeader, SaveBar, DateBox, Calendar, Fab, FlowCard, PeriodCard, AuditRows, askPassword, PasswordDialog } from '../shared.js';
@@ -112,7 +112,7 @@ export const scrCategories = {
     const isCat = (l.locTab || 'Categories') === 'Categories';
     const ct = l.locCatType || 'Expense';
     const used = {};
-    DB.txns.forEach(t => { if (!t.TxIsSplit && (t.TxType === 'Income' || t.TxType === 'Expense')) used[t.TxCat] = (used[t.TxCat] || 0) + 1; });
+    DB.txns.forEach(t => { if (!t.TxIsSplit && (t.TxType === 'Income' || t.TxType === 'Expense' || t.TxType === 'Refund')) used[t.TxCat] = (used[t.TxCat] || 0) + 1; });
     const cats = DB.categories.filter(c => c.CatType === ct).sort((a, b) => (a.CatName < b.CatName ? -1 : 1));
     const q = (l.q || '').toLowerCase();
     const pays = DB.payees.filter(p => !q || p.PyName.toLowerCase().includes(q) || (p.PyCat || '').toLowerCase().includes(q)).sort((a, b) => (a.PyName < b.PyName ? -1 : 1));
@@ -252,8 +252,9 @@ export const scrMore = {
       rerender();
     };
     const copy = async () => {
-      try { await navigator.clipboard.writeText(l.locCsv || ''); Notify('Copied. Paste into Excel.', 'success'); }
-      catch (e) { const ta = document.querySelector('[data-t=csv]'); if (ta) { ta.select(); document.execCommand('copy'); Notify('Copied. Paste into Excel.', 'success'); } }
+      try { await navigator.clipboard.writeText(l.locCsv || ''); }
+      catch (e) { const ta = document.querySelector('[data-t=csv]'); if (ta) { ta.select(); document.execCommand('copy'); } }
+      l.copied = true; rerender(); setTimeout(() => { l.copied = false; rerender(); }, 1800);
     };
     const recalc = () => askPassword(l, 'recalculate monthly totals', () => guard(async () => {
       Notify('Recalculating…', 'info');
@@ -295,7 +296,7 @@ export const scrMore = {
         ${L(16, 14, 246, 22, 'Export (CSV)', { s: 11.5, w: 6 })}
         ${L(16, 38, 334, 16, 'Transactions for ' + monthLabel('mmmm yyyy') + '  ·  ' + fmtD(G.gblFrom, 'dd mmm') + ' – ' + fmtD(G.gblTo, 'dd mmm'), { s: 8, c: K.sub })}
         ${B(16, 62, 162, 38, 'Build CSV', { fill: K.field, b: HAIR, r: 19, s: 10, onClick: buildCsv, id: 'csvBuild' })}
-        ${B(188, 62, 162, 38, 'Copy', { fill: K.or, c: '#FFFFFF', r: 19, s: 10, onClick: copy, id: 'csvCopy' })}
+        ${B(188, 62, 162, 38, l.copied ? 'Copied ✓' : 'Copy', { fill: K.or, c: '#FFFFFF', r: 19, s: 10, onClick: copy, id: 'csvCopy' })}
         ${l.locCsv ? TI(16, 110, 334, 196, l.locCsv, () => {}, { multiline: true, s: 9, id: 'csv' }) : null}`)}
       ${SubHead('Data')}
       ${Card(null, 0, 366, 124, html`
@@ -461,7 +462,7 @@ export const scrAnalysisFull = {
     const keyOf = lab => { const it = months.find(x => x.L === lab) || months[0]; const pe = addDays(addMonths(it.S, 1), -1); return Year(pe) * 100 + Month(pe); };
     const A = catTotals(k => k === keyOf(l.vsA)), Bt = catTotals(k => k === keyOf(l.vsB));
     const topOf = t => { const e = Object.entries(t.by).filter(([, v]) => v.Out > 0).sort((a, b) => b[1].Out - a[1].Out)[0]; return e ? e[0] : '—'; };
-    const inc = psum('Income'), out = round2(psum('Expense') - psum('Refund'));
+    const { In: inc, Out: out } = flowSum();
     const spend = catSpend();
     const top5 = spend.slice(0, 5);
     const spendTot = round2(spend.reduce((s, x) => s + x.Amt, 0));

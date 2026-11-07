@@ -1,4 +1,4 @@
-# Everwell v4.4.0 (web version)
+# Everwell v4.5.0 (web version)
 
 *Live well today. Build well for tomorrow.*
 
@@ -19,11 +19,29 @@ The screens are Setup, Home, Accounts, Account detail, New/Edit account, Transac
 | `manifest.webmanifest`, `sw.js`, `icons/` | Makes it behave like an app on your iPhone |
 | `apps-script/Code.gs` | Goes into your Google Sheet (it replaces SharePoint) |
 
-## Updating to v4.4.0 (your data stays)
+## Updating to v4.4.0 from older versions (your data stays)
 
 1. **Google Sheet:** open Apps Script. Replace everything in `Code.gs` with the new `apps-script/Code.gs`, then **Save**. Go to **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The URL stays the same, and the Sheet gets new columns (`StSweepAuto`, `StSweepFrom`, `StSweepLog`, `AccSweep`) the next time the app connects.
 2. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js`, `icons` and `apps-script` folders**. Files with the same name are replaced. Click **Commit changes**.
 3. **iPhone:** close Everwell fully and open it again. You won't need to reconnect.
+
+## Updating to v4.5.0 from v4.4.x
+
+Only **GitHub** changes. `Code.gs` is the same, so you don't need to redeploy Apps Script. Upload the whole folder (including `js`) and commit, then close and reopen Everwell on the iPhone.
+
+## What's new in v4.5.0
+
+- **Income and Expense can use any category.** The category decides where the money counts, so you can do paybacks and refunds yourself:
+  - An **Income** in an expense category (for example Sports) **lowers that category's spending** and is not counted as income. RM 30 Sports + RM 15 Income to Sports = Sports RM 15, money out RM 15, and your account goes up by RM 15.
+  - An **Expense** in an income category (for example Salary) **reduces that income** and is not counted as spending.
+  - A green or orange line under the amount tells you when this applies.
+  - Shortcut: open an expense and tap **Payback received**. Income, the same category and account, and a link to the expense are filled in, so you only type the amount. The expense then shows **Paid back RM 15 · your share RM 15**.
+  - Split lines can use any category too.
+- Fix: closing the app right after a save now always keeps the latest data on the phone.
+
+## What's new in v4.4.1
+
+- **No green messages anywhere.** Saving payees, categories, recurring items, settings and sweeps no longer shows a green banner. Red error messages still appear. Copy in Settings → Export shows "Copied ✓" on the button instead.
 
 ## What's new in v4.4.0
 
@@ -116,7 +134,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'everwell-4.4.0-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'everwell-4.5.0-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting

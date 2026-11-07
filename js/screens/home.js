@@ -1,7 +1,7 @@
 // scrHome — net worth, alerts, accounts, monthly overview, spending, recent activity, insights.
 import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, heroBg, Navigate, rerender,
-  bal, psum, catSpend, acc, byTxDesc, dueCount, lowBal, stStart, fmtD, Today, PLABEL, Year, Month, diffDays, minD,
+  bal, psum, flowSum, catSpend, acc, byTxDesc, dueCount, lowBal, stStart, fmtD, Today, PLABEL, Year, Month, diffDays, minD,
   RM, sRM, n0, pct, PALETTE, esc, monthLabel, resetTxPeriodToMonth, round2
 } from '../core.js';
 import { TabHeader, NavBar, Fab, PeriodCard, FlowCard, SectionHead } from '../shared.js';
@@ -18,13 +18,13 @@ export function netWorth() {
 export function txnRow(t) {
   const isT = t.TxType === 'Transfer';
   const ini = isT ? '⇄' : t.TxType === 'Opening Balance' ? '+' : (t.TxCat || '').slice(0, 1).toUpperCase();
-  const iniC = t.TxType === 'Income' ? K.grn : isT ? K.sub : t.TxType === 'Opening Balance' ? K.mute : K.or;
+  const iniC = t.TxType === 'Income' || t.TxType === 'Refund' ? K.grn : isT ? K.sub : t.TxType === 'Opening Balance' ? K.mute : K.or;
   let sub;
   if (isT) {
     const o = DB.txns.find(x => x.TxTrf === t.TxTrf && x.TxDir === 'Out');
     const i = DB.txns.find(x => x.TxTrf === t.TxTrf && x.TxDir === 'In');
     sub = ((o && acc(o.TxAcc)) || {}).AccName + '  →  ' + ((i && acc(i.TxAcc)) || {}).AccName;
-  } else sub = t.TxCat + '  ·  ' + ((acc(t.TxAcc) || {}).AccName || '');
+  } else sub = (t.TxType === 'Refund' || (t.TxType === 'Income' && t.TxRef) ? 'Payback · ' : '') + t.TxCat + '  ·  ' + ((acc(t.TxAcc) || {}).AccName || '');
   return html`
     ${C(14, 11, 32, K.field)}
     ${L(14, 11, 32, 32, ini, { s: 10, w: 7, a: 'c', c: iniC })}
@@ -66,7 +66,7 @@ export const scrHome = {
     const alerts = [[dueN + ' bill(s) due', dueN], [lowN + ' account(s) below RM ' + n0(lowBal()), lowN]].filter(x => x[1] > 0).map(x => x[0]).join('   ·   ');
     const openAcc = DB.accounts.filter(a => a.AccStatus !== 'Closed').map(a => ({ ...a, Bal: bal(a.AccId) })).sort((a, b) => b.Bal - a.Bal).slice(0, 7);
 
-    const inc = psum('Income'), out = round2(psum('Expense') - psum('Refund'));
+    const { In: inc, Out: out } = flowSum();
     const spend = catSpend();
     const top5 = spend.slice(0, 5);
     const spendTot = spend.reduce((s, x) => s + x.Amt, 0);
@@ -164,7 +164,7 @@ function Forecast(inc, out) {
   const daily = elapsed ? out / elapsed : 0;
   const projected = past ? out : round2(daily * days);
   const pFrom = addM(from, -1), pTo = addD(from, -1);
-  const last = round2(psum('Expense', pFrom, pTo) - psum('Refund', pFrom, pTo));
+  const last = flowSum(pFrom, pTo).Out;
   const delta = last > 0 ? (projected - last) / last : null;
   const projNet = round2(inc - projected);
   const share = days ? elapsed / days : 0;

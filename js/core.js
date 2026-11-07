@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '4.4.0';
+export const VERSION = '4.5.0';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -134,33 +134,57 @@ export function accMoveUpTo(accId, key) {
   for (const t of DB.txns) if (t.TxAcc === accId && !t.TxParent && perKey(t.TxDate) <= key) b += t.TxDir === 'In' ? t.TxAmt : -t.TxAmt;
   return round2(b);
 }
-/** Category totals for a month key or a year: {In, Out, N} — Income/Expense only, split lines instead of split parents. */
+/** The category decides which side a transaction counts on (Income category → money in, any other → money out);
+ *  the type decides the sign. So Income booked to Sports lowers Sports spending, and Expense booked to Salary lowers income. */
+let catMapSrc = null, catMap = null;
+export function catTypeOf(name) {
+  if (catMapSrc !== DB.categories) { catMapSrc = DB.categories; catMap = new Map((DB.categories || []).map(c => [c.CatName, c.CatType])); }
+  return catMap.get(name);
+}
+export function flowOf(t) {
+  const T = t.TxType;
+  if (t.TxIsSplit || (T !== 'Income' && T !== 'Expense' && T !== 'Refund')) return null;
+  const moneyIn = T !== 'Expense';               // Refund = older payback type, money in
+  const ct = catTypeOf(t.TxCat);
+  const side = ct === 'Income' ? 'In' : ct ? 'Out' : (moneyIn ? 'In' : 'Out');
+  const v = (side === 'In') === moneyIn ? t.TxAmt : -t.TxAmt;
+  return { side, v };
+}
+/** Money in / money out between two dates, netted by category side */
+export function flowSum(from = G.gblFrom, to = G.gblTo) {
+  let In = 0, Out = 0;
+  for (const t of DB.txns) {
+    if (t.TxDate < from || t.TxDate > to) continue;
+    const f = flowOf(t); if (!f) continue;
+    if (f.side === 'In') In += f.v; else Out += f.v;
+  }
+  return { In: round2(In), Out: round2(Out) };
+}
+/** Category totals for a month key or a year: {In, Out, N} — split lines instead of split parents. */
 export function catTotals(filter) {
   const r = { In: 0, Out: 0, N: 0, by: {} };
   for (const t of DB.txns) {
-    if (t.TxIsSplit || (t.TxType !== 'Income' && t.TxType !== 'Expense')) continue;
-    const k = perKey(t.TxDate);
-    if (!filter(k)) continue;
-    r.N++;
-    if (t.TxType === 'Income') r.In += t.TxAmt; else r.Out += t.TxAmt;
+    const f = flowOf(t); if (!f) continue;
+    if (!filter(perKey(t.TxDate))) continue;
+    r.N++; r[f.side] += f.v;
     const c = r.by[t.TxCat] || (r.by[t.TxCat] = { In: 0, Out: 0, N: 0 });
-    c.N++; if (t.TxType === 'Income') c.In += t.TxAmt; else c.Out += t.TxAmt;
+    c.N++; c[f.side] += f.v;
   }
   return r;
 }
-/** PSUM: sum of a type in the selected month (Home/Analysis) */
+/** PSUM: sum of a type in the selected month */
 export function psum(type, from = G.gblFrom, to = G.gblTo) {
   let s = 0;
   for (const t of DB.txns) if (!t.TxIsSplit && t.TxDate >= from && t.TxDate <= to && t.TxType === type) s += t.TxAmt;
   return round2(s);
 }
-/** Spending by category for the selected month (Expense minus Refund), biggest first */
+/** Spending by category for the selected month (net of any money back into that category), biggest first */
 export function catSpend(from = G.gblFrom, to = G.gblTo) {
   const by = {};
   for (const t of DB.txns) {
-    if (t.TxIsSplit || t.TxDate < from || t.TxDate > to) continue;
-    if (t.TxType === 'Expense') by[t.TxCat] = (by[t.TxCat] || 0) + t.TxAmt;
-    if (t.TxType === 'Refund') by[t.TxCat] = (by[t.TxCat] || 0) - t.TxAmt;
+    if (t.TxDate < from || t.TxDate > to) continue;
+    const f = flowOf(t);
+    if (f && f.side === 'Out') by[t.TxCat] = (by[t.TxCat] || 0) + f.v;
   }
   return DB.categories.filter(c => c.CatType === 'Expense' || c.CatType === 'Savings/Asset')
     .map(c => ({ ...c, Amt: round2(by[c.CatName] || 0) })).filter(c => c.Amt > 0)
@@ -237,11 +261,11 @@ function syncState() {
   if (el) el.textContent = SYNC.outbox.length ? (navigator.onLine ? 'Saving to Google Sheets…' : 'Offline · ' + SYNC.outbox.length + ' change(s) saved on this phone, will sync') : '';
 }
 function persistOutbox() { store.set('ew_outbox', SYNC.outbox); syncState(); }
-let cacheTimer;
-function persistCache() {
-  clearTimeout(cacheTimer);
-  cacheTimer = setTimeout(() => store.set('ew_data', { at: Date.now(), settings: DB.settings, accounts: DB.accounts, categories: DB.categories, payees: DB.payees, recurring: DB.recurring, txns: DB.txns, audit: DB.audit.slice(0, 30) }), 300);
-}
+let cacheTimer = null;
+const writeCache = () => { cacheTimer = null; store.set('ew_data', { at: Date.now(), settings: DB.settings, accounts: DB.accounts, categories: DB.categories, payees: DB.payees, recurring: DB.recurring, txns: DB.txns, audit: DB.audit.slice(0, 30) }); };
+function persistCache() { clearTimeout(cacheTimer); cacheTimer = setTimeout(writeCache, 300); }
+/** Write a pending cache save now (the app is being closed / hidden). */
+export function flushCache() { if (cacheTimer) { clearTimeout(cacheTimer); writeCache(); } }
 export async function flush() {
   if (SYNC.flushing || !CONN.v) return;
   SYNC.flushing = true; syncState();
@@ -356,6 +380,7 @@ export function current() { return NAV.stack[NAV.stack.length - 1]; }
 /* ───────────── Notify (Power Apps banner) ───────────── */
 let toastTimer;
 export function Notify(msg, kind = 'info') {
+  if (kind === 'success') return; // no green banners: the screen itself shows the result
   const el = document.getElementById('notify');
   el.textContent = msg;
   el.className = 'show ' + kind;
