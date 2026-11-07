@@ -97,21 +97,57 @@ export function FlowCard(inV, outV, label, o = {}) {
     : inV === 0 ? ['NO INCOME YET', K.sub, 'rgba(255,255,255,0.04)', 'rgba(255,255,255,0.08)']
       : net >= 0 ? ['KEPT ' + pct(net / inV), K.grn, 'rgba(52,199,123,0.08)', 'rgba(52,199,123,0.28)']
         : ['SPENT ' + pct(outV / inV), K.red, 'rgba(229,72,77,0.08)', 'rgba(229,72,77,0.3)'];
-  const netC = o.netColor ? o.netColor(net) : (net < 0 ? K.red : K.grn);
+  const empty = inV === 0 && outV === 0;
+  const netC = o.netColor ? o.netColor(net) : empty ? K.sub : (net < 0 ? K.red : K.grn);
+  const sp = o.split;
+  const base = Math.max(inV, outV, 0.01);
+  const cell3 = (x, dot, cap, v, sub, id) => html`
+    ${C(x, 15, 5, dot)}
+    ${L(x + 10, 10, 96, 13, cap, { s: 6, w: 6, c: K.mute, ls: 1.3 })}
+    ${L(x, 25, 104, 20, RM(v), { s: 9.5, w: 6, id })}
+    ${L(x, 45, 104, 13, sub, { s: 6.5, c: id === 'flowInc' && inV > 0 ? (net >= 0 ? K.grn : K.red) : K.mute, id: id + 'Sub' })}`;
+  const share = v => inV > 0 ? pct(v / inV) + ' of income' : '—';
   const cell = (x, cap, v, id) => html`
     ${L(x, 11, 140, 13, cap, { s: 6.5, w: 6, c: K.mute, st: 'letter-spacing:1.4px' })}
     ${L(x, 26, 150, 20, RM(v), { s: 11, w: 6, id })}`;
   const body = html`
     ${L(16, 14, 200, 22, 'Cash flow', { s: 11.5, w: 6 })}
     ${label ? L(16, 34, 200, 14, label.toUpperCase(), { s: 7, w: 6, c: K.or }) : null}
-    ${B(350 - 92, 14, 92, 22, badge[0], { fill: badge[2], b: badge[3], c: badge[1], r: 11, s: 6.5, flat: true, id: 'flowBadge' })}
+    ${o.split ? null : B(350 - 92, 14, 92, 22, badge[0], { fill: badge[2], b: badge[3], c: badge[1], r: 11, s: 6.5, flat: true, id: 'flowBadge' })}
     ${L(16, label ? 56 : 50, 200, 13, 'NET', { s: 6.5, w: 6, c: K.mute, st: 'letter-spacing:1.6px' })}
-    ${L(16, label ? 70 : 64, 334, 34, sRM(net), { s: 19, w: 6, c: netC, st: 'letter-spacing:-0.3px' })}
+    ${L(16, label ? 70 : 64, sp && o.side ? 184 : 334, 34, empty ? RM(0) : sRM(net), { s: 19, w: 6, c: netC, st: 'letter-spacing:-0.3px' })}
+    ${sp ? html`
+      ${(o.side || []).length ? html`
+        ${R(206, 18, 1, 100, 'rgba(255,255,255,0.07)')}
+        ${o.side.map((x, i) => html`
+          ${L(214, 16 + i * 58, 136, 13, x.cap, { s: 6.5, w: 6, c: K.mute, a: 'r', ls: 1.3 })}
+          ${L(190, 30 + i * 58, 160, 20, x.val, { s: x.big === false ? 8.5 : 10, w: 6, a: 'r', c: x.c || K.text, id: x.id })}`)}` : null}
+      ${empty ? L(16, 98, 180, 14, 'No transactions in this month yet', { s: 7.5, c: K.mute, id: 'flowEmpty' }) : null}
+      ${R(16, 132, 334, 3, 'rgba(255,255,255,0.06)', { r: 2 })}
+      ${empty ? null : (() => {
+        // the whole line is your income: green = savings, light green = still in the bank, red = expenses (right)
+        const ex = Math.min(sp.Exp / base, 1), sv = Math.min(sp.Sav / base, 1 - ex), kp = inV > 0 ? Math.max(0, 1 - ex - sv) : 0;
+        const LIGHT = '#A8EBC7';
+        const raw = [[sv, K.grn], [kp, LIGHT], [ex, K.red]].filter(x => x[0] > 0.0005);
+        const px = raw.map(([f]) => Math.max(334 * f, 6)); const k = 334 / px.reduce((t, v) => t + v, 0);
+        let x0 = 16;
+        const bar = raw.map(([f, col], i) => { const w = px[i] * k, el = R(x0 + (i ? 1.5 : 0), 132, Math.max(0, w - (i ? 1.5 : 0) - (i < raw.length - 1 ? 1.5 : 0)), 4, col, { r: 2 }); x0 += w; return el; });
+        const leg = [['Savings', sv, K.grn], ['In bank', kp, LIGHT], ['Expenses', ex, K.red]];
+        return html`${bar}${leg.map(([nm, f, col], i) => html`
+          ${R(16 + i * 112, 145, 8, 8, col, { r: 2 })}
+          ${L(29 + i * 112, 142, 98, 14, nm + '  ' + (inV > 0 ? pct(f) : '—'), { s: 6.5, c: K.sub, id: 'leg' + i })}`)}`;
+      })()}
+      ${Box(16, 166, 334, 66, html`
+        ${cell3(14, K.grn, 'INCOME', inV, inV <= 0 ? '—' : net >= 0 ? 'kept ' + pct(net / inV) : 'over by ' + pct(-net / inV), 'flowInc')}
+        ${R(117, 12, 1, 42, 'rgba(255,255,255,0.07)')}
+        ${cell3(126, K.red, 'EXPENSES', sp.Exp, share(sp.Exp), 'flowExp')}
+        ${R(228, 12, 1, 42, 'rgba(255,255,255,0.07)')}
+        ${cell3(236, K.grn, 'SAVINGS', sp.Sav, share(sp.Sav), 'flowSav')}`, { fill: 'rgba(255,255,255,0.025)', r: 12, b: 'rgba(255,255,255,0.05)' })}` : html`
     ${Box(16, label ? 112 : 106, 334, 56, html`
       ${cell(16, 'MONEY IN', inV)}
       ${R(167, 12, 1, 32, 'rgba(255,255,255,0.07)')}
-      ${cell(184, 'MONEY OUT', outV)}`, { fill: 'rgba(255,255,255,0.025)', r: 12, b: 'rgba(255,255,255,0.05)' })}`;
-  return Card(o.x ?? null, o.y ?? 0, 366, label ? 184 : 178, body, { id: o.id });
+      ${cell(184, 'MONEY OUT', outV)}`, { fill: 'rgba(255,255,255,0.025)', r: 12, b: 'rgba(255,255,255,0.05)' })}`}`;
+  return Card(o.x ?? null, o.y ?? 0, 366, sp ? 248 : label ? 184 : 178, body, { id: o.id });
 }
 
 /* ── Date box (dd/mm/yyyy text + calendar icon) and its calendar overlay ── */

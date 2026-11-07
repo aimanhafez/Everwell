@@ -1,4 +1,4 @@
-# Pocket Dreamer v4.7.0 (web version, formerly Everwell)
+# Pocket Dreamer v4.8.0 (web version, formerly Everwell)
 
 *Live well today. Build well for tomorrow.*
 
@@ -24,6 +24,20 @@ The screens are Setup, Home, Accounts, Account detail, New/Edit account, Transac
 1. **Google Sheet:** open Apps Script. Replace everything in `Code.gs` with the new `apps-script/Code.gs`, then **Save**. Go to **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The URL stays the same, and the Sheet gets new columns (`StSweepAuto`, `StSweepFrom`, `StSweepLog`, `AccSweep`) the next time the app connects.
 2. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js`, `icons` and `apps-script` folders**. Files with the same name are replaced. Click **Commit changes**.
 3. **iPhone:** close Everwell fully and open it again. You won't need to reconnect.
+
+## Updating to v4.8.0
+
+Only **GitHub** changes; `Code.gs` stays the same. Upload the whole folder and commit, then close and reopen the app.
+
+## What's new in v4.8.0 · Cash flow
+
+- **Home · Cash flow** now shows **Income · Expenses · Savings**:
+  - Expenses are your Expense categories and Savings are your Savings/Asset categories (for example ASB).
+  - Income shows how much you kept ("kept 2%").
+- **The line is your whole income.** Green on the left is savings, light green is what's still in the bank, and red on the right is expenses. A small legend gives each share.
+- **Beside NET:** "vs last month" and "vs the same month last year" (▲ green = better, ▼ red = worse).
+- **An empty month** shows RM 0.00 in grey. The comparisons show what the other month was ("Was RM 70.44") or "No records yet".
+- **Month result / forecast** has been removed from Home.
 
 ## Updating to v4.7.0
 
@@ -161,7 +175,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'pocketdreamer-4.7.0-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'pocketdreamer-4.8.0-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting

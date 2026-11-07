@@ -1,7 +1,7 @@
 // scrHome — net worth, alerts, accounts, monthly overview, spending, recent activity, insights.
 import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, heroBg, Navigate, rerender,
-  bal, psum, flowSum, catSpend, acc, byTxDesc, dueCount, lowBal, stStart, fmtD, Today, PLABEL, Year, Month, diffDays, minD,
+  bal, psum, flowSum, flowSplit, catSpend, acc, byTxDesc, dueCount, lowBal, stStart, fmtD, Today, PLABEL, Year, Month, diffDays, minD,
   RM, sRM, n0, pct, PALETTE, esc, monthLabel, resetTxPeriodToMonth, round2, fs
 } from '../core.js';
 import { TabHeader, NavBar, Fab, PeriodCard, FlowCard, SectionHead } from '../shared.js';
@@ -89,6 +89,7 @@ export const scrHome = {
     const { In: inc, Out: out } = flowSum();
     const spend = catSpend();
     const SP = spendParts(spend);
+    const SPL = flowSplit();
     const recent = DB.txns.filter(t => !t.TxParent && !(t.TxType === 'Transfer' && t.TxDir === 'In') && t.TxType !== 'Opening Balance' && t.TxDate >= G.gblFrom && t.TxDate <= G.gblTo).sort(byTxDesc).slice(0, 10);
 
     // insights
@@ -141,8 +142,7 @@ export const scrHome = {
       ${hasAcc ? Upcoming() : null}
       ${hasAcc ? SectionHead('Monthly overview', 'overviewHead') : null}
       ${PeriodCard(l)}
-      ${FlowCard(inc, out, '', { id: 'homeFlow' })}
-      ${hasAcc ? Forecast(inc, out) : null}
+      ${FlowCard(inc, out, '', { id: 'homeFlow', split: SPL, side: flowSide(SPL) })}
       ${Card(null, 0, 366, 218, html`
         ${L(16, 14, 246, 22, 'Spending', { s: 11.5, w: 6 })}
         ${L(250, 14, 100, 22, 'Analysis  ›', { s: 8.5, w: 6, c: K.or, a: 'r', onClick: () => Navigate('scrAnalysis') })}
@@ -181,40 +181,22 @@ export const scrHome = {
   }
 };
 
-/* ── Month-end forecast: pace of spending in the selected month, projected to its last day ── */
-function Forecast(inc, out) {
-  const from = G.gblFrom, to = G.gblTo, today = Today();
-  const days = diffDays(from, to) + 1;
-  const past = today > to, future = today < from;
-  const elapsed = past ? days : future ? 0 : diffDays(from, today) + 1;
-  const daily = elapsed ? out / elapsed : 0;
-  const projected = past ? out : round2(daily * days);
-  const pFrom = addM(from, -1), pTo = addD(from, -1);
-  const last = flowSum(pFrom, pTo).Out;
-  const delta = last > 0 ? (projected - last) / last : null;
-  const projNet = round2(inc - projected);
-  const share = days ? elapsed / days : 0;
-  const head = past ? 'Month result' : 'Month-end forecast';
-  const big = future ? '—' : RM(projected);
-  const cap = past ? 'TOTAL SPENT' : 'PROJECTED SPENDING BY ' + fmtD(to, 'dd mmm').toUpperCase();
-  const dTxt = delta === null ? '' : (delta > 0 ? '▲ ' : '▼ ') + pct(Math.abs(delta)) + ' vs last month';
-  const dC = delta === null ? K.mute : delta > 0 ? K.red : K.grn;
-  const showBar = !past && !future;
-  return Card(null, 0, 366, showBar ? 150 : 134, html`
-    ${C(16, 16, 30, K.field)}${I(22, 22, 18, 18, 'Gauge', K.or, { pad: 1 })}
-    ${L(56, 14, 170, 18, head, { s: 11.5, w: 6 })}
-    ${L(56, 32, 170, 14, future ? 'This month has not started yet' : past ? 'Closed  ·  ' + days + ' days' : 'Day ' + elapsed + ' of ' + days, { s: 7.5, c: K.sub })}
-    ${dTxt ? B(350 - 132, 18, 132, 22, dTxt, { fill: delta > 0 ? 'rgba(229,72,77,0.08)' : 'rgba(52,199,123,0.08)', b: delta > 0 ? 'rgba(229,72,77,0.3)' : 'rgba(52,199,123,0.28)', c: dC, r: 11, s: 6.5, flat: true, id: 'fcDelta' }) : null}
-    ${L(16, 62, 220, 13, cap, { s: 6.5, w: 6, c: K.mute, ls: 1.4 })}
-    ${L(16, 77, 220, 32, big, { s: 18, w: 6, id: 'forecast', st: 'letter-spacing:-0.3px' })}
-    ${R(250, 62, 1, 50, 'rgba(255,255,255,0.07)')}
-    ${L(264, 60, 90, 13, 'DAILY AVG', { s: 6.5, w: 6, c: K.mute, ls: 1.4 })}
-    ${L(264, 74, 90, 18, future ? '—' : RM(daily), { s: 9.5, w: 6 })}
-    ${L(264, 96, 90, 13, past ? 'NET' : 'PROJ. NET', { s: 6.5, w: 6, c: K.mute, ls: 1.4 })}
-    ${L(264, 110, 90, 18, future ? '—' : sRM(projNet), { s: 9.5, w: 6, c: projNet < 0 ? K.red : K.grn })}
-    ${showBar ? html`
-      ${R(16, 132, 334, 3, 'rgba(255,255,255,0.06)', { r: 2 })}
-      ${R(16, 132, Math.max(4, 334 * share), 3, 'linear-gradient(90deg, rgba(255,106,0,0.35), #FF6A00)', { r: 2 })}` : null}`, { id: 'forecastCard' });
+/* ── Beside NET on the cash flow card: change vs last month and average daily spending ── */
+function flowSide(sp) {
+  const from = G.gblFrom;
+  const net = round2(sp.In - sp.Out);
+  const cmp = (f, t, cap, id) => {
+    const o = flowSplit(f, t);
+    const had = o.In > 0 || o.Out > 0;
+    const d = round2(net - (o.In - o.Out));
+    if (!had) return { cap, val: 'No records yet', c: K.mute, big: false, id };
+    if (sp.In === 0 && sp.Out === 0) return { cap, val: 'Was ' + sRM(round2(o.In - o.Out)), c: K.sub, big: false, id }; // nothing to compare yet
+    return { cap, val: (d >= 0 ? '▲ ' : '▼ ') + RM(Math.abs(d)), c: d >= 0 ? K.grn : K.red, id };
+  };
+  return [
+    cmp(addM(from, -1), addD(from, -1), 'VS LAST MONTH', 'flowVs'),
+    cmp(addM(from, -12), addD(addM(from, -11), -1), 'VS ' + monthLabel('mmm').toUpperCase() + ' ' + (G.gblYear - 1), 'flowVsYear')
+  ];
 }
 
 /* ── Next 14 days: bills from Recurring + credit card due dates, and what is safe to spend ── */

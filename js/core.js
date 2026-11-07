@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '4.7.0';
+export const VERSION = '4.8.0';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -159,6 +159,19 @@ export function flowSum(from = G.gblFrom, to = G.gblTo) {
     if (f.side === 'In') In += f.v; else Out += f.v;
   }
   return { In: round2(In), Out: round2(Out) };
+}
+/** Money out split into spending (Expense categories) and saving (Savings/Asset categories) */
+export function flowSplit(from = G.gblFrom, to = G.gblTo) {
+  let In = 0, Exp = 0, Sav = 0;
+  const byInc = {};
+  for (const t of DB.txns) {
+    if (t.TxDate < from || t.TxDate > to) continue;
+    const f = flowOf(t); if (!f) continue;
+    if (f.side === 'In') { In += f.v; byInc[t.TxCat] = (byInc[t.TxCat] || 0) + f.v; }
+    else if (catTypeOf(t.TxCat) === 'Savings/Asset') Sav += f.v; else Exp += f.v;
+  }
+  const top = Object.keys(byInc).sort((a, b) => byInc[b] - byInc[a])[0] || '';
+  return { In: round2(In), Exp: round2(Exp), Sav: round2(Sav), Out: round2(Exp + Sav), Top: top };
 }
 /** Category totals for a month key or a year: {In, Out, N} — split lines instead of split parents. */
 export function catTotals(filter) {
