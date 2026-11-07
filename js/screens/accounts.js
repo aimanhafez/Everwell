@@ -35,12 +35,6 @@ export const scrAccounts = {
       <div class="abs tap" style="inset:0" data-t=${'acc-' + a.AccName} onClick=${() => { G.gblAccId = a.AccId; Navigate('scrAccountDetail'); }}></div>`);
     const kids = html`
       ${SubHead('BANK ACCOUNTS', open.length + ' ACTIVE')}
-      ${Box(null, 0, 366, 56, html`
-        ${L(16, 10, 160, 12, 'TOTAL CASH', { s: 6.5, w: 6, c: K.sub })}
-        ${L(16, 24, 160, 22, RM(round2(cash)), { s: 11.5, w: 6, id: 'totalCash' })}
-        ${R(183, 12, 1, 32, 'rgba(255,255,255,0.07)')}
-        ${L(198, 10, 152, 12, 'CARDS OWED', { s: 6.5, w: 6, c: K.sub, a: 'r' })}
-        ${L(198, 24, 152, 22, RM(round2(owed)), { s: 11.5, w: 6, a: 'r', c: owed > 0 ? K.red : K.text })}`, { fill: 'rgba(255,255,255,0.025)', r: 14, b: 'rgba(255,255,255,0.05)' })}
       ${list.map(row)}
       ${!list.length ? Card(null, 0, 366, 72, L(16, 0, 334, 72, 'No accounts yet.', { s: 9.5, c: K.mute, a: 'c' })) : null}
       ${B(null, 0, 366, 46, '＋   Add account', { fill: 'transparent', b: 'rgba(255,106,0,0.45)', c: K.or, r: 23, s: 10, flat: true, st: 'position:relative;flex:none;', onClick: () => { G.gblEditMode = 'new'; Navigate('scrAccountEdit'); }, id: 'addAccount' })}

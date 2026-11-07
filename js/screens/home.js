@@ -55,22 +55,22 @@ export function donutSvg(top, label = 'SPENT') {
 
 /** Thin ring with small gaps between segments (Home). Text is drawn in HTML on top, in the app font. */
 export function ringSvg(parts, total) {
-  const R0 = 62, c = 2 * Math.PI * R0, gap = parts.length > 1 ? 3 : 0;
+  const R0 = 60, c = 2 * Math.PI * R0, gap = parts.length > 1 ? 3 : 0;
   let o = 0, arcs = '';
   parts.forEach(p => {
     const len = Math.max(p.Amt / total * c - gap, 0.5);
-    arcs += `<circle cx='80' cy='80' r='${R0}' fill='none' stroke='${p.Col}' stroke-width='9' stroke-linecap='butt' stroke-dasharray='${len.toFixed(2)} ${c.toFixed(2)}' stroke-dashoffset='${(-o / total * c).toFixed(2)}' transform='rotate(-90 80 80)'/>`;
+    arcs += `<circle cx='80' cy='80' r='${R0}' fill='none' stroke='${p.Col}' stroke-width='15' stroke-linecap='butt' stroke-dasharray='${len.toFixed(2)} ${c.toFixed(2)}' stroke-dashoffset='${(-o / total * c).toFixed(2)}' transform='rotate(-90 80 80)'/>`;
     o += p.Amt;
   });
-  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><circle cx='80' cy='80' r='${R0}' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='9'/><circle cx='80' cy='80' r='50' fill='none' stroke='rgba(255,255,255,0.04)' stroke-width='1'/>${arcs}</svg>`;
+  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><defs><filter id='glow' x='-20%' y='-20%' width='140%' height='140%'><feGaussianBlur stdDeviation='2.2' result='b'/><feMerge><feMergeNode in='b'/><feMergeNode in='SourceGraphic'/></feMerge></filter></defs><circle cx='80' cy='80' r='${R0}' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='15'/><g filter='url(#glow)'>${arcs}</g></svg>`;
 }
-/** Top 4 categories + "Others", shares of the whole month */
+/** Warm orange → red palette for the spending ring (biggest first) */
+const SPEND_PAL = ['#FF7A00', '#FF2A1F', '#FFB800', '#FF5A4E', '#FFDA3A'];
+/** Top 5 categories; their shares are of the whole month, so the ring shows the rest as empty track */
 function spendParts(spend) {
   const tot = spend.reduce((s, x) => s + x.Amt, 0);
-  const top = spend.slice(0, spend.length > 5 ? 4 : 5).map((c, i) => ({ Nm: c.CatName, Amt: c.Amt, Col: PALETTE[i] }));
-  const rest = round2(tot - top.reduce((s, x) => s + x.Amt, 0));
-  if (spend.length > 5 && rest > 0) top.push({ Nm: 'Others', Amt: rest, Col: '#4A4F57' });
-  return { tot: round2(tot), parts: top };
+  const top = spend.slice(0, 5).map((c, i) => ({ Nm: c.CatName, Amt: c.Amt, Col: SPEND_PAL[i] }));
+  return { tot: round2(tot), parts: top, rest: round2(tot - top.reduce((s, x) => s + x.Amt, 0)), more: Math.max(0, spend.length - 5) };
 }
 
 export const scrHome = {
@@ -147,11 +147,10 @@ export const scrHome = {
         ${L(16, 14, 246, 22, 'Spending', { s: 11.5, w: 6 })}
         ${L(250, 14, 100, 22, 'Analysis  ›', { s: 8.5, w: 6, c: K.or, a: 'r', onClick: () => Navigate('scrAnalysis') })}
         ${Svg(12, 50, 150, 150, ringSvg(SP.parts.length ? SP.parts : [{ Amt: 1, Col: 'rgba(255,255,255,0.05)' }], SP.tot || 1))}
-        ${L(12, 100, 150, 13, 'TOTAL SPENT', { s: 5.5, w: 6, c: K.mute, a: 'c', ls: 1.6 })}
-        <div class="abs" style="left:12px;top:113px;width:150px;height:26px;display:flex;align-items:center;justify-content:center;white-space:nowrap;color:#F4F2EE" data-t="spendTotal">
-          <span><span style=${`font-size:${fs(7)};font-weight:600;color:${K.sub};margin-right:3px;vertical-align:5px`}>RM</span><span style=${`font-size:${fs(14)};font-weight:600;letter-spacing:-0.4px`}>${n0(Math.round(SP.tot))}</span></span>
+        ${L(12, 106, 150, 12, 'TOTAL SPENT', { s: 5, w: 6, c: K.mute, a: 'c', ls: 1.4 })}
+        <div class="abs" style="left:12px;top:117px;width:150px;height:22px;display:flex;align-items:center;justify-content:center;white-space:nowrap;color:#F4F2EE" data-t="spendTotal">
+          <span><span style=${`font-size:${fs(6)};font-weight:600;color:${K.sub};margin-right:2px;vertical-align:4px`}>RM</span><span style=${`font-size:${fs(11.5)};font-weight:600;letter-spacing:-0.3px`}>${n0(Math.round(SP.tot))}</span></span>
         </div>
-        ${L(12, 139, 150, 13, monthLabel('mmm yyyy').toUpperCase(), { s: 5.5, w: 6, c: K.mute, a: 'c', ls: 1.4 })}
         ${Gal(178, 50, 172, 160, SP.parts, 32, it => html`
           ${R(0, 6, 3, 20, it.Col, { r: 2 })}
           ${L(12, 2, 104, 15, it.Nm, { s: 8.5, w: 6 })}
