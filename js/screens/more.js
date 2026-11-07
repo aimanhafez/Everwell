@@ -3,7 +3,7 @@ import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, TI, DD, Tog, Brand, heroBg, Navigate, Back, Notify, rerender, guard, save, api,
   bal, acc, accByName, stStart, lowBal, fmtD, fmtTime, Today, PLABEL, PSTART, PEND, Year, Month, D, addDays, addMonths, addYears,
   RM, sRM, n0, pct, Value, round2, mkTxn, txnId, nextTxSeq, catTotals, catSpend, psum, ordinal, setMonth, monthLabel, settingsRow,
-  PALETTE, CONN, store, loadAll, NAV, VERSION, perKey, SURFACE, HAIR
+  PALETTE, CONN, store, loadAll, NAV, VERSION, perKey, SURFACE, HAIR, SYNC, flush
 } from '../core.js';
 import { TabHeader, NavBar, DetailHeader, SaveBar, DateBox, Calendar, Fab, FlowCard, PeriodCard, AuditRows, askPassword, PasswordDialog } from '../shared.js';
 import { donutSvg } from './home.js';
@@ -261,14 +261,16 @@ export const scrMore = {
       Notify('Monthly totals recalculated.', 'success');
     }));
     const fresh = () => askPassword(l, 'delete all accounts and transactions', () => guard(async () => {
+      await flush();
       await api('startFresh');
+      SYNC.outbox = []; store.del('ew_outbox'); store.del('ew_data');
       DB.txns = []; DB.accounts = []; DB.recurring = []; DB.audit = [];
       DB.settings = settingsRow({ StStart: '' });
       Notify('All accounts and transactions deleted. Categories and payees were kept.', 'success');
       NAV.stack = []; Navigate('scrSetup');
     }));
     const disconnect = () => askPassword(l, 'disconnect this device', () => {
-      store.del('ew_conn'); CONN.v = null; NAV.stack = []; Navigate('connect');
+      store.del('ew_conn'); store.del('ew_data'); store.del('ew_outbox'); SYNC.outbox = []; CONN.v = null; NAV.stack = []; Navigate('connect');
     });
     const csvH = l.locCsv ? 320 : 112;
     const actionRow = (y, ic, title, sub, color, onClick, id, last) => html`
@@ -326,7 +328,7 @@ function SubHead(t) {
 export const scrActivity = {
   onVisible(l) {
     l.all = null;
-    api('activityAll').then(r => { l.all = r; rerender(); }).catch(() => { l.all = DB.audit.slice(); l.partial = true; rerender(); });
+    api('activityAll', {}, undefined, { quiet: true }).then(r => { const seen = new Set(r.map(a => a.AuId)); r = [...r, ...DB.audit.filter(a => !seen.has(a.AuId))]; l.all = r; rerender(); }).catch(() => { l.all = DB.audit.slice(); l.partial = true; rerender(); });
   },
   view(l) {
     const list = (l.all || DB.audit).slice().sort((a, b) => (a.AuWhen < b.AuWhen ? 1 : -1));

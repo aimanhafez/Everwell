@@ -17,7 +17,7 @@
  * Helpers you can run from the editor: showApiKey(), resetApiKey()
  */
 
-var EW_VERSION = '4.3.0';
+var EW_VERSION = '4.4.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -98,7 +98,7 @@ function doPost(e) {
   try {
     if (lock) lock.waitLock(25000);
     var ss = getSs_();
-    ensureTables_(ss);
+    if (req.action === 'bootstrap' || req.action === 'startFresh') ensureTables_(ss);
     return json_({ ok: true, data: fn(ss, req.payload || {}) });
   } catch (err) {
     return json_({ ok: false, error: String((err && err.message) || err) });
@@ -146,10 +146,12 @@ var ACTIONS = {
    */
   commit: function (ss, p) {
     var del = p.deletes || {}, ups = p.upserts || {};
+    var touched = Object.keys(del).concat(Object.keys(ups));
+    if (touched.some(function (t) { return !ss.getSheetByName(t); })) ensureTables_(ss);
     Object.keys(del).forEach(function (t) { checkTable_(t); deleteRows_(ss, t, del[t]); });
     Object.keys(ups).forEach(function (t) { checkTable_(t); upsertRows_(ss, t, ups[t]); });
     var logged = (p.log || []).map(function (l) {
-      return { AuId: 'AU-' + Utilities.getUuid().replace(/-/g, '').slice(0, 12), AuWhen: new Date().toISOString(), AuAction: String(l.AuAction || ''), AuRef: String(l.AuRef || ''), AuDetail: String(l.AuDetail || '') };
+      return { AuId: String(l.AuId || ('AU-' + Utilities.getUuid().replace(/-/g, '').slice(0, 12))), AuWhen: String(l.AuWhen || new Date().toISOString()), AuAction: String(l.AuAction || ''), AuRef: String(l.AuRef || ''), AuDetail: String(l.AuDetail || '') };
     });
     if (logged.length) upsertRows_(ss, 'EW_ActivityLog', logged);
     return { logged: logged };
@@ -170,11 +172,11 @@ var ACTIONS = {
 /* ───────────────────────── Sheet helpers ───────────────────────── */
 
 function getSs_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(); // fastest: the sheet this script is attached to
+  if (ss) return ss;
   var id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
   if (id) return SpreadsheetApp.openById(id);
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss) throw new Error('Sheet not linked. Run setupEverwell in Apps Script.');
-  return ss;
+  throw new Error('Sheet not linked. Run setupEverwell in Apps Script.');
 }
 
 function checkTable_(t) { if (!TABLES[t]) throw new Error('Unknown table ' + t); }

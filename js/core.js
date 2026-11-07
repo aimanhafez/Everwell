@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '4.3.0';
+export const VERSION = '4.4.0';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -191,62 +191,134 @@ export const CONN = { v: store.get('ew_conn', null) };
 let busyN = 0;
 function setBusy(d) { busyN += d; document.body.classList.toggle('busy', busyN > 0); }
 
-export async function api(action, payload, conn = CONN.v) {
+export async function api(action, payload, conn = CONN.v, opts = {}) {
   if (!conn) throw new Error('Not connected.');
-  if (!navigator.onLine) throw new Error("You're offline. Connect to the internet to save to Google Sheets.");
-  setBusy(1);
+  if (!navigator.onLine) { const e = new Error("You're offline."); e.offline = true; throw e; }
+  if (!opts.quiet) setBusy(1);
   try {
     let res;
     try {
       res = await fetch(conn.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ key: conn.key, action, payload: payload || {} }) });
-    } catch (e) { throw new Error("Can't reach Google. Check your internet connection."); }
+    } catch (e) { const er = new Error("Can't reach Google. Check your internet connection."); er.offline = true; throw er; }
     const text = await res.text();
     let j;
     try { j = JSON.parse(text); } catch (e) { throw new Error('Unexpected reply. Check the Web app URL and that access is set to "Anyone".'); }
     if (!j.ok) { const err = new Error(j.error || 'Something went wrong.'); err.code = j.code; throw err; }
     return j.data;
-  } finally { setBusy(-1); }
+  } finally { if (!opts.quiet) setBusy(-1); }
 }
 
-/** Loads every list (App.OnStart). */
-export async function loadAll() {
-  const d = await api('bootstrap');
+/* ───────────── Fast saving: change the app first, sync to Google in the background ─────────────
+ * Every save is applied on the phone straight away and put in an "outbox" kept in phone storage.
+ * The outbox is sent to Google one batch at a time. Each batch is safe to send twice (rows are keyed),
+ * so nothing is lost if the app is closed, offline or interrupted: it is sent again next time. */
+const MAP = { EW_Accounts: ['accounts', 'AccId'], EW_Categories: ['categories', 'CatId'], EW_Payees: ['payees', 'PyName'], EW_Recurring: ['recurring', 'RcId'], EW_Transactions: ['txns', 'TxnId'] };
+export const SYNC = { outbox: store.get('ew_outbox', []), flushing: false, failed: false, timer: null };
+function applyLocal(p) {
+  for (const [t, keys] of Object.entries(p.deletes || {})) {
+    if (!MAP[t]) continue;
+    const [list, k] = MAP[t];
+    DB[list] = DB[list].filter(x => !keys.includes(x[k]));
+  }
+  for (const [t, rows] of Object.entries(p.upserts || {})) {
+    if (t === 'EW_Settings') { DB.settings = { ...rows[0] }; continue; }
+    const [list, k] = MAP[t];
+    for (const row of rows) {
+      const i = DB[list].findIndex(x => x[k] === row[k]);
+      if (i >= 0) DB[list][i] = { ...row }; else DB[list].push({ ...row });
+    }
+  }
+  for (const l of p.log || []) if (!DB.audit.some(a => a.AuId === l.AuId)) DB.audit.unshift(l);
+}
+function syncState() {
+  document.body.classList.toggle('syncing', SYNC.outbox.length > 0);
+  document.body.classList.toggle('sync-wait', SYNC.outbox.length > 0 && (SYNC.failed || !navigator.onLine));
+  const el = document.getElementById('syncnote');
+  if (el) el.textContent = SYNC.outbox.length ? (navigator.onLine ? 'Saving to Google Sheets…' : 'Offline · ' + SYNC.outbox.length + ' change(s) saved on this phone, will sync') : '';
+}
+function persistOutbox() { store.set('ew_outbox', SYNC.outbox); syncState(); }
+let cacheTimer;
+function persistCache() {
+  clearTimeout(cacheTimer);
+  cacheTimer = setTimeout(() => store.set('ew_data', { at: Date.now(), settings: DB.settings, accounts: DB.accounts, categories: DB.categories, payees: DB.payees, recurring: DB.recurring, txns: DB.txns, audit: DB.audit.slice(0, 30) }), 300);
+}
+export async function flush() {
+  if (SYNC.flushing || !CONN.v) return;
+  SYNC.flushing = true; syncState();
+  try {
+    while (SYNC.outbox.length) {
+      const item = SYNC.outbox[0];
+      try {
+        await api('commit', item.p, CONN.v, { quiet: true });
+        SYNC.outbox.shift(); SYNC.failed = false; persistOutbox();
+      } catch (e) {
+        if (e.offline) { SYNC.failed = true; break; }
+        if (e.code === 'AUTH') { SYNC.failed = true; CONN.authError = e.message; NAV.stack = ['connect']; rerender(); break; }
+        item.tries = (item.tries || 0) + 1;
+        if (item.tries >= 3) {
+          SYNC.outbox.shift(); persistOutbox();
+          Notify("Couldn't save one change to Google Sheets: " + e.message + ' Tap ↻ to reload your data.', 'error');
+        } else { persistOutbox(); SYNC.failed = true; break; }
+      }
+    }
+  } finally {
+    SYNC.flushing = false; syncState();
+    clearTimeout(SYNC.timer);
+    if (SYNC.outbox.length) SYNC.timer = setTimeout(flush, 8000);
+  }
+}
+/** Last chance when the app is closed: hand pending batches to the browser to deliver. */
+export function beaconOutbox() {
+  if (!CONN.v || !SYNC.outbox.length || !navigator.sendBeacon) return;
+  for (const item of SYNC.outbox) {
+    try { navigator.sendBeacon(CONN.v.url, new Blob([JSON.stringify({ key: CONN.v.key, action: 'commit', payload: item.p })], { type: 'text/plain;charset=utf-8' })); } catch (e) { /* ignore */ }
+  }
+}
+
+function applyLoaded(d) {
   DB.settings = d.settings ? { ...d.settings } : null;
   DB.accounts = d.accounts;
   DB.categories = d.categories;
   DB.payees = d.payees;
   DB.recurring = d.recurring;
-  DB.txns = d.transactions;
-  DB.audit = d.activity;
+  DB.txns = d.transactions || d.txns;
+  DB.audit = d.activity || d.audit || [];
+  for (const item of SYNC.outbox) applyLocal(item.p); // changes not yet on Google stay visible
   G.gblCycleDay = (DB.settings && DB.settings.StCycleDay) || 28;
   const l = PLABEL(Today());
   setMonth(Year(l), Month(l));
   G.gblTxAll = false; G.gblTxFrom = G.gblFrom; G.gblTxTo = G.gblTo; G.gblTxLbl = monthLabel('mmm yyyy');
+}
+/** Shows the copy saved on this phone straight away (it is refreshed from Google right after). */
+export function loadCached() {
+  const d = store.get('ew_data', null);
+  if (!d || !d.accounts) return false;
+  applyLoaded(d);
+  return true;
+}
+/** Loads every list from Google (App.OnStart). */
+export async function loadAll(opts = {}) {
+  const d = await api('bootstrap', {}, CONN.v, { quiet: !!opts.quiet });
+  applyLoaded(d);
+  persistCache();
   store.set('ew_cache_at', new Date().toISOString());
   return d;
 }
 
 /**
  * Saves a set of changes. ch = { up: {Table:[rows]}, del: {Table:[keys]}, log: [{AuAction, AuRef, AuDetail}] }
- * The Google Sheet is updated first; the app's lists change only when the save worked.
+ * The app updates immediately; the Google Sheet is updated in the background (see flush).
  */
 export async function save(ch) {
-  const r = await api('commit', { upserts: ch.up || {}, deletes: ch.del || {}, log: ch.log || [] });
-  const map = { EW_Accounts: ['accounts', 'AccId'], EW_Categories: ['categories', 'CatId'], EW_Payees: ['payees', 'PyName'], EW_Recurring: ['recurring', 'RcId'], EW_Transactions: ['txns', 'TxnId'] };
-  for (const [t, keys] of Object.entries(ch.del || {})) {
-    const [list, k] = map[t];
-    DB[list] = DB[list].filter(x => !keys.includes(x[k]));
-  }
-  for (const [t, rows] of Object.entries(ch.up || {})) {
-    if (t === 'EW_Settings') { DB.settings = { ...rows[0] }; continue; }
-    const [list, k] = map[t];
-    for (const row of rows) {
-      const i = DB[list].findIndex(x => x[k] === row[k]);
-      if (i >= 0) DB[list][i] = { ...row }; else DB[list].push({ ...row });
-    }
-  }
-  for (const l of r.logged || []) DB.audit.unshift(l);
-  return r;
+  const now = new Date().toISOString();
+  const log = (ch.log || []).map(l => ({ AuId: 'AU-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), AuWhen: now, AuAction: String(l.AuAction || ''), AuRef: String(l.AuRef || ''), AuDetail: String(l.AuDetail || '') }));
+  const p = { upserts: ch.up || {}, deletes: ch.del || {}, log };
+  applyLocal(p);
+  persistCache();
+  SYNC.outbox.push({ p, tries: 0 });
+  persistOutbox();
+  flush();
+  return { logged: log };
 }
 export function settingsRow(over = {}) {
   const s = DB.settings || { Title: 'Settings', StStart: '', StCycleDay: 28, StLowBal: 200, StCurrency: 'MYR' };
@@ -292,7 +364,6 @@ export function Notify(msg, kind = 'info') {
 }
 /** Runs a save action and reports errors like IfError(..., Notify("Couldn't save ...")) */
 export async function guard(fn) {
-  if (!navigator.onLine) { Notify("You're offline. Connect to the internet to save to Google Sheets.", 'error'); return; }
   try { await fn(); } catch (e) {
     if (e.code === 'AUTH') { CONN.authError = e.message; NAV.stack = ['connect']; rerender(); return; }
     Notify("Couldn't save to Google Sheets: " + e.message, 'error');

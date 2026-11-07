@@ -94,7 +94,6 @@ export const scrAccountDetail = {
     const closeTap = () => guard(async () => {
       if (closed) {
         await save({ up: { EW_Accounts: [{ ...a, AccStatus: 'Active' }] }, log: [{ AuAction: 'Reopen account', AuRef: a.AccId, AuDetail: a.AccName }] });
-        Notify('Account reopened.', 'success');
       } else if (Math.abs(b) >= 0.005) {
         Notify('Balance must be RM 0.00 before closing.', 'error');
       } else if (!l.locConfirmClose) {
@@ -102,7 +101,6 @@ export const scrAccountDetail = {
       } else {
         await save({ up: { EW_Accounts: [{ ...a, AccStatus: 'Closed' }] }, log: [{ AuAction: 'Close account', AuRef: a.AccId, AuDetail: a.AccName }] });
         l.locConfirmClose = false;
-        Notify('Account closed.', 'success');
       }
     });
     const histH = 52 + Math.max(hist.length, 1) * 58 + 44;
@@ -228,7 +226,6 @@ export const scrAccountEdit = {
         else if (ob > 0) { const ts = nextTxSeq(); txUps.push(mkTxn({ TxnId: txnId(od, ts), TxSeq: ts, TxAcc: a.AccId, TxDate: od, TxType: 'Opening Balance', TxDir: cls === 'Liability' ? 'Out' : 'In', TxAmt: ob, TxCat: 'Opening Balance', TxDesc: 'Opening balance' })); }
         await save({ up: { EW_Accounts: [row], EW_Transactions: txUps }, log: [{ AuAction: 'Edit account', AuRef: a.AccId, AuDetail: nm }] });
         G.gblAccId = a.AccId;
-        Notify('Account updated.', 'success');
       } else {
         const sq = DB.accounts.reduce((m, x) => Math.max(m, x.AccSeq || 0), 0) + 1;
         const aid = 'ACC-' + String(sq).padStart(4, '0');
@@ -236,7 +233,6 @@ export const scrAccountEdit = {
         if (ob > 0) { const ts = nextTxSeq(); txUps.push(mkTxn({ TxnId: txnId(od, ts), TxSeq: ts, TxAcc: aid, TxDate: od, TxType: 'Opening Balance', TxDir: cls === 'Liability' ? 'Out' : 'In', TxAmt: ob, TxCat: 'Opening Balance', TxDesc: 'Opening balance' })); }
         await save({ up: { EW_Accounts: [row], EW_Transactions: txUps }, log: [{ AuAction: 'Create account', AuRef: aid, AuDetail: nm }] });
         G.gblAccId = aid;
-        Notify('Account created.', 'success');
       }
       Replace('scrAccountDetail');
     });

@@ -1,6 +1,6 @@
 // Everwell — start-up: scale the 390 x 844 canvas to the device, register screens, load data (App.OnStart).
 import { html, render } from './vendor/preact-htm.js';
-import { NAV, CONN, mount, rerender, loadAll, Navigate, stStart, Notify, K } from './core.js';
+import { NAV, CONN, mount, rerender, loadAll, loadCached, flush, beaconOutbox, Navigate, stStart, Notify, K } from './core.js';
 import { autoSweep } from './sweep.js';
 import { scrHome } from './screens/home.js';
 import { scrAccounts, scrAccountDetail, scrAccountEdit } from './screens/accounts.js';
@@ -43,16 +43,22 @@ async function boot() {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
   if (!CONN.v) { NAV.stack = []; Navigate('connect'); return; }
-  splash('Loading your money…');
+  const start = () => { NAV.stack = []; Navigate(stStart() ? 'scrHome' : 'scrSetup'); }; // StartScreen: If(IsBlank(StStart), scrSetup, scrHome)
+  const cached = loadCached();
+  if (cached) start(); else splash('Loading your money…');
   try {
-    await loadAll();
-    NAV.stack = [];
-    Navigate(stStart() ? 'scrHome' : 'scrSetup'); // StartScreen: If(IsBlank(StStart), scrSetup, scrHome)
+    await loadAll({ quiet: cached });
+    if (!cached) start(); else rerender();
+    flush();
     autoSweep().then(() => rerender()).catch(e => Notify('Monthly sweep could not run: ' + e.message + ' It will retry next time you open Everwell.', 'error'));
   } catch (e) {
     if (e.code === 'AUTH') { CONN.authError = e.message; NAV.stack = []; Navigate('connect'); return; }
+    if (cached) { flush(); return; } // keep working with the copy on this phone
     splash(navigator.onLine ? e.message : "You're offline. Connect to the internet to load your data.", boot);
   }
 }
-window.addEventListener('online', () => rerender());
+window.addEventListener('online', () => { flush(); rerender(); });
+window.addEventListener('offline', () => rerender());
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') beaconOutbox(); else flush(); });
+window.addEventListener('pagehide', beaconOutbox);
 boot();

@@ -142,7 +142,12 @@ export const scrTxnDetail = {
     if (!t) return;
     const refs = [t.TxnId]; if (t.TxTrf) refs.push(t.TxTrf);
     const want = G.gblTxnId;
-    api('activityFor', { refs }).then(r => { if (G.gblTxnId === want) { l.aud = r; rerender(); } }).catch(() => { /* history is optional */ });
+    l.aud = DB.audit.filter(a => refs.includes(a.AuRef));
+    api('activityFor', { refs }, undefined, { quiet: true }).then(r => {
+      if (G.gblTxnId !== want) return;
+      const seen = new Set(r.map(a => a.AuId));
+      l.aud = [...r, ...l.aud.filter(a => !seen.has(a.AuId))]; rerender();
+    }).catch(() => { /* history is optional */ });
   },
   view(l) {
     const T = txn(G.gblTxnId);
@@ -171,7 +176,6 @@ export const scrTxnDetail = {
       const ids = DB.txns.filter(x => x.TxnId === id || x.TxParent === id || (trf && (x.TxTrf === trf || x.TxRef === trf))).map(x => x.TxnId);
       await save({ del: { EW_Transactions: ids }, log: [{ AuAction: 'Delete', AuRef: id, AuDetail: trf ? 'Transfer ' + trf + ' (both sides)' : 'Transaction' }] });
       l.locConfirmDel = false;
-      Notify('Deleted.', 'success');
       Back();
     });
 
@@ -322,7 +326,6 @@ export const scrTxnEdit = {
         await save({ up, log: [{ AuAction: mode === 'dup' ? 'Duplicate transaction' : 'Create transaction', AuRef: tid, AuDetail: detail }] });
         G.gblTxnId = tid;
       }
-      Notify('Saved.', 'success');
       Replace('scrTxnDetail');
     });
 
@@ -392,7 +395,6 @@ export const scrTransfer = {
       if (fee > 0) rows.push(mkTxn({ TxnId: txnId(d, ts + 2), TxSeq: ts + 2, TxAcc: fa.AccId, TxDate: d, TxType: 'Expense', TxDir: 'Out', TxAmt: round2(fee), TxCat: 'Bank Charges', TxDesc: 'Transfer fee - ' + trf, TxRef: trf }));
       await save({ up: { EW_Transactions: rows }, log: [{ AuAction: 'Create transfer', AuRef: trf, AuDetail: fa.AccName + ' -> ' + ta.AccName + ' RM ' + RM(amt).slice(3) }] });
       G.gblTxnId = rows[0].TxnId;
-      Notify('Transfer saved.', 'success');
       Replace('scrTxnDetail');
     });
 
@@ -432,7 +434,6 @@ export const scrSplit = {
     const unsplit = () => guard(async () => {
       const kids = DB.txns.filter(x => x.TxParent === P.TxnId).map(x => x.TxnId);
       await save({ del: { EW_Transactions: kids }, up: { EW_Transactions: [{ ...P, TxIsSplit: false }] }, log: [{ AuAction: 'Remove split', AuRef: P.TxnId, AuDetail: 'Split removed' }] });
-      Notify('Split removed.', 'success');
       Back();
     });
     const onSave = () => guard(async () => {
@@ -444,7 +445,6 @@ export const scrSplit = {
       const rows = l.lines.map((ln, i) => mkTxn({ TxnId: P.TxnId + '-S' + (i + 1), TxSeq: base + i + 1, TxAcc: P.TxAcc, TxDate: P.TxDate, TxType: P.TxType, TxDir: P.TxDir, TxAmt: ln.SpAmt, TxCat: ln.SpCat, TxPayee: P.TxPayee, TxDesc: 'Split ' + (i + 1) + ' of ' + P.TxnId, TxParent: P.TxnId, TxNote: ln.SpNote }));
       const del = old.filter(id => !rows.some(r => r.TxnId === id));
       await save({ del: { EW_Transactions: del }, up: { EW_Transactions: [...rows, { ...P, TxIsSplit: true }] }, log: [{ AuAction: 'Split', AuRef: P.TxnId, AuDetail: l.lines.length + ' lines' }] });
-      Notify('Split saved.', 'success');
       Back();
     });
 
