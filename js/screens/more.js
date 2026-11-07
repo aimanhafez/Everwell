@@ -7,6 +7,7 @@ import {
 } from '../core.js';
 import { TabHeader, NavBar, DetailHeader, SaveBar, DateBox, Calendar, Fab, FlowCard, PeriodCard, AuditRows, askPassword, PasswordDialog } from '../shared.js';
 import { donutSvg } from './home.js';
+import { isLocked, lockMsg, lastSwept } from '../sweep.js';
 
 /* ───────────── Recurring ───────────── */
 export const scrRecurring = {
@@ -22,6 +23,7 @@ export const scrRecurring = {
     const post = () => guard(async () => {
       const auto = DB.recurring.filter(r => r.RcActive && r.RcMode === 'Auto-post' && r.RcNext <= Today());
       if (!auto.length) return Notify('Nothing is due.', 'info');
+      if (auto.some(r => isLocked(r.RcNext))) return Notify('Some due items are dated in a closed month. ' + lockMsg().split('. ').slice(1).join('. '), 'error');
       const base = nextTxSeq() - 1;
       const rows = auto.map((r, i) => mkTxn({ TxnId: txnId(r.RcNext, base + i + 1), TxSeq: base + i + 1, TxAcc: r.RcAcc, TxDate: r.RcNext, TxType: r.RcType, TxDir: r.RcType === 'Income' ? 'In' : 'Out', TxAmt: r.RcAmt, TxCat: r.RcCat, TxPayee: r.RcPayee, TxDesc: r.RcName, TxRule: r.RcId }));
       const rec = auto.map(r => ({ ...r, RcNext: r.RcFreq === 'Weekly' ? addDays(r.RcNext, 7) : r.RcFreq === 'Yearly' ? addYears(r.RcNext, 1) : addMonths(r.RcNext, 1) }));
@@ -280,7 +282,8 @@ export const scrMore = {
       await api('startFresh');
       SYNC.outbox = []; store.del('ew_outbox'); store.del('ew_data');
       DB.txns = []; DB.accounts = []; DB.recurring = []; DB.audit = [];
-      DB.settings = settingsRow({ StStart: '' });
+      DB.settings = settingsRow({ StStart: '', StSweepLog: '', StSweepFrom: 0, StSweepAuto: false });
+      await save({ up: { EW_Settings: [DB.settings] }, log: [] });
       Notify('All accounts and transactions deleted. Categories and payees were kept.', 'success');
       NAV.stack = []; Navigate('scrSetup');
     }));
@@ -401,6 +404,7 @@ export const scrSetup = {
     const onBegin = () => guard(async () => {
       if (!st) return Notify('Choose the date tracking starts.', 'error');
       if (st > Today()) return Notify("The start date can't be in the future.", 'error');
+      if (lastSwept() && (st !== stStart() || day !== G.gblCycleDay)) return Notify('Some months are closed by Balance Sweep. Reopen them in Accounts before changing the tracking period.', 'error');
       const detail = 'Starts ' + fmtD(st, 'dd mmm yyyy') + ', months from day ' + day;
       await save({ up: { EW_Settings: [settingsRow({ StStart: st, StCycleDay: day })] }, log: [{ AuAction: l.locFirst ? 'Setup' : 'Tracking period', AuRef: 'SYSTEM', AuDetail: detail }] });
       G.gblCycleDay = day;

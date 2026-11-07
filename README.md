@@ -1,4 +1,4 @@
-# Pocket Dreamer v4.6.0 (web version, formerly Everwell)
+# Pocket Dreamer v4.7.0 (web version, formerly Everwell)
 
 *Live well today. Build well for tomorrow.*
 
@@ -24,6 +24,18 @@ The screens are Setup, Home, Accounts, Account detail, New/Edit account, Transac
 1. **Google Sheet:** open Apps Script. Replace everything in `Code.gs` with the new `apps-script/Code.gs`, then **Save**. Go to **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The URL stays the same, and the Sheet gets new columns (`StSweepAuto`, `StSweepFrom`, `StSweepLog`, `AccSweep`) the next time the app connects.
 2. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js`, `icons` and `apps-script` folders**. Files with the same name are replaced. Click **Commit changes**.
 3. **iPhone:** close Everwell fully and open it again. You won't need to reconnect.
+
+## Updating to v4.7.0
+
+Only **GitHub** changes; `Code.gs` stays the same. Upload the whole folder and commit, then close and reopen the app.
+
+## What's new in v4.7.0 · Close a month
+
+- **Sweep now lets you choose the month.** It opens on the oldest month that is still open. Use ‹ › to pick how far to close. Any earlier open months are closed with it, in order, and each one is swept at its own month end (27 Jan, 27 Feb…).
+- **A closed month is locked.** Transactions dated on or before its last day can't be added, edited, split or deleted, including transfers, recurring posts and opening balances. The tracking period can't be changed while months are closed.
+- **Reopen month** (password) appears on the latest closed month in Sweep history. It removes that month's sweep and unlocks it, so you can fix something and close it again. Reopen one month at a time, newest first.
+- **Older data:** if October was swept before January–September (as older versions did), a gold note tells you to reopen October first, then close the months from January.
+- Start fresh also clears the sweep history.
 
 ## Updating to v4.6.0
 
@@ -149,7 +161,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'pocketdreamer-4.6.0-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'pocketdreamer-4.7.0-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting

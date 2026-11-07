@@ -1,4 +1,5 @@
 // scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit
+import { isLocked, lockMsg } from '../sweep.js';
 import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, TI, DD, heroBg, Navigate, Back, Replace, Notify, rerender, guard, save, api, SURFACE, HAIR,
   bal, acc, accByName, txn, byTxDesc, stStart, fmtD, fmtTime, Today, PLABEL, PSTART, PEND, Year, Month, addDays, addMonths, addYears, diffDays,
@@ -171,14 +172,17 @@ export const scrTxnDetail = {
       ['Notes', T.TxNote], ['Reference', T.TxnId]
     ].filter(x => x[1]);
     const lines = DB.txns.filter(x => x.TxParent === T.TxnId);
-    const canEdit = ['Income', 'Expense', 'Refund'].includes(T.TxType) && !T.TxParent;
-    const canSplit = ['Income', 'Expense'].includes(T.TxType) && !T.TxParent;
+    const locked = isLocked(T.TxDate);
+    const canEdit = ['Income', 'Expense', 'Refund'].includes(T.TxType) && !T.TxParent && !locked;
+    const canDup = ['Income', 'Expense', 'Refund'].includes(T.TxType) && !T.TxParent;
+    const canSplit = canEdit && T.TxType !== 'Refund';
     const canPayback = T.TxType === 'Expense' && !T.TxParent;
-    const canDel = !T.TxParent && T.TxType !== 'Opening Balance';
+    const canDel = !T.TxParent && T.TxType !== 'Opening Balance' && !isLocked(T.TxDate);
     const aud = (l.aud || []).slice().sort((a, b) => (a.AuWhen < b.AuWhen ? 1 : -1)).slice(0, 8);
-    const note = T.TxType === 'Opening Balance' ? 'Opening balances are changed from the account screen.' : T.TxType === 'Transfer' ? 'Transfers can be deleted and recorded again. Deleting removes both sides and any fee.' : T.TxParent ? 'This is a split line. Open the original transaction to change it.' : '';
+    const note = isLocked(T.TxDate) ? 'This month is closed (Balance Sweep), so this transaction is locked. Reopen the month in Accounts to change it.' : T.TxType === 'Opening Balance' ? 'Opening balances are changed from the account screen.' : T.TxType === 'Transfer' ? 'Transfers can be deleted and recorded again. Deleting removes both sides and any fee.' : T.TxParent ? 'This is a split line. Open the original transaction to change it.' : '';
 
     const del = () => guard(async () => {
+      if (isLocked(T.TxDate)) return Notify(lockMsg(), 'error');
       if (!l.locConfirmDel) { l.locConfirmDel = true; return; }
       const id = T.TxnId, trf = T.TxTrf;
       const ids = DB.txns.filter(x => x.TxnId === id || x.TxParent === id || (trf && (x.TxTrf === trf || x.TxRef === trf))).map(x => x.TxnId);
@@ -209,7 +213,7 @@ export const scrTxnDetail = {
         ${canPayback ? B(16, 142, 334, 40, paidBack ? 'Add another payback' : 'Payback received', { fill: K.field, b: K.grn, c: K.grn, r: 20, s: 10, id: 'tdPayback',
           onClick: () => { G.gblPrefill = { PfType: 'Income', PfAmt: '', PfCat: T.TxCat, PfAcc: T.TxAcc, PfPayee: '', PfDesc: 'Payback · ' + (T.TxPayee || T.TxDesc || T.TxCat), PfRule: '', PfRef: T.TxnId, PfDate: Today() }; G.gblEditMode = 'prefill'; Navigate('scrTxnEdit'); } }) : null}
         ${B(16, 46, 162, 40, 'Edit', { fill: K.or, c: '#FFFFFF', r: 20, s: 10, disabled: !canEdit, onClick: () => { G.gblEditMode = 'edit'; Navigate('scrTxnEdit'); }, id: 'tdEdit' })}
-        ${B(188, 46, 162, 40, 'Duplicate', { fill: K.field, b: HAIR, r: 20, s: 10, disabled: !canEdit, onClick: () => { G.gblEditMode = 'dup'; Navigate('scrTxnEdit'); }, id: 'tdDup' })}
+        ${B(188, 46, 162, 40, 'Duplicate', { fill: K.field, b: HAIR, r: 20, s: 10, disabled: !canDup, onClick: () => { G.gblEditMode = 'dup'; Navigate('scrTxnEdit'); }, id: 'tdDup' })}
         ${B(16, 94, 162, 40, T.TxIsSplit ? 'Edit split' : 'Split', { fill: K.field, b: HAIR, r: 20, s: 10, disabled: !canSplit, onClick: () => Navigate('scrSplit'), id: 'tdSplit' })}
         ${B(188, 94, 162, 40, l.locConfirmDel ? 'Tap to confirm' : 'Delete', { fill: K.field, b: K.red, c: K.red, r: 20, s: 10, disabled: !canDel, onClick: del, id: 'tdDel' })}`)}
       ${note ? L(null, 0, 366, 30, note, { s: 8, c: K.mute, wrap: true, st: 'position:relative;flex:none;' }) : null}
@@ -330,6 +334,7 @@ export const scrTxnEdit = {
       if (!cat) return Notify('Choose a category.', 'error');
       if (ps.q && !PAYEE) return Notify('Tap a payee from the list (type a few more letters if several match), or leave it empty.', 'error');
       if (stStart() && d < stStart()) return Notify('This date is before your tracking start (' + fmtD(stStart(), 'dd mmm yyyy') + ').', 'error');
+      if (isLocked(d) || (mode === 'edit' && isLocked(T.TxDate))) return Notify(lockMsg(), 'error');
       if (mode === 'edit' && T.TxIsSplit && Math.abs(amt - T.TxAmt) >= 0.005) return Notify('This transaction is split. Remove the split before changing the amount.', 'error');
       const dir = income ? 'In' : 'Out';
       const detail = l.locType + ' RM ' + RM(amt).slice(3) + ' ' + cat;
@@ -409,6 +414,7 @@ export const scrTransfer = {
       if (amt === null || amt <= 0) return Notify('Enter an amount greater than 0.', 'error');
       if (fee < 0) return Notify("The fee can't be negative.", 'error');
       if (stStart() && d < stStart()) return Notify('This date is before your tracking start (' + fmtD(stStart(), 'dd mmm yyyy') + ').', 'error');
+      if (isLocked(d)) return Notify(lockMsg(), 'error');
       const ts = nextTxSeq();
       const trf = 'TRF-' + Year(d) + '-' + String(ts).padStart(6, '0');
       const desc = (l.ref || '').trim() || 'Transfer';
@@ -455,11 +461,13 @@ export const scrSplit = {
       l.locFill = ''; rerender();
     };
     const unsplit = () => guard(async () => {
+      if (isLocked(P.TxDate)) return Notify(lockMsg(), 'error');
       const kids = DB.txns.filter(x => x.TxParent === P.TxnId).map(x => x.TxnId);
       await save({ del: { EW_Transactions: kids }, up: { EW_Transactions: [{ ...P, TxIsSplit: false }] }, log: [{ AuAction: 'Remove split', AuRef: P.TxnId, AuDetail: 'Split removed' }] });
       Back();
     });
     const onSave = () => guard(async () => {
+      if (isLocked(P.TxDate)) return Notify(lockMsg(), 'error');
       if (l.lines.length < 2) return Notify('A split needs at least 2 lines.', 'error');
       if (l.lines.some(x => x.SpAmt <= 0)) return Notify('Every line needs an amount greater than 0.', 'error');
       if (!ok) return Notify('Lines must add up to ' + RM(P.TxAmt) + '.', 'error');

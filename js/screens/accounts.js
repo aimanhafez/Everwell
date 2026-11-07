@@ -4,8 +4,8 @@ import {
   bal, acc, byTxDesc, stStart, fmtD, Today, PLABEL, PSTART, Year, Month, addDays, addMonths, perKey, RM, sRM, n0, Value, round2,
   mkTxn, txnId, nextTxSeq, shortName, accMoveUpTo
 } from '../core.js';
-import { TabHeader, NavBar, DetailHeader, SaveBar, DateBox, Calendar } from '../shared.js';
-import { SweepSection, SweepConfirm, sweepEnabled, isSystem } from '../sweep.js';
+import { TabHeader, NavBar, DetailHeader, SaveBar, DateBox, Calendar, PasswordDialog } from '../shared.js';
+import { SweepSection, SweepConfirm, sweepEnabled, isSystem, isLocked, lockMsg } from '../sweep.js';
 import { Tog } from '../core.js';
 
 /* ───────────── Accounts list + Monthly Balance Sweep ───────────── */
@@ -54,6 +54,7 @@ export const scrAccounts = {
       ${Flow(0, 104, 390, 662, kids)}
       ${NavBar(1)}
       ${SweepConfirm(l)}
+      ${PasswordDialog(l)}
     </div>`;
   }
 };
@@ -216,6 +217,11 @@ export const scrAccountEdit = {
       if (ob < 0) return Notify('Enter the opening balance as a positive amount (for credit cards, the amount owed).', 'error');
       if (stStart() && od < stStart()) return Notify("The opening date can't be before your tracking start (" + fmtD(stStart(), 'dd mmm yyyy') + ').', 'error');
       if (edit && l.status === 'Closed' && Math.abs(bal(a.AccId)) >= 0.005) return Notify('An account can only be closed when its balance is RM 0.00.', 'error');
+      { // opening balances inside a closed month would change that month's numbers
+        const oldOB = l.locOB ? l.locOB.TxAmt : 0, oldD = l.locOB ? l.locOB.TxDate : '';
+        const changed = Math.abs(ob - oldOB) >= 0.005 || (ob > 0 && od !== oldD);
+        if (changed && ((oldOB > 0 && isLocked(oldD)) || (ob > 0 && isLocked(od)))) return Notify("This opening balance is in a closed month, so it can't be added or changed. " + lockMsg().split('. ').slice(1).join('. '), 'error');
+      }
       const fields = { AccName: nm, AccShort: shortName(nm), AccColor: l.locColor, AccType: l.locAType, AccClass: cls, AccOpenDate: od,
         AccLimit: cc ? (Value(l.limit) ?? 0) : 0, AccDueDay: cc ? (Value(l.due) ?? 0) : 0, AccStatus: edit ? (l.status || 'Active') : 'Active', AccRemarks: l.remarks || '', AccOB: ob,
         AccSweep: cc ? 'No' : (sweepOn ? 'Yes' : 'No') };
