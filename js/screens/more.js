@@ -1,11 +1,11 @@
 // scrRecurring, scrCategories, scrMore (Settings), scrSetup, scrAnalysis, plus the one-time connect screen.
 import {
-  html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, TI, DD, Tog, Brand, Navigate, Back, Notify, rerender, guard, save, api,
+  html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, TI, DD, Tog, Brand, heroBg, Navigate, Back, Notify, rerender, guard, save, api,
   bal, acc, accByName, stStart, lowBal, fmtD, fmtTime, Today, PLABEL, PSTART, PEND, Year, Month, D, addDays, addMonths, addYears,
   RM, sRM, n0, pct, Value, round2, mkTxn, txnId, nextTxSeq, catTotals, catSpend, psum, ordinal, setMonth, monthLabel, settingsRow,
-  PALETTE, CONN, store, loadAll, NAV, VERSION, perKey
+  PALETTE, CONN, store, loadAll, NAV, VERSION, perKey, SURFACE, HAIR
 } from '../core.js';
-import { TabHeader, NavBar, DetailHeader, SaveBar, DateBox, Calendar, Fab, FlowCard, PeriodCard, AuditRows } from '../shared.js';
+import { TabHeader, NavBar, DetailHeader, SaveBar, DateBox, Calendar, Fab, FlowCard, PeriodCard, AuditRows, askPassword, PasswordDialog } from '../shared.js';
 import { donutSvg } from './home.js';
 
 /* ───────────── Recurring ───────────── */
@@ -73,7 +73,7 @@ export const scrRecurring = {
         ${cap(12, 366, 366, 'MODE')}${DD(12, 384, 366, 42, ['Auto-post', 'Remind'], l.mode, set('mode'), { id: 'rcMode' })}
         ${L(12, 430, 366, 30, 'Auto-post: "Record due items" adds it for you. Remind: the bell lights up and you tap Record.', { s: 8, c: K.mute, wrap: true })}
         ${B(12, 466, 116, 42, 'Save', { fill: K.or, c: '#FFFFFF', r: 21, s: 10, onClick: onSave, id: 'rcSave' })}
-        ${R0 ? B(136, 466, 116, 42, R0.RcActive ? 'Pause' : 'Resume', { fill: K.field, b: K.line, r: 21, s: 10, onClick: toggle, id: 'rcToggle' }) : null}
+        ${R0 ? B(136, 466, 116, 42, R0.RcActive ? 'Pause' : 'Resume', { fill: K.field, b: HAIR, r: 21, s: 10, onClick: toggle, id: 'rcToggle' }) : null}
         ${R0 ? B(260, 466, 116, 42, l.locConfirmDel ? 'Confirm' : 'Delete', { fill: K.field, b: K.red, c: K.red, r: 21, s: 10, onClick: del, id: 'rcDel' }) : null}`,
       { fill: K.bg, st: 'bottom:0;height:auto;' });
     }
@@ -88,7 +88,7 @@ export const scrRecurring = {
         ${L(16, 32, 334, 16, 'Tap Record on a reminder, or record all auto-post items below.', { s: 8, c: K.sub })}
         ${B(16, 54, 334, 30, 'Record due auto-post items', { fill: K.or, c: '#FFFFFF', r: 15, s: 9.5, onClick: post, id: 'rcPost' })}`)}
       ${Gal(12, 178, 366, 652, list, 84, r => html`
-        ${B(0, 0, 366, 76, '', { fill: K.card, b: K.line, r: 14 })}
+        ${B(0, 0, 366, 76, '', { fill: SURFACE, b: HAIR, r: 16, flat: true })}
         ${L(16, 12, 206, 18, r.RcName, { s: 10.5, w: 6, c: r.RcActive ? K.text : K.mute })}
         ${L(16, 31, 206, 16, ((acc(r.RcAcc) || {}).AccName || '') + '  ·  ' + r.RcFreq, { s: 8, c: K.sub })}
         ${L(16, 50, 206, 14, !r.RcActive ? 'PAUSED' : (r.RcNext <= Today() ? 'DUE ' : 'NEXT ') + fmtD(r.RcNext, 'dd mmm').toUpperCase() + '  ·  ' + r.RcMode.toUpperCase(), { s: 7.5, w: 6, c: !r.RcActive ? K.mute : r.RcNext <= Today() ? K.red : K.or })}
@@ -225,7 +225,7 @@ export const scrCategories = {
             ${L(16, 9, 334, 18, p.PyName, { s: 10.5, w: 6 })}
             ${L(16, 28, 334, 16, 'Default: ' + (p.PyCat || '—'), { s: 8, c: K.sub })}
             ${R(16, 53, 334, 1, K.sep)}`, { scroll: true, inset: [4, 4], onSelect: openPay, key: p => p.PyName }),
-      { fill: K.card, r: 14, b: K.line, st: 'height:auto;bottom:84px;' })}
+      { fill: SURFACE, r: 16, b: HAIR, st: 'height:auto;bottom:84px;' })}
       ${B(52, { b: 28 }, 286, 44, isCat ? '＋   Add category' : '＋   Add payee', { fill: K.card, b: K.or, c: K.or, r: 22, s: 10.5, onClick: () => (isCat ? openCat(null) : openPay(null)), id: 'ctAdd' })}
       ${panel}
     </div>`;
@@ -234,20 +234,15 @@ export const scrCategories = {
 
 /* ───────────── Settings (scrMore) ───────────── */
 export const scrMore = {
-  onVisible(l) { l.locConfirmReset = false; l.locConfirmClear = false; l.low = String(lowBal()); },
+  onVisible(l) { l.pwd = null; },
   view(l) {
     const menu = [
       ['Person', 'Payees', 'Your list of shops, billers and people', () => { G.gblCatTab = 'Payees'; Navigate('scrCategories'); }],
       ['Tag', 'Categories', 'F&B, Transport, Sports and more', () => { G.gblCatTab = 'Categories'; Navigate('scrCategories'); }],
       ['Sync', 'Recurring', 'Salary, rent and bills', () => Navigate('scrRecurring')],
-      ['Money', 'Fund transfer', 'Move money between your accounts', () => Navigate('scrTransfer')],
+      ['Note', 'Activity log', 'Every change you make, newest first', () => Navigate('scrActivity')],
       ['CalendarBlank', 'Tracking period', 'From ' + fmtD(stStart(), 'dd mmm yyyy') + '  ·  months start on day ' + G.gblCycleDay, () => Navigate('scrSetup')]
     ];
-    const audit = DB.audit.slice().sort((a, b) => (a.AuWhen < b.AuWhen ? 1 : -1)).slice(0, 10);
-    const saveLow = () => guard(async () => {
-      await save({ up: { EW_Settings: [settingsRow({ StLowBal: Value(l.low) ?? 0 })] } });
-      Notify('Saved.', 'success');
-    });
     const buildCsv = () => {
       const rows = DB.txns.filter(t => t.TxType !== 'Opening Balance' && t.TxDate >= G.gblFrom && t.TxDate <= G.gblTo)
         .sort((a, b) => (a.TxDate + String(a.TxSeq).padStart(6, '0') < b.TxDate + String(b.TxSeq).padStart(6, '0') ? -1 : 1));
@@ -260,27 +255,31 @@ export const scrMore = {
       try { await navigator.clipboard.writeText(l.locCsv || ''); Notify('Copied. Paste into Excel.', 'success'); }
       catch (e) { const ta = document.querySelector('[data-t=csv]'); if (ta) { ta.select(); document.execCommand('copy'); Notify('Copied. Paste into Excel.', 'success'); } }
     };
-    const recalc = () => guard(async () => {
-      if (!l.locConfirmReset) { l.locConfirmReset = true; l.locConfirmClear = false; return; }
+    const recalc = () => askPassword(l, 'recalculate monthly totals', () => guard(async () => {
       Notify('Recalculating…', 'info');
       await loadAll();
-      l.locConfirmReset = false;
       Notify('Monthly totals recalculated.', 'success');
-    });
-    const fresh = () => guard(async () => {
-      if (!l.locConfirmClear) { l.locConfirmClear = true; l.locConfirmReset = false; return; }
+    }));
+    const fresh = () => askPassword(l, 'delete all accounts and transactions', () => guard(async () => {
       await api('startFresh');
       DB.txns = []; DB.accounts = []; DB.recurring = []; DB.audit = [];
       DB.settings = settingsRow({ StStart: '' });
-      l.locConfirmClear = false;
       Notify('All accounts and transactions deleted. Categories and payees were kept.', 'success');
       NAV.stack = []; Navigate('scrSetup');
+    }));
+    const disconnect = () => askPassword(l, 'disconnect this device', () => {
+      store.del('ew_conn'); CONN.v = null; NAV.stack = []; Navigate('connect');
     });
-    const disconnect = () => {
-      if (!l.locConfirmDisc) { l.locConfirmDisc = true; rerender(); return; }
-      store.del('ew_conn'); CONN.v = null; l.locConfirmDisc = false; NAV.stack = ['connect']; rerender();
-    };
     const csvH = l.locCsv ? 320 : 112;
+    const actionRow = (y, ic, title, sub, color, onClick, id, last) => html`
+      ${C(16, y + 13, 36, color === K.red ? 'rgba(229,72,77,0.12)' : K.field)}
+      ${I(25, y + 22, 18, 18, ic, color, { pad: 0 })}
+      ${L(64, y + 12, 230, 20, title, { s: 10.5, w: 6, c: color === K.red ? K.red : K.text })}
+      ${L(64, y + 32, 230, 16, sub, { s: 8, c: K.sub })}
+      ${I(318, y + 23, 16, 16, 'Lock', K.mute, { pad: 0 })}
+      ${last ? null : R(64, y + 61, 286, 1, K.sep)}
+      ${B(0, y, 366, 62, '', { fill: 'transparent', r: 0, flat: true, onClick, id })}`;
+    const url = CONN.v ? CONN.v.url.replace(/^https:\/\//, '') : '';
     const kids = html`
       ${Card(null, 0, 366, 318, html`${menu.map(([ic, nm, sb, go], i) => html`
         ${C(16, 17 + 62 * i, 36, K.field)}
@@ -289,31 +288,25 @@ export const scrMore = {
         ${L(64, 36 + 62 * i, 256, 16, sb, { s: 8, c: K.sub })}
         ${I(326, 23 + 62 * i, 24, 24, 'ChevronRight', K.mute, { pad: 3 })}
         ${i < 4 ? R(64, 65 + 62 * i, 286, 1, K.sep) : null}
-        ${B(0, 4 + 62 * i, 366, 62, '', { fill: 'transparent', r: 0, onClick: go, id: 'menu-' + nm })}`)}`)}
-      ${Card(null, 0, 366, 150, html`
-        ${L(16, 14, 246, 22, 'Alerts', { s: 11.5, w: 6 })}
-        ${L(16, 46, 334, 14, 'LOW BALANCE ALERT (RM)', { s: 7.5, w: 6, c: K.sub })}
-        ${TI(16, 64, 226, 40, l.low, v => { l.low = v; rerender(); }, { hint: '200', num: true, id: 'lowBal' })}
-        ${B(250, 64, 100, 40, 'Save', { fill: K.or, c: '#FFFFFF', r: 20, s: 10, onClick: saveLow, id: 'lowSave' })}
-        ${L(16, 114, 334, 22, 'Currency: RM (MYR)  ·  Dates: DD/MM/YYYY', { s: 8, c: K.mute })}`)}
+        ${B(0, 4 + 62 * i, 366, 62, '', { fill: 'transparent', r: 0, flat: true, onClick: go, id: 'menu-' + nm })}`)}`)}
       ${Card(null, 0, 366, csvH, html`
         ${L(16, 14, 246, 22, 'Export (CSV)', { s: 11.5, w: 6 })}
         ${L(16, 38, 334, 16, 'Transactions for ' + monthLabel('mmmm yyyy') + '  ·  ' + fmtD(G.gblFrom, 'dd mmm') + ' – ' + fmtD(G.gblTo, 'dd mmm'), { s: 8, c: K.sub })}
-        ${B(16, 62, 162, 38, 'Build CSV', { fill: K.field, b: K.line, r: 19, s: 10, onClick: buildCsv, id: 'csvBuild' })}
+        ${B(16, 62, 162, 38, 'Build CSV', { fill: K.field, b: HAIR, r: 19, s: 10, onClick: buildCsv, id: 'csvBuild' })}
         ${B(188, 62, 162, 38, 'Copy', { fill: K.or, c: '#FFFFFF', r: 19, s: 10, onClick: copy, id: 'csvCopy' })}
         ${l.locCsv ? TI(16, 110, 334, 196, l.locCsv, () => {}, { multiline: true, s: 9, id: 'csv' }) : null}`)}
-      ${Card(null, 0, 366, 52 + audit.length * 44, html`
-        ${L(16, 14, 246, 22, 'Activity log', { s: 11.5, w: 6 })}
-        <div class="abs" style="left:0;top:46px;width:366px">${AuditRows(audit, w => fmtTime(w, 'dd/mm hh:mm'))}</div>`, { id: 'auditCard' })}
-      ${Card(null, 0, 366, 184, html`
-        ${L(16, 14, 246, 22, 'Data', { s: 11.5, w: 6 })}
-        ${L(16, 40, 334, 40, 'Saved in your Everwell Google Sheet (EW_ tabs), so every phone, laptop and browser shows the same data.', { s: 8, c: K.sub, wrap: true })}
-        ${B(16, 84, 334, 38, l.locConfirmReset ? 'Tap again to recalculate (can take a few minutes)' : 'Recalculate monthly totals', { fill: K.field, b: K.line, r: 19, s: 9.5, onClick: recalc, id: 'recalc' })}
-        ${B(16, 130, 334, 38, l.locConfirmClear ? 'Tap again to delete all accounts and transactions' : 'Start fresh', { fill: K.field, b: K.red, c: K.red, r: 19, s: 9.5, onClick: fresh, id: 'startFresh' })}`)}
-      ${Card(null, 0, 366, 96, html`
-        ${L(16, 14, 246, 22, 'Google Sheet connection', { s: 11.5, w: 6 })}
-        ${L(16, 36, 334, 14, CONN.v ? CONN.v.url.replace(/^https:\/\//, '').slice(0, 52) + (CONN.v.url.length > 60 ? '…' : '') : '', { s: 7.5, c: K.mute })}
-        ${B(16, 54, 334, 32, l.locConfirmDisc ? 'Tap again to disconnect this device' : 'Disconnect this device', { fill: K.field, b: K.line, c: K.sub, r: 16, s: 9, onClick: disconnect, id: 'disconnect' })}`)}
+      ${SubHead('Data')}
+      ${Card(null, 0, 366, 124, html`
+        ${actionRow(0, 'Sync', 'Recalculate monthly totals', 'Reload everything from your Google Sheet', K.or, recalc, 'recalc')}
+        ${actionRow(62, 'Trash', 'Start fresh', 'Delete all accounts and transactions', K.red, fresh, 'startFresh', true)}`, { id: 'dataCard' })}
+      ${SubHead('Data Connection')}
+      ${Card(null, 0, 366, 124, html`
+        ${C(16, 13, 36, K.field)}${I(25, 22, 18, 18, 'Shield', K.grn, { pad: 0 })}
+        ${L(64, 12, 230, 20, 'Google Sheet', { s: 10.5, w: 6 })}
+        ${L(64, 32, 270, 16, url.length > 44 ? url.slice(0, 30) + '…' + url.slice(-12) : url, { s: 8, c: K.sub })}
+        ${B(278, 16, 72, 24, 'CONNECTED', { fill: 'rgba(52,199,123,0.1)', b: 'rgba(52,199,123,0.35)', c: K.grn, r: 12, s: 6.5, flat: true })}
+        ${R(64, 61, 286, 1, K.sep)}
+        ${actionRow(62, 'Lock', 'Disconnect this device', 'You will need the URL and key again', K.red, disconnect, 'disconnect', true)}`, { id: 'connCard' })}
       ${L(null, 0, 366, 30, 'Everwell  ·  v' + VERSION, { s: 8, c: K.mute, a: 'c', st: 'position:relative;flex:none;' })}
       ${Box(null, 0, 366, 16, null)}`;
     return html`<div>
@@ -321,9 +314,59 @@ export const scrMore = {
       ${L(18, 68, 240, 32, 'Settings', { s: 17 })}
       ${Flow(0, 104, 390, 662, kids)}
       ${NavBar(4)}
+      ${PasswordDialog(l)}
     </div>`;
   }
 };
+function SubHead(t) {
+  return html`<div class="box" style="position:relative;flex:none;width:366px;height:22px;padding:6px 4px 0;color:#9AA0A8;font-size:${'9.33px'};font-weight:600;letter-spacing:1.2px">${t.toUpperCase()}</div>`;
+}
+
+/* ───────────── Activity log (all entries) ───────────── */
+export const scrActivity = {
+  onVisible(l) {
+    l.all = null;
+    api('activityAll').then(r => { l.all = r; rerender(); }).catch(() => { l.all = DB.audit.slice(); l.partial = true; rerender(); });
+  },
+  view(l) {
+    const list = (l.all || DB.audit).slice().sort((a, b) => (a.AuWhen < b.AuWhen ? 1 : -1));
+    const dayKey = iso => { const t = new Date(iso); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); };
+    const groups = [];
+    list.forEach(a => { const k = dayKey(a.AuWhen); let g = groups[groups.length - 1]; if (!g || g.k !== k) { g = { k, items: [] }; groups.push(g); } g.items.push(a); });
+    const label = k => k === Today() ? 'TODAY' : k === addDays(Today(), -1) ? 'YESTERDAY' : fmtD(k, 'dd mmm yyyy').toUpperCase();
+    const kids = html`
+      ${Box(null, 0, 366, 40, html`
+        ${L(4, 4, 250, 16, list.length + (list.length === 1 ? ' entry' : ' entries'), { s: 10, w: 6 })}
+        ${L(4, 22, 340, 14, l.all === null ? 'Loading…' : l.partial ? 'Showing the latest entries.' : 'Newest first', { s: 8, c: K.sub })}`)}
+      ${groups.map(g => html`
+        ${SubHead(label(g.k))}
+        ${Card(null, 0, 366, g.items.length * 58 + 8, html`<div class="abs" style="left:0;top:4px;width:366px">${g.items.map((a, i) => html`<div class="row" style="position:relative;height:58px;width:366px">
+          ${C(16, 15, 28, K.field)}${I(22, 21, 16, 16, actIcon(a.AuAction), K.or, { pad: 0 })}
+          ${L(56, 9, 220, 18, a.AuAction, { s: 10, w: 6 })}
+          ${L(56, 28, 290, 16, a.AuDetail || a.AuRef, { s: 8, c: K.sub })}
+          ${L(276, 9, 74, 18, fmtTime(a.AuWhen, 'dd/mm hh:mm').slice(6), { s: 8, c: K.mute, a: 'r' })}
+          ${i < g.items.length - 1 ? R(56, 57, 294, 1, K.sep) : null}
+        </div>`)}</div>`)}`)}
+      ${!list.length && l.all !== null ? Card(null, 0, 366, 84, L(16, 0, 334, 84, 'No activity yet.', { s: 9.5, c: K.mute, a: 'c' })) : null}
+      ${Box(null, 0, 366, 16, null)}`;
+    return html`<div>
+      ${DetailHeader('Activity log')}
+      ${Flow(0, 66, 390, 778, kids, { pad: [12, 12, 24, 12] })}
+    </div>`;
+  }
+};
+function actIcon(a) {
+  a = a || '';
+  if (/delete|remove|start fresh/i.test(a)) return 'Trash';
+  if (/transfer/i.test(a)) return 'Sync';
+  if (/account/i.test(a)) return 'Money';
+  if (/categor/i.test(a)) return 'Tag';
+  if (/payee/i.test(a)) return 'Person';
+  if (/recurring/i.test(a)) return 'Clock';
+  if (/setup|period/i.test(a)) return 'CalendarBlank';
+  if (/split/i.test(a)) return 'DetailList';
+  return 'Edit';
+}
 
 /* ───────────── Setup / Tracking period ───────────── */
 export const scrSetup = {
@@ -363,10 +406,10 @@ export const scrSetup = {
       ${Card(12, 318, 366, 150, html`
         ${C(16, 14, 30, K.field)}${I(22, 20, 18, 18, 'Sync', K.or, { pad: 1 })}
         ${L(56, 22, 294, 14, 'EACH MONTH STARTS ON DAY', { s: 7.5, w: 6, c: K.sub })}
-        ${C(16, 60, 40, K.field, { b: K.line, onClick: () => { l.locDay = Math.max(1, day - 1); rerender(); } })}
+        ${C(16, 60, 40, K.field, { b: HAIR, onClick: () => { l.locDay = Math.max(1, day - 1); rerender(); } })}
         ${L(16, 60, 40, 40, '−', { s: 16, a: 'c', onClick: () => { l.locDay = Math.max(1, day - 1); rerender(); }, id: 'dayMinus' })}
         ${L(60, 54, 64, 52, String(day), { s: 28, a: 'c', c: K.or, id: 'cycleDay' })}
-        ${C(128, 60, 40, K.field, { b: K.line, onClick: () => { l.locDay = Math.min(28, day + 1); rerender(); } })}
+        ${C(128, 60, 40, K.field, { b: HAIR, onClick: () => { l.locDay = Math.min(28, day + 1); rerender(); } })}
         ${L(128, 60, 40, 40, '+', { s: 15, a: 'c', onClick: () => { l.locDay = Math.min(28, day + 1); rerender(); }, id: 'dayPlus' })}
         ${L(184, 56, 166, 48, day === 1 ? 'From the 1st to the last day of each month.' : 'From the ' + ordinal(day) + ' to the ' + ordinal(day - 1) + ' of the next month.', { s: 8.5, wrap: true })}
         ${R(16, 114, 334, 1, K.sep)}
@@ -404,7 +447,8 @@ function barsSvg() {
     `<text x='332' y='9' text-anchor='end' font-family='Segoe UI,Arial' font-size='9' fill='#6B7178'>RM ${n0(mx)}</text></svg>`;
 }
 
-export const scrAnalysis = {
+/* Full Analysis screen — kept ready for when it is switched back on. */
+export const scrAnalysisFull = {
   onVisible(l) {
     const m = last12();
     l.vsA = m[1].L; l.vsB = m[2].L;
@@ -431,7 +475,7 @@ export const scrAnalysis = {
     const vsBox = (x, y, cap, a, b) => Box(x, y, 162, 64, html`
       ${L(12, 8, 138, 14, cap, { s: 7.5, w: 6, c: K.sub })}
       ${L(12, 24, 138, 18, a, { s: 10.5, w: 6 })}
-      ${L(12, 42, 138, 16, 'vs ' + b, { s: 8, c: K.or })}`, { fill: K.field, r: 10, b: K.line });
+      ${L(12, 42, 138, 16, 'vs ' + b, { s: 8, c: K.or })}`, { fill: K.field, r: 10, b: HAIR });
 
     const kids = html`
       ${PeriodCard(l)}
@@ -495,6 +539,45 @@ export const scrAnalysis = {
         ${L(182, 80 + years.length * 34, 83, 22, n0(all.Out), { s: 9, w: 6, c: K.or, a: 'r' })}
         ${L(265, 80 + years.length * 34, 83, 22, (all.In - all.Out < 0 ? '-' : '') + n0(Math.abs(all.In - all.Out)), { s: 9, w: 6, c: K.or, a: 'r' })}`)}
       ${L(null, 0, 366, 30, 'Income and spending exclude transfers and opening balances. Split transactions count by their lines.', { s: 8, c: K.mute, wrap: true, st: 'position:relative;flex:none;' })}
+      ${Box(null, 0, 366, 16, null)}`;
+    return html`<div>
+      ${TabHeader()}
+      ${L(18, 68, 240, 32, 'Analysis', { s: 17 })}
+      ${Flow(0, 104, 390, 662, kids)}
+      ${NavBar(3)}
+    </div>`;
+  }
+};
+
+/* ───────────── Analysis (coming soon) ───────────── */
+const SOON = [
+  ['Trending', 'In vs out', 'Six months of money in and out, side by side'],
+  ['Tag', 'Spending by category', 'Where each ringgit goes, with share of total'],
+  ['Person', 'Top payees', 'The shops and billers you pay the most'],
+  ['Sync', 'Compare months', 'Any two months: in, out, net and count'],
+  ['DetailList', 'Category breakdown', 'Every category with transactions and %'],
+  ['CalendarBlank', 'Since you started', 'Year-by-year income, spending and net']
+];
+function soonArt() {
+  const bars = [38, 56, 44, 70, 52, 84, 66].map((h, i) => `<rect x='${18 + i * 34}' y='${112 - h}' width='14' height='${h}' rx='3' fill='${i === 5 ? '#FF6A00' : 'rgba(255,255,255,0.08)'}'/>`).join('');
+  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 130'><defs><linearGradient id='al' x1='0' x2='1'><stop offset='0' stop-color='#FF6A00' stop-opacity='0.15'/><stop offset='1' stop-color='#FF6A00'/></linearGradient></defs>${bars}<polyline fill='none' stroke='url(#al)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' points='25,86 59,70 93,78 127,52 161,62 195,34 229,44'/><circle cx='195' cy='34' r='5' fill='#0D0F12' stroke='#FF6A00' stroke-width='2'/><line x1='8' y1='112.5' x2='252' y2='112.5' stroke='rgba(255,255,255,0.1)'/></svg>`;
+}
+export const scrAnalysis = {
+  view() {
+    const kids = html`
+      ${Card(null, 0, 366, 300, html`
+        ${Svg(0, 0, 366, 300, heroBg(300), { stretch: true })}
+        ${B(16, 18, 124, 24, 'IN DEVELOPMENT', { fill: K.orSoft, b: K.orBorder, c: K.or, r: 12, s: 6.5, flat: true, id: 'soonPill' })}
+        ${Svg(53, 50, 260, 130, soonArt())}
+        ${L(16, 196, 334, 30, html`<span style="font-family:Georgia,'Times New Roman',serif;font-size:24px">Deploying soon<span style="color:#FF6A00">.</span></span>`, { s: 18, a: 'c' })}
+        ${L(28, 230, 310, 50, 'A deeper look at your money is on the way. Your data is already being recorded, so every chart will be ready on day one.', { s: 8.5, c: K.sub, a: 'c', wrap: true })}`, { id: 'soonHero' })}
+      ${Box(null, 0, 366, 22, html`<div style="padding:6px 4px 0;color:#9AA0A8;font-size:9.33px;font-weight:600;letter-spacing:1.2px">WHAT'S COMING</div>`)}
+      ${Card(null, 0, 366, SOON.length * 58 + 8, html`<div class="abs" style="left:0;top:4px;width:366px">${SOON.map(([ic, t, d], i) => html`<div class="row" style="position:relative;height:58px;width:366px">
+        ${C(16, 13, 32, K.field)}${I(24, 21, 16, 16, ic, K.or, { pad: 0 })}
+        ${L(60, 10, 270, 18, t, { s: 10, w: 6 })}
+        ${L(60, 29, 280, 16, d, { s: 8, c: K.sub })}
+        ${i < SOON.length - 1 ? R(60, 57, 290, 1, K.sep) : null}
+      </div>`)}</div>`)}
       ${Box(null, 0, 366, 16, null)}`;
     return html`<div>
       ${TabHeader()}

@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '4.2.5';
+export const VERSION = '4.3.0';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -250,7 +250,8 @@ export async function save(ch) {
 }
 export function settingsRow(over = {}) {
   const s = DB.settings || { Title: 'Settings', StStart: '', StCycleDay: 28, StLowBal: 200, StCurrency: 'MYR' };
-  return { Title: 'Settings', StStart: s.StStart || '', StCycleDay: s.StCycleDay || 28, StLowBal: s.StLowBal ?? 200, StCurrency: s.StCurrency || 'MYR', ...over };
+  return { Title: 'Settings', StStart: s.StStart || '', StCycleDay: s.StCycleDay || 28, StLowBal: s.StLowBal ?? 200, StCurrency: s.StCurrency || 'MYR',
+    StSweepAuto: !!s.StSweepAuto, StSweepFrom: Number(s.StSweepFrom) || 0, StSweepLog: s.StSweepLog || '', ...over };
 }
 export const stStart = () => (DB.settings && DB.settings.StStart) || '';
 export const lowBal = () => (DB.settings ? Number(DB.settings.StLowBal) : 200);
@@ -328,7 +329,9 @@ export function pos(x, y, w, h) {
 export const fromBottom = (y, h) => ({ b: 844 - y - h });
 
 /** Label */
+const isCap = (t, sz) => typeof t === 'string' && sz <= 8 && t.length > 2 && /[A-Z]/.test(t) && t === t.toUpperCase();
 export function L(x, y, w, h, text, o = {}) {
+  if (o.ls === undefined && isCap(text, o.s || 10)) o = { ...o, ls: 0.9 };
   const st = pos(x, y, w, h) + `color:${o.c || K.text};font-size:${fs(o.s || 10)};font-weight:${W[o.w] || 400};` +
     `text-align:${o.a === 'c' ? 'center' : o.a === 'r' ? 'right' : 'left'};` +
     (o.wrap ? `white-space:normal;align-items:${o.top ? 'flex-start' : 'center'};line-height:1.25;` : '') + (o.font ? `font-family:${o.font};` : '') + (o.ls ? `letter-spacing:${o.ls}px;` : '') + (o.st || '');
@@ -350,7 +353,8 @@ export function I(x, y, w, h, name, color, o = {}) {
 /** Button */
 export function B(x, y, w, h, text, o = {}) {
   const st = pos(x, y, w, h) + `background:${o.fill || K.field};color:${o.c || K.text};border-radius:${o.r ?? Math.round(h / 2)}px;` +
-    `font-size:${fs(o.s || 10)};font-weight:${W[o.w || 6]};` + (o.b ? `box-shadow:inset 0 0 0 ${o.bt || 1}px ${o.b};` : '') + (o.st || '');
+    `font-size:${fs(o.s || 10)};font-weight:${W[o.w || 6]};letter-spacing:.2px;` +
+    (o.b ? `box-shadow:inset 0 0 0 ${o.bt || 1}px ${o.b};` : o.fill === K.or && !o.flat ? 'box-shadow:0 6px 18px rgba(255,106,0,0.22), inset 0 1px 0 rgba(255,255,255,0.18);' : '') + (o.st || '');
   return html`<button class="btn" style=${st} disabled=${!!o.disabled} onClick=${o.onClick} data-t=${o.id}>${text}</button>`;
 }
 /** Card / container (manual layout). In a flow, pass x=null to stack. */
@@ -359,7 +363,12 @@ export function Box(x, y, w, h, kids, o = {}) {
     `background:${o.fill || 'transparent'};border-radius:${o.r || 0}px;` + (o.b ? `box-shadow:inset 0 0 0 ${o.bt || 1}px ${o.b};` : '') + (o.st || '');
   return html`<div class="box" style=${st} data-t=${o.id}>${kids}</div>`;
 }
-export const Card = (x, y, w, h, kids, o = {}) => Box(x, y, w, h, kids, { fill: K.card, r: 14, b: K.line, ...o });
+export const SURFACE = 'linear-gradient(180deg, #191C22 0%, #15181D 100%)';
+export const HAIR = 'rgba(255,255,255,0.065)';
+export function Card(x, y, w, h, kids, o = {}) {
+  const b = o.b || HAIR;
+  return Box(x, y, w, h, kids, { ...o, fill: o.fill || SURFACE, r: o.r ?? 16, b: undefined, st: `box-shadow:inset 0 0 0 1px ${b}, inset 0 1px 0 rgba(255,255,255,0.035);` + (o.st || '') });
+}
 /** Vertical auto-layout scroll container (LayoutMode.Auto). Top stays at y, bottom stays (844 - y - h) from the canvas bottom. */
 export function Flow(x, y, w, h, kids, o = {}) {
   const pad = o.pad || [4, 12, 16, 12];
@@ -381,8 +390,8 @@ export function Gal(x, y, w, h, items, size, tpl, o = {}) {
 }
 /** Text input */
 export function TI(x, y, w, h, value, onInput, o = {}) {
-  const st = pos(x, y, w, h) + `background:${o.fill || K.field};color:${o.c || K.text};font-size:${fs(o.s || 12)};font-weight:${W[o.w] || 400};border-radius:${o.r ?? 8}px;` +
-    `padding:0 ${o.padR ?? o.pad ?? 12}px 0 ${o.pad ?? 12}px;text-align:${o.a === 'c' ? 'center' : 'left'};` + (o.bt === 0 ? 'box-shadow:none;' : `box-shadow:inset 0 0 0 1px ${o.b || K.line};`) + (o.st || '');
+  const st = pos(x, y, w, h) + `background:${o.fill || K.field};color:${o.c || K.text};font-size:${fs(o.s || 12)};font-weight:${W[o.w] || 400};border-radius:${o.r ?? 10}px;` +
+    `padding:0 ${o.padR ?? o.pad ?? 12}px 0 ${o.pad ?? 12}px;text-align:${o.a === 'c' ? 'center' : 'left'};` + (o.bt === 0 ? 'box-shadow:none;' : `box-shadow:inset 0 0 0 1px ${o.b || 'rgba(255,255,255,0.07)'};`) + (o.st || '');
   if (o.multiline) {
     return html`<textarea class="inp" style=${st + 'padding-top:10px;padding-bottom:10px;resize:none;'} placeholder=${o.hint || ''} value=${value ?? ''} maxlength=${o.max} onInput=${e => onInput(e.target.value)} data-t=${o.id}></textarea>`;
   }
@@ -393,13 +402,13 @@ export function TI(x, y, w, h, value, onInput, o = {}) {
 }
 /** Dropdown (classic) */
 export function DD(x, y, w, h, items, value, onChange, o = {}) {
-  const st = pos(x, y, w, h) + `background:${o.fill || K.field};border-radius:${o.r ?? 0}px;` + (o.bt === 0 ? '' : `box-shadow:inset 0 0 0 1px ${o.b || K.line};`);
+  const st = pos(x, y, w, h) + `background:${o.fill || K.field};border-radius:${o.r ?? 10}px;overflow:hidden;` + (o.bt === 0 ? '' : `box-shadow:inset 0 0 0 1px ${o.b || 'rgba(255,255,255,0.07)'};`);
   return html`<div class="abs dd" style=${st}>
     <select style=${`color:${K.text};font-size:${fs(o.s || 12)};padding:0 ${h}px 0 ${o.pad ?? 12}px;`} value=${value ?? ''} onChange=${e => onChange(e.target.value)} data-t=${o.id}>
       ${o.allowEmpty || !items.includes(value) ? html`<option value="">${''}</option>` : null}
       ${items.map(v => html`<option value=${v}>${v}</option>`)}
     </select>
-    <div class="chev" style=${`width:${Math.min(h, 40)}px;background:${o.chevBg || o.fill || K.field};color:${o.chev || K.or};`}>${icon('ChevronDown')}</div>
+    <div class="chev" style=${`width:${Math.min(h, 40)}px;background:transparent;color:${o.chev || K.or};`}>${icon('ChevronDown')}</div>
   </div>`;
 }
 /** Toggle */
@@ -446,6 +455,10 @@ const P = {
   Cancel: '<path d="M5 5l14 14M19 5 5 19"/>',
   Check: '<path d="m4 12.5 5 5L20 6.5"/>',
   ArrowDown: '<path d="M12 4v16M5 13l7 7 7-7"/>',
+  Lock: '<rect x="4.5" y="10.5" width="15" height="10.5" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 15v2.5"/>',
+  Shield: '<path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6z"/>',
+  Clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  Gauge: '<path d="M4 17a8 8 0 1 1 16 0"/><path d="m12 17 4-5"/>',
   Trash: '<path d="M4 6h16M9 6V4h6v2M6 6l1 15h10l1-15"/><path d="M10 10v7M14 10v7"/>'
 };
 export function icon(name) {

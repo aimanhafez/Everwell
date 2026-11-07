@@ -17,12 +17,12 @@
  * Helpers you can run from the editor: showApiKey(), resetApiKey()
  */
 
-var EW_VERSION = '4.2.5';
+var EW_VERSION = '4.3.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
-  EW_Settings: { key: 'Title', cols: { Title: 's', StStart: 'd', StCycleDay: 'n', StLowBal: 'n', StCurrency: 's' } },
-  EW_Accounts: { key: 'AccId', cols: { AccId: 's', AccSeq: 'n', AccName: 's', AccShort: 's', AccColor: 's', AccType: 's', AccClass: 's', AccOpenDate: 'd', AccOB: 'n', AccLimit: 'n', AccDueDay: 'n', AccStatus: 's', AccRemarks: 's' } },
+  EW_Settings: { key: 'Title', cols: { Title: 's', StStart: 'd', StCycleDay: 'n', StLowBal: 'n', StCurrency: 's', StSweepAuto: 'b', StSweepFrom: 'n', StSweepLog: 's' } },
+  EW_Accounts: { key: 'AccId', cols: { AccId: 's', AccSeq: 'n', AccName: 's', AccShort: 's', AccColor: 's', AccType: 's', AccClass: 's', AccOpenDate: 'd', AccOB: 'n', AccLimit: 'n', AccDueDay: 'n', AccStatus: 's', AccRemarks: 's', AccSweep: 's' } },
   EW_Categories: { key: 'CatId', cols: { CatId: 's', CatSeq: 'n', CatName: 's', CatType: 's', CatPL: 's', CatFixed: 's', CatEss: 's', CatBudget: 'b', CatColor: 's', CatActive: 'b' } },
   EW_Payees: { key: 'PyName', cols: { PyName: 's', PyCat: 's' } },
   EW_Recurring: { key: 'RcId', cols: { RcId: 's', RcSeq: 'n', RcName: 's', RcAcc: 's', RcType: 's', RcAmt: 'n', RcCat: 's', RcPayee: 's', RcFreq: 's', RcNext: 'd', RcMode: 's', RcActive: 'b' } },
@@ -126,6 +126,13 @@ var ACTIONS = {
       activity: log.slice(0, 30),
       serverTime: new Date().toISOString()
     };
+  },
+
+  /** Every activity-log entry, newest first (Settings → Activity log). */
+  activityAll: function (ss) {
+    var log = readTable_(ss, 'EW_ActivityLog');
+    log.sort(function (a, b) { return a.AuWhen < b.AuWhen ? 1 : -1; });
+    return log.slice(0, 2000);
   },
 
   /** History entries for given references (transaction detail screen). */

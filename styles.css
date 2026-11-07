@@ -8,6 +8,7 @@ body { -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; touc
   position: absolute; left: 0; top: 0; width: 390px; height: 844px; transform-origin: 0 0; overflow: hidden;
   background: #0D0F12; color: #F4F2EE;
   font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric: tabular-nums; font-feature-settings: "tnum";
 }
 #stage > div { position: absolute; inset: 0; }
 
@@ -64,3 +65,7 @@ body { -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; touc
 body.busy #busybar::after { content: ""; position: absolute; top: 0; bottom: 0; width: 30%; background: #FF6A00; animation: ewbusy 1s linear infinite; }
 body.busy #frame { pointer-events: none; }
 @keyframes ewbusy { from { left: -30%; } to { left: 100%; } }
+
+/* v4.3 polish */
+.navbar-glass { position: absolute; left: 0; right: 0; bottom: 0; height: 78px; background: rgba(19, 22, 27, 0.92); backdrop-filter: saturate(1.4) blur(18px); -webkit-backdrop-filter: saturate(1.4) blur(18px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+.pwd-dot { letter-spacing: 3px; }

@@ -4,7 +4,8 @@ import {
   bal, psum, catSpend, acc, byTxDesc, dueCount, lowBal, stStart, fmtD, Today, PLABEL, Year, Month, diffDays, minD,
   RM, sRM, n0, pct, PALETTE, esc, monthLabel, resetTxPeriodToMonth, round2
 } from '../core.js';
-import { TabHeader, NavBar, Fab, PeriodCard, FlowCard } from '../shared.js';
+import { TabHeader, NavBar, Fab, PeriodCard, FlowCard, SectionHead } from '../shared.js';
+import { addDays as addD, addMonths as addM, PSTART as PST, Day as DayOf, D as mkD, perKey } from '../core.js';
 
 export function netWorth() {
   const open = DB.accounts.filter(a => a.AccStatus !== 'Closed');
@@ -69,7 +70,7 @@ export const scrHome = {
     const spend = catSpend();
     const top5 = spend.slice(0, 5);
     const spendTot = spend.reduce((s, x) => s + x.Amt, 0);
-    const recent = DB.txns.filter(t => !t.TxParent && !(t.TxType === 'Transfer' && t.TxDir === 'In') && t.TxType !== 'Opening Balance' && t.TxDate >= G.gblFrom && t.TxDate <= G.gblTo).sort(byTxDesc).slice(0, 5);
+    const recent = DB.txns.filter(t => !t.TxParent && !(t.TxType === 'Transfer' && t.TxDir === 'In') && t.TxType !== 'Opening Balance' && t.TxDate >= G.gblFrom && t.TxDate <= G.gblTo).sort(byTxDesc).slice(0, 10);
 
     // insights
     const exps = DB.txns.filter(t => !t.TxIsSplit && t.TxDate >= G.gblFrom && t.TxDate <= G.gblTo && t.TxType === 'Expense').sort((a, b) => b.TxAmt - a.TxAmt);
@@ -118,12 +119,11 @@ export const scrHome = {
           ${L(54, 0, 162, 44, a.AccName, { s: 10 })}
           ${L(220, 0, 130, 44, sRM(a.Bal), { s: 10, w: 6, a: 'r', c: a.Bal < 0 ? K.red : K.text })}
           ${R(54, 43, 296, 1, K.sep)}`, { onSelect: a => { G.gblAccId = a.AccId; Navigate('scrAccountDetail'); }, key: a => a.AccId })}`, { id: 'homeAccounts' }) : null}
-      ${hasAcc ? Box(null, 0, 366, 50, html`
-        ${R(4, 24, 26, 1, K.gold)}
-        ${L(38, 8, 220, 30, 'Monthly overview', { s: 14 })}
-        ${L(38, 34, 326, 14, 'Cash flow, spending, activity and insights for the month below', { s: 7.5, c: K.mute })}`) : null}
+      ${hasAcc ? Upcoming() : null}
+      ${hasAcc ? SectionHead('Monthly overview', 'overviewHead') : null}
       ${PeriodCard(l)}
-      ${FlowCard(inc, out, monthLabel('mmm yyyy'), { id: 'homeFlow' })}
+      ${FlowCard(inc, out, '', { id: 'homeFlow' })}
+      ${hasAcc ? Forecast(inc, out) : null}
       ${Card(null, 0, 366, 206, html`
         ${L(16, 14, 246, 22, 'Spending', { s: 11.5, w: 6 })}
         ${L(250, 14, 100, 22, 'Analysis  ›', { s: 8.5, w: 6, c: K.or, a: 'r', onClick: () => Navigate('scrAnalysis') })}
@@ -154,3 +154,78 @@ export const scrHome = {
     </div>`;
   }
 };
+
+/* ── Month-end forecast: pace of spending in the selected month, projected to its last day ── */
+function Forecast(inc, out) {
+  const from = G.gblFrom, to = G.gblTo, today = Today();
+  const days = diffDays(from, to) + 1;
+  const past = today > to, future = today < from;
+  const elapsed = past ? days : future ? 0 : diffDays(from, today) + 1;
+  const daily = elapsed ? out / elapsed : 0;
+  const projected = past ? out : round2(daily * days);
+  const pFrom = addM(from, -1), pTo = addD(from, -1);
+  const last = round2(psum('Expense', pFrom, pTo) - psum('Refund', pFrom, pTo));
+  const delta = last > 0 ? (projected - last) / last : null;
+  const projNet = round2(inc - projected);
+  const share = days ? elapsed / days : 0;
+  const head = past ? 'Month result' : 'Month-end forecast';
+  const big = future ? '—' : RM(projected);
+  const cap = past ? 'TOTAL SPENT' : 'PROJECTED SPENDING BY ' + fmtD(to, 'dd mmm').toUpperCase();
+  const dTxt = delta === null ? 'No spending last month' : (delta > 0 ? '▲ ' : '▼ ') + pct(Math.abs(delta)) + (delta > 0 ? ' more' : ' less') + ' than last month';
+  return Card(null, 0, 366, 178, html`
+    ${C(16, 16, 30, K.field)}${I(22, 22, 18, 18, 'Gauge', K.or, { pad: 1 })}
+    ${L(56, 14, 200, 18, head, { s: 11.5, w: 6 })}
+    ${L(56, 32, 200, 14, future ? 'This month has not started yet' : elapsed + ' of ' + days + ' days', { s: 7.5, c: K.sub })}
+    ${L(16, 60, 220, 14, cap, { s: 7, w: 6, c: K.sub })}
+    ${L(16, 76, 220, 30, big, { s: 18, w: 6, id: 'forecast' })}
+    ${L(16, 106, 220, 16, future ? '' : dTxt, { s: 8, w: 6, c: delta === null ? K.mute : delta > 0 ? K.red : K.grn })}
+    ${R(250, 62, 1, 58, 'rgba(255,255,255,0.07)')}
+    ${L(264, 60, 90, 14, 'DAILY AVG', { s: 7, w: 6, c: K.sub })}
+    ${L(264, 74, 90, 18, future ? '—' : RM(daily), { s: 9.5, w: 6 })}
+    ${L(264, 96, 90, 14, past ? 'NET' : 'PROJ. NET', { s: 7, w: 6, c: K.sub })}
+    ${L(264, 110, 90, 18, future ? '—' : sRM(projNet), { s: 9.5, w: 6, c: projNet < 0 ? K.red : K.grn })}
+    ${R(16, 142, 334, 4, K.field, { r: 2 })}
+    ${R(16, 142, Math.max(4, 334 * share), 4, 'linear-gradient(90deg, rgba(255,106,0,0.5), #FF6A00)', { r: 2 })}
+    ${L(16, 152, 167, 14, fmtD(from, 'dd mmm'), { s: 7.5, c: K.mute })}
+    ${L(183, 152, 167, 14, fmtD(to, 'dd mmm'), { s: 7.5, c: K.mute, a: 'r' })}`, { id: 'forecastCard' });
+}
+
+/* ── Next 14 days: bills from Recurring + credit card due dates, and what is safe to spend ── */
+function Upcoming() {
+  const today = Today(), until = addD(today, 14);
+  const items = [];
+  DB.recurring.filter(r => r.RcActive && r.RcNext <= until).forEach(r => items.push({ nm: r.RcName, d: r.RcNext, amt: r.RcAmt, inc: r.RcType === 'Income', tag: r.RcNext < today ? 'OVERDUE' : '' }));
+  DB.accounts.filter(a => a.AccStatus !== 'Closed' && a.AccClass === 'Liability' && a.AccDueDay > 0).forEach(a => {
+    const owed = -bal(a.AccId);
+    if (owed <= 0.004) return;
+    const [y, m] = today.split('-').map(Number);
+    let due = mkD(y, m, a.AccDueDay);
+    if (due < today) due = mkD(y, m + 1, a.AccDueDay);
+    if (due <= until) items.push({ nm: a.AccName + ' payment', d: due, amt: owed, inc: false, tag: 'CARD' });
+  });
+  items.sort((a, b) => (a.d < b.d ? -1 : 1));
+  const shown = items.slice(0, 4);
+  const committed = round2(items.filter(i => !i.inc).reduce((s, i) => s + i.amt, 0));
+  const cash = round2(DB.accounts.filter(a => a.AccStatus !== 'Closed' && a.AccClass === 'Asset').reduce((s, a) => s + bal(a.AccId), 0));
+  const safe = round2(cash - committed);
+  const listH = shown.length ? shown.length * 46 : 40;
+  return Card(null, 0, 366, 58 + listH + 70, html`
+    ${C(16, 16, 30, K.field)}${I(22, 22, 18, 18, 'Clock', K.or, { pad: 1 })}
+    ${L(56, 14, 200, 18, 'Next 14 days', { s: 11.5, w: 6 })}
+    ${L(56, 32, 200, 14, 'Bills and card payments coming up', { s: 7.5, c: K.sub })}
+    ${L(250, 14, 100, 22, 'Manage  ›', { s: 8.5, w: 6, c: K.or, a: 'r', onClick: () => Navigate('scrRecurring') })}
+    ${shown.length ? Gal(0, 56, 366, listH, shown, 46, it => html`
+      ${Box(16, 8, 40, 30, html`
+        ${L(0, 0, 40, 16, fmtD(it.d, 'dd'), { s: 11, w: 6, a: 'c', c: it.tag === 'OVERDUE' ? K.red : K.text })}
+        ${L(0, 16, 40, 12, fmtD(it.d, 'mmm').toUpperCase(), { s: 6.5, w: 7, a: 'c', c: K.or })}`)}
+      ${L(66, 6, 180, 18, it.nm, { s: 10, w: 6 })}
+      ${L(66, 24, 180, 14, it.tag === 'OVERDUE' ? 'Overdue' : it.tag === 'CARD' ? 'Card due date' : 'Recurring', { s: 7.5, c: it.tag === 'OVERDUE' ? K.red : K.sub })}
+      ${L(226, 0, 124, 46, (it.inc ? '+' : '−') + RM(it.amt), { s: 10, w: 6, a: 'r', c: it.inc ? K.grn : K.text })}
+      ${R(66, 45, 284, 1, K.sep)}`) : L(16, 56, 334, 40, 'Nothing due in the next 14 days.', { s: 8.5, c: K.mute })}
+    ${Box(12, 58 + listH + 8, 342, 52, html`
+      ${L(14, 8, 150, 14, 'COMMITTED', { s: 7, w: 6, c: K.sub })}
+      ${L(14, 22, 150, 22, RM(committed), { s: 11, w: 6, id: 'committed' })}
+      ${R(171, 10, 1, 32, 'rgba(255,255,255,0.07)')}
+      ${L(186, 8, 142, 14, 'SAFE TO SPEND', { s: 7, w: 6, c: K.sub, a: 'r' })}
+      ${L(186, 22, 142, 22, sRM(safe), { s: 11, w: 6, a: 'r', c: safe < 0 ? K.red : K.grn, id: 'safe' })}`, { fill: 'rgba(255,255,255,0.025)', r: 12, b: 'rgba(255,255,255,0.05)' })}`, { id: 'upcoming' });
+}

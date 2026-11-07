@@ -1,6 +1,6 @@
 // Pieces used on many screens: headers, bottom bar, save bar, month picker, cash-flow card, date box + calendar.
 import {
-  html, K, G, DB, L, R, C, I, B, Box, Card, Gal, TI, Brand, fs, Navigate, Back, Notify, loadAll, rerender, dueCount,
+  html, K, G, DB, L, R, C, I, B, Box, Card, Gal, TI, Brand, fs, Navigate, Back, Notify, loadAll, rerender, dueCount, HAIR, SURFACE,
   fmtD, parseDMY, D, Year, Month, Day, addDays, addMonths, weekday, Today, setMonth, PSTART, RM, sRM, pct, monthLabel, guard, fromBottom
 } from './core.js';
 
@@ -20,12 +20,11 @@ const TABS = [['Home', 'Home', 'scrHome'], ['Money', 'Accounts', 'scrAccounts'],
 /* Bottom navigation (active = index 0..4) */
 export function NavBar(active) {
   return html`
-    ${R(0, { b: 0 }, 390, 78, K.card)}
-    ${R(0, { b: 77 }, 390, 1, K.line)}
-    ${R(25 + active * 78, { b: 76 }, 28, 2, K.or)}
+    <div class="navbar-glass"></div>
+    ${R(28 + active * 78, { b: 75 }, 22, 3, K.or, { r: 2, st: 'box-shadow:0 0 12px rgba(255,106,0,0.55);' })}
     ${TABS.map(([ic, lb, scr], i) => html`
       ${I(26 + i * 78, { b: 41 }, 26, 26, ic, i === active ? K.or : K.mute, { pad: 4, onClick: () => Navigate(scr), label: lb })}
-      ${L(i * 78, { b: 25 }, 78, 14, lb, { s: 7.5, c: i === active ? K.or : K.mute, w: i === active ? 6 : 4, a: 'c', onClick: () => Navigate(scr) })}`)}`;
+      ${L(i * 78, { b: 25 }, 78, 14, lb, { s: 7.5, c: i === active ? K.or : K.mute, w: i === active ? 6 : 4, a: 'c', ls: 0.3, onClick: () => Navigate(scr) })}`)}`;
 }
 
 /* Detail screens: back arrow, centred title and a line. */
@@ -61,11 +60,13 @@ export function PeriodCard(l, after) {
     if (after) after();
     rerender();
   };
+  const toggle = () => { l.locPick = !l.locPick; l.locPickYear = G.gblYear; rerender(); };
   return html`${Card(null, 0, 366, 70, html`
-      ${C(14, 17, 36, K.field, { b: K.line, onClick: () => go(-1) })}
+      ${C(14, 17, 36, K.field, { b: HAIR, onClick: () => go(-1) })}
       ${I(14, 17, 36, 36, 'ChevronLeft', K.text, { pad: 10, onClick: () => go(-1), label: 'Previous month' })}
-      ${L(60, 17, 246, 36, monthLabel('mmmm yyyy') + (l.locPick ? '  ˄' : '  ˅'), { s: 15, a: 'c', onClick: () => { l.locPick = !l.locPick; l.locPickYear = G.gblYear; rerender(); } })}
-      ${C(316, 17, 36, K.field, { b: K.line, onClick: () => go(1) })}
+      ${L(60, 13, 246, 26, monthLabel('mmmm yyyy'), { s: 15, a: 'c', onClick: toggle, id: 'periodName' })}
+      ${L(60, 39, 246, 16, fmtD(G.gblFrom, 'dd mmm') + '  –  ' + fmtD(G.gblTo, 'dd mmm yyyy'), { s: 8, a: 'c', c: l.locPick ? K.or : K.sub, onClick: toggle })}
+      ${C(316, 17, 36, K.field, { b: HAIR, onClick: () => go(1) })}
       ${I(316, 17, 36, 36, 'ChevronRight', K.text, { pad: 10, onClick: () => go(1), label: 'Next month' })}`, { id: 'period' })}
     ${l.locPick ? MonthGrid(l.locPickYear ?? G.gblYear, y => { l.locPickYear = y; rerender(); },
       no => no === G.gblMonth && (l.locPickYear ?? G.gblYear) === G.gblYear,
@@ -99,7 +100,7 @@ export function FlowCard(inV, outV, label, o = {}) {
         : 'You spent ' + pct(outV / inV) + ' of your income';
   const body = html`
     ${L(16, 12, 160, 22, 'Cash flow', { s: 11.5, w: 6 })}
-    ${L(190, 12, 160, 22, label.toUpperCase(), { s: 7.5, w: 6, c: K.or, a: 'r' })}
+    ${label ? L(190, 12, 160, 22, label.toUpperCase(), { s: 7.5, w: 6, c: K.or, a: 'r' }) : null}
     ${C(16, 47, 6, K.grn)}${L(26, 43, 111, 14, 'MONEY IN', { s: 7.5, w: 6, c: K.sub })}
     ${L(16, 58, 111, 20, RM(inV), { s: 12.5, w: 6 })}
     ${C(127, 47, 6, K.or)}${L(137, 43, 111, 14, 'MONEY OUT', { s: 7.5, w: 6, c: K.sub })}
@@ -146,10 +147,10 @@ export function Calendar(l, key, onPick) {
   return html`<div class="abs" style="left:0;top:0;right:0;bottom:0;z-index:30">
     <div class="abs dim" style="inset:0" onClick=${close}></div>
     ${Box(45, 250, 300, 344, html`
-      ${C(16, 14, 32, K.field, { b: K.line, onClick: () => move(-1) })}
+      ${C(16, 14, 32, K.field, { b: HAIR, onClick: () => move(-1) })}
       ${I(16, 14, 32, 32, 'ChevronLeft', K.text, { pad: 8, onClick: () => move(-1), label: 'Previous month' })}
       ${L(56, 14, 188, 32, fmtD(m, 'mmmm yyyy'), { s: 14, a: 'c' })}
-      ${C(252, 14, 32, K.field, { b: K.line, onClick: () => move(1) })}
+      ${C(252, 14, 32, K.field, { b: HAIR, onClick: () => move(1) })}
       ${I(252, 14, 32, 32, 'ChevronRight', K.text, { pad: 8, onClick: () => move(1), label: 'Next month' })}
       ${R(20, 54, 260, 1, 'rgba(255,106,0,0.35)')}
       ${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => L(17 + i * 38, 60, 38, 18, d, { s: 7.5, w: 6, a: 'c', c: i >= 5 ? K.or : K.mute }))}
@@ -172,4 +173,39 @@ export function AuditRows(list, whenFmt, whenX = 230, whenW = 120) {
     ${L(16, 22, 334, 16, a.AuDetail, { s: 8, c: K.sub })}
     ${R(16, 43, 334, 1, K.sep)}
   </div>`);
+}
+
+/* Section title used on Home: serif title with an orange full stop and a fading hairline. */
+export function SectionHead(title, id) {
+  return html`<div class="box" data-t=${id} style="position:relative;flex:none;width:366px;height:44px;display:flex;align-items:flex-end;gap:14px;padding:0 2px 6px">
+    <div style="font-family:Georgia,'Times New Roman',serif;font-size:21px;line-height:1;color:#F4F2EE;letter-spacing:.3px;white-space:nowrap">${title}<span style="color:#FF6A00">.</span></div>
+    <div style="flex:1;height:1px;margin-bottom:5px;background:linear-gradient(90deg, rgba(255,106,0,0.55), rgba(255,255,255,0.08) 35%, rgba(255,255,255,0))"></div>
+  </div>`;
+}
+
+/* Password guard for sensitive actions (stops mis-taps; it is not account security). */
+export const GUARD_PASSWORD = 'aiman00.';
+export function askPassword(l, label, run) { l.pwd = { label, run, val: '', err: '' }; rerender(); }
+export function PasswordDialog(l) {
+  const p = l.pwd;
+  if (!p) return null;
+  const close = () => { l.pwd = null; rerender(); };
+  const ok = () => {
+    if (p.val !== GUARD_PASSWORD) { p.err = 'Wrong password. Try again.'; p.val = ''; rerender(); return; }
+    const run = p.run; l.pwd = null; rerender(); run();
+  };
+  return html`<div class="abs" style="inset:0;z-index:40">
+    <div class="abs dim" style="inset:0" onClick=${close}></div>
+    ${Card(33, 226, 324, 250, html`
+      ${C(138, 20, 48, 'rgba(255,106,0,0.12)', { b: 'rgba(255,106,0,0.35)' })}
+      ${I(150, 32, 24, 24, 'Lock', K.or, { pad: 1 })}
+      ${L(16, 80, 292, 24, 'Enter password', { s: 13, w: 6, a: 'c' })}
+      ${L(24, 104, 276, 18, 'Required to ' + p.label + '.', { s: 8.5, c: K.sub, a: 'c' })}
+      <input class="inp" type="password" data-t="pwd" placeholder="Password" value=${p.val} autocomplete="off"
+        style=${'left:20px;top:130px;width:284px;height:44px;border-radius:10px;padding:0 14px;background:#1E2228;color:#F4F2EE;font-size:16px;box-shadow:inset 0 0 0 1px ' + (p.err ? K.red : 'rgba(255,255,255,0.07)')}
+        onInput=${e => { p.val = e.target.value; p.err = ''; }} onKeyDown=${e => { if (e.key === 'Enter') ok(); }} />
+      ${p.err ? L(20, 178, 284, 14, p.err, { s: 7.5, c: K.red, a: 'c' }) : null}
+      ${B(20, 200, 136, 36, 'Cancel', { fill: K.field, b: HAIR, s: 9.5, onClick: close, id: 'pwdCancel' })}
+      ${B(168, 200, 136, 36, 'Unlock', { fill: K.or, c: '#FFFFFF', s: 9.5, onClick: ok, id: 'pwdOk' })}`, { b: 'rgba(255,106,0,0.35)' })}
+  </div>`;
 }

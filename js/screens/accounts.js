@@ -1,35 +1,59 @@
 // scrAccounts, scrAccountDetail, scrAccountEdit
 import {
-  html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, TI, DD, heroBg, Navigate, Back, Replace, Notify, rerender, guard, save,
+  html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, TI, DD, heroBg, Navigate, Back, Replace, Notify, SURFACE, HAIR, rerender, guard, save,
   bal, acc, byTxDesc, stStart, fmtD, Today, PLABEL, PSTART, Year, Month, addDays, addMonths, perKey, RM, sRM, n0, Value, round2,
   mkTxn, txnId, nextTxSeq, shortName, accMoveUpTo
 } from '../core.js';
 import { TabHeader, NavBar, DetailHeader, SaveBar, DateBox, Calendar } from '../shared.js';
+import { SweepSection, SweepConfirm, sweepEnabled, isSystem } from '../sweep.js';
+import { Tog } from '../core.js';
 
-/* ───────────── Accounts list ───────────── */
+/* ───────────── Accounts list + Monthly Balance Sweep ───────────── */
+function SubHead(t, right) {
+  return html`<div class="box" style="position:relative;flex:none;width:366px;height:24px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 4px 2px;font-size:9.33px;font-weight:600;letter-spacing:1.2px;color:#9AA0A8">
+    <span>${t}</span><span style="color:#626872">${right || ''}</span></div>`;
+}
 export const scrAccounts = {
-  view() {
-    const list = DB.accounts.map(a => ({ ...a, Bal: bal(a.AccId) }))
+  onVisible(l) { l.sweepConfirm = null; l.goDetail = () => Navigate('scrAccountDetail'); },
+  view(l) {
+    const list = DB.accounts.filter(a => !isSystem(a)).map(a => ({ ...a, Bal: bal(a.AccId) }))
       .sort((a, b) => {
         const k = x => (x.AccStatus === 'Closed' ? '3' : x.AccClass === 'Asset' ? '1' : '2') + String(x.AccSeq).padStart(4, '0');
         return k(a) < k(b) ? -1 : 1;
       });
+    const open = list.filter(a => a.AccStatus !== 'Closed');
+    const cash = open.filter(a => a.AccClass === 'Asset').reduce((s, a) => s + a.Bal, 0);
+    const owed = -open.filter(a => a.AccClass === 'Liability').reduce((s, a) => s + a.Bal, 0);
+    const row = a => Box(null, 0, 366, 72, html`
+      ${B(0, 0, 366, 72, '', { fill: SURFACE, b: HAIR, r: 16, flat: true })}
+      ${C(14, 17, 38, a.AccColor)}
+      ${L(14, 17, 38, 38, a.AccShort, { s: 8, w: 7, a: 'c', c: '#FFFFFF' })}
+      ${L(64, 16, 150, 20, a.AccName, { s: 10.5, w: 6, c: a.AccStatus === 'Closed' ? K.mute : K.text })}
+      ${L(64, 37, 150, 16, a.AccType + (a.AccStatus === 'Closed' ? '  ·  Closed' : sweepEnabled(a) && a.AccStatus === 'Active' ? '  ·  Sweeps monthly' : ''), { s: 8, c: K.sub })}
+      ${L(206, 16, 146, 20, a.AccClass === 'Liability' ? RM(-a.Bal) : sRM(a.Bal), { s: 12, w: 6, a: 'r', c: a.AccClass === 'Liability' || a.Bal < 0 ? K.red : K.text })}
+      ${L(206, 37, 146, 16, a.AccClass === 'Liability' ? (a.AccLimit > 0 ? 'Owed  ·  RM ' + n0(a.AccLimit + a.Bal) + ' available' : 'Owed') : a.Bal < 0 ? 'Overdrawn' : 'Available', { s: 8, c: a.Bal < 0 && a.AccClass !== 'Liability' ? K.red : K.sub, a: 'r' })}
+      <div class="abs tap" style="inset:0" data-t=${'acc-' + a.AccName} onClick=${() => { G.gblAccId = a.AccId; Navigate('scrAccountDetail'); }}></div>`);
+    const kids = html`
+      ${SubHead('BANK ACCOUNTS', open.length + ' ACTIVE')}
+      ${Box(null, 0, 366, 56, html`
+        ${L(16, 10, 160, 12, 'TOTAL CASH', { s: 6.5, w: 6, c: K.sub })}
+        ${L(16, 24, 160, 22, RM(round2(cash)), { s: 11.5, w: 6, id: 'totalCash' })}
+        ${R(183, 12, 1, 32, 'rgba(255,255,255,0.07)')}
+        ${L(198, 10, 152, 12, 'CARDS OWED', { s: 6.5, w: 6, c: K.sub, a: 'r' })}
+        ${L(198, 24, 152, 22, RM(round2(owed)), { s: 11.5, w: 6, a: 'r', c: owed > 0 ? K.red : K.text })}`, { fill: 'rgba(255,255,255,0.025)', r: 14, b: 'rgba(255,255,255,0.05)' })}
+      ${list.map(row)}
+      ${!list.length ? Card(null, 0, 366, 72, L(16, 0, 334, 72, 'No accounts yet.', { s: 9.5, c: K.mute, a: 'c' })) : null}
+      ${B(null, 0, 366, 46, '＋   Add account', { fill: 'transparent', b: 'rgba(255,106,0,0.45)', c: K.or, r: 23, s: 10, flat: true, st: 'position:relative;flex:none;', onClick: () => { G.gblEditMode = 'new'; Navigate('scrAccountEdit'); }, id: 'addAccount' })}
+      <div style="position:relative;flex:none;height:10px"></div>
+      ${SubHead('MONTHLY BALANCE SWEEP', 'MONTH-END')}
+      ${SweepSection(l)}
+      ${Box(null, 0, 366, 20, null)}`;
     return html`<div>
       ${TabHeader()}
       ${L(18, 68, 240, 32, 'Accounts', { s: 17 })}
-      ${L(18, 106, 260, 14, 'YOUR ACCOUNTS  ·  ' + DB.accounts.length + '   ·   CURRENT BALANCE', { s: 7.5, w: 6, c: K.mute })}
-      ${Gal(12, 132, 366, 568, list, 78, a => html`
-        ${B(0, 0, 366, 70, '', { fill: K.card, b: K.line, r: 14 })}
-        ${C(14, 16, 38, a.AccColor)}
-        ${L(14, 16, 38, 38, a.AccShort, { s: 8, w: 7, a: 'c', c: '#FFFFFF' })}
-        ${L(64, 15, 152, 20, a.AccName, { s: 10.5, w: 6, c: a.AccStatus === 'Closed' ? K.mute : K.text })}
-        ${L(64, 36, 152, 16, a.AccType + (a.AccStatus === 'Closed' ? '  ·  Closed' : ''), { s: 8, c: K.sub })}
-        ${L(206, 15, 146, 20, a.AccClass === 'Liability' ? RM(-a.Bal) : sRM(a.Bal), { s: 12.5, w: 6, a: 'r', c: a.AccClass === 'Liability' || a.Bal < 0 ? K.red : K.text })}
-        ${L(206, 36, 146, 16, a.AccClass === 'Liability' ? (a.AccLimit > 0 ? 'Owed  ·  RM ' + n0(a.AccLimit + a.Bal) + ' available' : 'Owed') : '', { s: 8, c: K.sub, a: 'r' })}`,
-      { scroll: true, stretch: true, onSelect: a => { G.gblAccId = a.AccId; Navigate('scrAccountDetail'); }, key: a => a.AccId })}
-      ${!DB.accounts.length ? L(12, 152, 366, 40, 'No accounts yet.', { s: 10, c: K.mute, a: 'c' }) : null}
-      ${B(52, { b: 92 }, 286, 44, '＋   Add account', { fill: K.card, b: K.or, c: K.or, r: 22, s: 10.5, onClick: () => { G.gblEditMode = 'new'; Navigate('scrAccountEdit'); }, id: 'addAccount' })}
+      ${Flow(0, 104, 390, 662, kids)}
       ${NavBar(1)}
+      ${SweepConfirm(l)}
     </div>`;
   }
 };
@@ -93,8 +117,8 @@ export const scrAccountDetail = {
         ${L(18, 88, 330, 32, isL ? RM(-b) : sRM(b), { s: 20, w: 6, c: isL ? K.red : K.text, id: 'accBal' })}
         ${L(18, 122, 330, 16, isL && a.AccLimit > 0 ? RM(a.AccLimit + b) + ' available of RM ' + n0(a.AccLimit) + (a.AccDueDay > 0 ? '  ·  due on day ' + a.AccDueDay : '') : '', { s: 8, c: K.sub })}`, { r: 16 })}
       ${Box(null, 0, 366, 44, html`
-        ${B(0, 0, 178, 42, '＋  Transaction', { fill: K.or, c: '#FFFFFF', r: 21, s: 10, onClick: () => { G.gblPrefill = { PfAcc: a.AccId, PfType: 'Expense', PfAmt: 0, PfCat: '', PfPayee: '', PfRule: '', PfDate: Today() }; G.gblEditMode = 'prefill'; Navigate('scrTxnEdit'); } })}
-        ${B(188, 0, 178, 42, '⇄  Transfer', { fill: K.field, b: K.line, r: 21, s: 10, onClick: () => Navigate('scrTransfer') })}`)}
+        ${isSystem(a) ? null : B(0, 0, 178, 42, '＋  Transaction', { fill: K.or, c: '#FFFFFF', r: 21, s: 10, onClick: () => { G.gblPrefill = { PfAcc: a.AccId, PfType: 'Expense', PfAmt: 0, PfCat: '', PfPayee: '', PfRule: '', PfDate: Today() }; G.gblEditMode = 'prefill'; Navigate('scrTxnEdit'); } })}
+        ${B(isSystem(a) ? 0 : 188, 0, isSystem(a) ? 366 : 178, 42, '⇄  Transfer', { fill: K.field, b: HAIR, r: 21, s: 10, onClick: () => Navigate('scrTransfer') })}`)}
       ${Card(null, 0, 366, 66, html`
         ${L(18, 14, 178, 14, 'IN THIS MONTH', { s: 7.5, w: 6, c: K.sub })}
         ${L(18, 30, 168, 20, RM(inM), { s: 12.5, w: 6, c: K.grn })}
@@ -115,13 +139,13 @@ export const scrAccountDetail = {
           ${L(226, 30, 126, 16, 'Bal ' + sRM(runBal(t)), { s: 8, c: K.sub, a: 'r' })}
           ${R(70, 57, 282, 1, K.sep)}`, { onSelect: t => { G.gblTxnId = t.TxnId; Navigate('scrTxnDetail'); }, key: t => t.TxnId })}
         ${L(16, 52 + Math.max(hist.length, 1) * 58 - (hist.length ? 0 : 0), 334, 32, hist.length ? (mine.length > 60 ? 'Showing the latest 60 transactions.' : 'Showing every transaction since ' + fmtD(a.AccOpenDate || stStart(), 'dd mmm yyyy') + '.') : 'No transactions yet.', { s: 8, c: K.mute, wrap: true })}`)}
-      ${Card(null, 0, 366, 96, html`
+      ${isSystem(a) ? Card(null, 0, 366, 64, L(18, 0, 330, 64, 'Balance Sweep is a system account. It collects the month-end balances of your linked accounts. Move money out of it with a transfer.', { s: 8, c: K.sub, wrap: true })) : Card(null, 0, 366, 96, html`
         ${L(18, 12, 330, 30, closed ? 'This account is closed. Reopen it to record new transactions.' : 'An account can be closed when its balance is RM 0.00. Its history is kept.', { s: 8, c: K.sub, wrap: true })}
         ${B(18, 46, 330, 38, closed ? 'Reopen account' : l.locConfirmClose ? 'Tap again to close' : 'Close account', { fill: K.field, b: K.red, c: K.red, r: 19, s: 10, onClick: closeTap, id: 'closeAcc' })}`)}
       ${Box(null, 0, 366, 20, null)}`;
 
     return html`<div>
-      ${DetailHeader(a.AccName, I(344, 20, 36, 36, 'Edit', K.or, { pad: 8, onClick: () => { G.gblEditMode = 'edit'; Navigate('scrAccountEdit'); }, label: 'Edit account' }))}
+      ${DetailHeader(a.AccName, isSystem(a) ? null : I(344, 20, 36, 36, 'Edit', K.or, { pad: 8, onClick: () => { G.gblEditMode = 'edit'; Navigate('scrAccountEdit'); }, label: 'Edit account' }))}
       ${Flow(0, 66, 390, 764, kids, { pad: [12, 12, 16, 12] })}
     </div>`;
   }
@@ -146,6 +170,7 @@ export const scrAccountEdit = {
     l.remarks = a ? a.AccRemarks : '';
     l.limit = a && a.AccLimit ? String(a.AccLimit) : '';
     l.due = a && a.AccDueDay ? String(a.AccDueDay) : '';
+    l.sweep = a ? sweepEnabled(a) : null;
   },
   view(l) {
     const edit = G.gblEditMode === 'edit';
@@ -153,6 +178,7 @@ export const scrAccountEdit = {
     const s1 = cc ? 0 : 76, s2 = s1 + (edit ? 0 : 76);
     const set = k => v => { l[k] = v; rerender(); };
     const typeBtn = (t, x) => B(x, 98, 87, 34, t, { fill: l.locAType === t ? K.or : K.field, c: l.locAType === t ? '#FFFFFF' : K.sub, b: l.locAType === t ? K.or : K.line, r: 17, s: 9, onClick: () => { l.locAType = t; rerender(); }, id: 'type-' + t });
+    const sweepOn = l.sweep === null || l.sweep === undefined ? l.locAType === 'Debit Card' : l.sweep;
     const form = html`
       ${L(0, 4, 366, 14, 'ACCOUNT NAME', { s: 7.5, w: 6, c: K.sub })}
       ${TI(0, 22, 366, 44, l.name, set('name'), { hint: 'e.g. Maybank Savings', max: 40, id: 'accName' })}
@@ -174,6 +200,11 @@ export const scrAccountEdit = {
         ${DD(0, 388 - s1, 366, 44, ['Active', 'Closed'], l.status, set('status'), { id: 'accStatus' })}` : null}
       ${L(0, 446 - s2, 366, 14, 'NOTES', { s: 7.5, w: 6, c: K.sub })}
       ${TI(0, 464 - s2, 366, 64, l.remarks, set('remarks'), { hint: 'Optional', multiline: true, id: 'accNotes' })}
+      ${!cc ? html`
+        ${R(0, 586 - s2, 366, 1, K.sep)}
+        ${L(0, 596 - s2, 290, 20, 'Include in monthly balance sweep', { s: 10, w: 6 })}
+        ${L(0, 616 - s2, 290, 16, 'Its month-end balance moves to Balance Sweep', { s: 8, c: K.sub })}
+        ${Tog(310, 598 - s2, 56, 28, sweepOn, v => { l.sweep = v; rerender(); })}` : null}
       ${L(0, 538 - s2, 366, 40, 'Balances are never typed in. The opening balance is saved as the first transaction and every balance is calculated from transactions.', { s: 8, c: K.mute, wrap: true, top: true })}`;
 
     const onSave = () => guard(async () => {
@@ -188,7 +219,8 @@ export const scrAccountEdit = {
       if (stStart() && od < stStart()) return Notify("The opening date can't be before your tracking start (" + fmtD(stStart(), 'dd mmm yyyy') + ').', 'error');
       if (edit && l.status === 'Closed' && Math.abs(bal(a.AccId)) >= 0.005) return Notify('An account can only be closed when its balance is RM 0.00.', 'error');
       const fields = { AccName: nm, AccShort: shortName(nm), AccColor: l.locColor, AccType: l.locAType, AccClass: cls, AccOpenDate: od,
-        AccLimit: cc ? (Value(l.limit) ?? 0) : 0, AccDueDay: cc ? (Value(l.due) ?? 0) : 0, AccStatus: edit ? (l.status || 'Active') : 'Active', AccRemarks: l.remarks || '', AccOB: ob };
+        AccLimit: cc ? (Value(l.limit) ?? 0) : 0, AccDueDay: cc ? (Value(l.due) ?? 0) : 0, AccStatus: edit ? (l.status || 'Active') : 'Active', AccRemarks: l.remarks || '', AccOB: ob,
+        AccSweep: cc ? 'No' : (sweepOn ? 'Yes' : 'No') };
       const txUps = [];
       if (edit) {
         const row = { ...a, ...fields };
@@ -211,7 +243,7 @@ export const scrAccountEdit = {
 
     return html`<div>
       ${DetailHeader(edit ? 'Edit account' : 'New account')}
-      ${Flow(0, 66, 390, 700, Box(null, 0, 366, 582 - s2, form), { pad: [16, 12, 16, 12], gap: 8 })}
+      ${Flow(0, 66, 390, 700, Box(null, 0, 366, 582 - s2 + (cc ? 0 : 56), form), { pad: [16, 12, 16, 12], gap: 8 })}
       ${SaveBar(edit ? 'Save changes' : 'Create account', onSave, 'saveAccount')}
       ${Calendar(l, 'aeOpenDate')}
     </div>`;

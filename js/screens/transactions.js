@@ -1,6 +1,6 @@
 // scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit
 import {
-  html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, TI, DD, heroBg, Navigate, Back, Replace, Notify, rerender, guard, save, api,
+  html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, TI, DD, heroBg, Navigate, Back, Replace, Notify, rerender, guard, save, api, SURFACE, HAIR,
   bal, acc, accByName, txn, byTxDesc, stStart, fmtD, fmtTime, Today, PLABEL, PSTART, PEND, Year, Month, addDays, addMonths, addYears, diffDays,
   RM, sRM, Value, round2, mkTxn, txnId, nextTxSeq, CD
 } from '../core.js';
@@ -31,33 +31,48 @@ export const scrTransactions = {
     const accOn = !!l.locTxAcc, catOn = l.locTxCat !== 'All';
     const anyOn = perOn || accOn || catOn || l.locTxType !== 'All' || !!q;
 
-    const pill = (x, on, ic, cap, val, sheet, id) => Box(x, 156, 118, 44, html`
-      ${B(0, 0, 118, 44, '', { fill: on ? K.orTint : K.card, b: on ? K.or : K.line, r: 22, onClick: () => open(sheet), id })}
-      ${I(12, 15, 14, 14, ic, on ? K.or : K.sub, { pad: 0, onClick: () => open(sheet) })}
-      ${L(32, 7, 70, 12, cap, { s: 6.5, w: 6, c: on ? K.or : K.mute, onClick: () => open(sheet) })}
-      ${L(32, 19, 70, 18, val, { s: 8.5, w: 6, onClick: () => open(sheet) })}
-      ${I(100, 17, 10, 10, 'ChevronDown', K.sub, { pad: 0, onClick: () => open(sheet) })}`);
     const open = s => { l.locSheet = s; if (s === 'per') l.locTxYear = G.gblTxAll ? Year(Today()) : Year(addDays(G.gblTxFrom, 10)); rerender(); };
-    const typeBtn = (t, x) => B(x, 3, 90, 28, t, { fill: l.locTxType === t ? K.or : 'transparent', c: l.locTxType === t ? '#FFFFFF' : K.sub, r: 14, s: 8.5, onClick: () => { l.locTxType = t; rerender(); }, id: 'tt-' + t });
+    const chip = (x, w, on, ic, cap, val, sub, sheet, id) => {
+      const go = () => open(sheet);
+      return Box(x, 0, w, 56, html`
+        ${B(0, 0, w, 56, '', { fill: on ? 'rgba(255,106,0,0.07)' : SURFACE, b: on ? 'rgba(255,106,0,0.5)' : HAIR, r: 14, onClick: go, id })}
+        ${C(12, 12, 32, on ? 'rgba(255,106,0,0.14)' : K.field, { onClick: go })}
+        ${I(20, 20, 16, 16, ic, on ? K.or : K.sub, { pad: 0, onClick: go })}
+        ${L(54, 10, w - 84, 14, cap, { s: 6.5, w: 6, c: on ? K.or : K.mute, onClick: go })}
+        ${L(54, 25, w - (sub ? 170 : 84), 20, val, { s: 10.5, w: 6, onClick: go })}
+        ${sub ? L(w - 140, 25, 108, 20, sub, { s: 8, c: K.sub, a: 'r', onClick: go }) : null}
+        ${I(w - 26, 22, 12, 12, 'ChevronDown', K.sub, { pad: 0, onClick: go })}`);
+    };
+    const typeBtn = (t, x) => B(x, 4, 89.5, 30, t, { fill: l.locTxType === t ? K.or : 'transparent', c: l.locTxType === t ? '#FFFFFF' : K.sub, r: 15, s: 8.5, flat: true, onClick: () => { l.locTxType = t; rerender(); }, id: 'tt-' + t });
     const clear = () => {
       G.gblTxAll = false; G.gblTxFrom = curMonthStart(); G.gblTxTo = addDays(addMonths(G.gblTxFrom, 1), -1); G.gblTxLbl = fmtD(G.gblTxTo, 'mmm yyyy');
       l.locTxAcc = ''; l.locTxCat = 'All'; l.locTxType = 'All'; l.q = ''; rerender();
     };
+    const range = G.gblTxAll ? (stStart() ? 'Since ' + fmtD(stStart(), 'dd mmm yyyy') : '') : fmtD(G.gblTxFrom, 'dd mmm') + ' – ' + fmtD(G.gblTxTo, 'dd mmm');
+
+    const kids = html`
+      ${Box(null, 0, 366, 44, html`
+        ${TI(0, 0, 366, 44, q, v => { l.q = v; rerender(); }, { hint: 'Search payee, description or category', fill: SURFACE, r: 22, pad: 44, padR: 14, b: HAIR, id: 'search' })}
+        ${I(16, 13, 18, 18, 'Search', K.sub, { pad: 1 })}`)}
+      ${Box(null, 0, 366, 56, chip(0, 366, perOn, 'CalendarBlank', 'PERIOD', G.gblTxAll ? 'All time' : G.gblTxLbl, range, 'per', 'pillPer'))}
+      ${Box(null, 0, 366, 56, html`
+        ${chip(0, 179, accOn, 'Money', 'ACCOUNT', accOn ? (acc(l.locTxAcc) || {}).AccName : 'All accounts', '', 'acc', 'pillAcc')}
+        ${chip(187, 179, catOn, 'Tag', 'CATEGORY', catOn ? l.locTxCat : 'All categories', '', 'cat', 'pillCat')}`)}
+      ${Box(null, 0, 366, 38, html`${typeBtn('All', 4)}${typeBtn('Expense', 93.5)}${typeBtn('Income', 183)}${typeBtn('Transfer', 272.5)}`, { fill: SURFACE, r: 19, b: HAIR })}
+      ${FlowCard(inV, outV, '', { id: 'txFlow' })}
+      ${Box(null, 0, 366, 22, html`
+        ${L(4, 4, 240, 14, list.length + ' TRANSACTIONS', { s: 7.5, w: 6, c: K.sub, id: 'txCount' })}
+        ${list.length ? L(200, 4, 162, 14, 'NEWEST FIRST', { s: 7, w: 6, c: K.mute, a: 'r' }) : null}`)}
+      ${list.length
+        ? Card(null, 0, 366, list.length * 54 + 8, Gal(0, 4, 366, list.length * 54, list, 54, txnRow, { onSelect: openTxn, key: t => t.TxnId }), { id: 'txList' })
+        : Card(null, 0, 366, 84, L(16, 0, 334, 84, 'No transactions for this filter.', { s: 9.5, c: K.mute, a: 'c' }))}
+      ${Box(null, 0, 366, 64, null)}`;
 
     return html`<div>
       ${TabHeader()}
-      ${L(18, 70, 240, 32, 'Transactions', { s: 17 })}
-      ${anyOn ? L(268, 74, 110, 26, 'Clear filters', { s: 8.5, w: 6, c: K.or, a: 'r', onClick: clear, id: 'clearFilters' }) : null}
-      ${TI(12, 110, 366, 38, q, v => { l.q = v; rerender(); }, { hint: 'Search payee, description or category', fill: K.card, r: 19, pad: 38, padR: 12, id: 'search' })}
-      ${I(24, 119, 20, 20, 'Search', K.sub, { pad: 2 })}
-      ${pill(12, perOn, 'CalendarBlank', 'PERIOD', G.gblTxAll ? 'All time' : G.gblTxLbl, 'per', 'pillPer')}
-      ${pill(136, accOn, 'Money', 'ACCOUNT', accOn ? (acc(l.locTxAcc) || {}).AccName : 'All', 'acc', 'pillAcc')}
-      ${pill(260, catOn, 'Tag', 'CATEGORY', catOn ? l.locTxCat : 'All', 'cat', 'pillCat')}
-      ${Box(12, 208, 366, 34, html`${typeBtn('All', 3)}${typeBtn('Expense', 93)}${typeBtn('Income', 183)}${typeBtn('Transfer', 273)}`, { fill: K.card, r: 17, b: K.line })}
-      ${FlowCard(inV, outV, G.gblTxAll ? 'All time' : G.gblTxLbl, { x: 12, y: 250, id: 'txFlow' })}
-      ${L(16, 376, 260, 14, list.length + ' TRANSACTIONS', { s: 7.5, w: 6, c: K.sub, id: 'txCount' })}
-      ${Gal(12, 398, 366, 368, list, 54, txnRow, { scroll: true, stretch: true, onSelect: openTxn, key: t => t.TxnId })}
-      ${!list.length ? L(12, 428, 366, 40, 'No transactions for this filter.', { s: 10, c: K.mute, a: 'c' }) : null}
+      ${L(18, 68, 240, 32, 'Transactions', { s: 17 })}
+      ${anyOn ? B(268, 72, 110, 28, 'Clear filters', { fill: 'rgba(255,106,0,0.1)', b: 'rgba(255,106,0,0.35)', c: K.or, r: 14, s: 8, onClick: clear, id: 'clearFilters' }) : null}
+      ${Flow(0, 104, 390, 662, kids, { gap: 10 })}
       ${Fab(() => { G.gblEditMode = 'new'; G.gblTxnId = ''; Navigate('scrTxnEdit'); })}
       ${NavBar(2)}
       ${l.locSheet ? Sheet(l) : null}
@@ -114,7 +129,7 @@ function Sheet(l) {
       ${R(175, 10, 40, 4, K.line)}
       ${L(20, 24, 310, 30, l.locSheet === 'per' ? 'Choose a period' : l.locSheet === 'acc' ? 'Choose an account' : 'Choose a category', { s: 14 })}
       ${I(338, 22, 34, 34, 'Cancel', K.sub, { pad: 8, onClick: close, label: 'Close' })}
-      ${body}`, { fill: K.card, r: 22, b: K.line, st: 'border-bottom-left-radius:0;border-bottom-right-radius:0;', id: 'sheet' })}
+      ${body}`, { fill: K.card, r: 22, b: HAIR, st: 'border-bottom-left-radius:0;border-bottom-right-radius:0;', id: 'sheet' })}
   </div>`;
 }
 
@@ -180,8 +195,8 @@ export const scrTxnDetail = {
       ${Card(null, 0, 366, 148, html`
         ${L(16, 14, 246, 22, 'Actions', { s: 11.5, w: 6 })}
         ${B(16, 46, 162, 40, 'Edit', { fill: K.or, c: '#FFFFFF', r: 20, s: 10, disabled: !canEdit, onClick: () => { G.gblEditMode = 'edit'; Navigate('scrTxnEdit'); }, id: 'tdEdit' })}
-        ${B(188, 46, 162, 40, 'Duplicate', { fill: K.field, b: K.line, r: 20, s: 10, disabled: !canEdit, onClick: () => { G.gblEditMode = 'dup'; Navigate('scrTxnEdit'); }, id: 'tdDup' })}
-        ${B(16, 94, 162, 40, T.TxIsSplit ? 'Edit split' : 'Split', { fill: K.field, b: K.line, r: 20, s: 10, disabled: !canEdit, onClick: () => Navigate('scrSplit'), id: 'tdSplit' })}
+        ${B(188, 46, 162, 40, 'Duplicate', { fill: K.field, b: HAIR, r: 20, s: 10, disabled: !canEdit, onClick: () => { G.gblEditMode = 'dup'; Navigate('scrTxnEdit'); }, id: 'tdDup' })}
+        ${B(16, 94, 162, 40, T.TxIsSplit ? 'Edit split' : 'Split', { fill: K.field, b: HAIR, r: 20, s: 10, disabled: !canEdit, onClick: () => Navigate('scrSplit'), id: 'tdSplit' })}
         ${B(188, 94, 162, 40, l.locConfirmDel ? 'Tap to confirm' : 'Delete', { fill: K.field, b: K.red, c: K.red, r: 20, s: 10, disabled: !canDel, onClick: del, id: 'tdDel' })}`)}
       ${note ? L(null, 0, 366, 30, note, { s: 8, c: K.mute, wrap: true, st: 'position:relative;flex:none;' }) : null}
       ${Card(null, 0, 366, 52 + aud.length * 44, html`
@@ -234,11 +249,11 @@ export const scrTxnEdit = {
     const ps = payeeState(l);
     const income = l.locType === 'Income';
     const cats = DB.categories.filter(c => c.CatActive && (c.CatType === l.locType || (l.locType === 'Expense' && c.CatType === 'Savings/Asset'))).map(c => c.CatName).sort();
-    const accs = DB.accounts.filter(a => a.AccStatus !== 'Closed').map(a => a.AccName).sort();
+    const accs = DB.accounts.filter(a => a.AccStatus !== 'Closed' && a.AccType !== 'System').map(a => a.AccName).sort();
     const accVal = l.acc || accs[0] || '';
     const seg = (t, x) => B(x, 3, 100, 32, t, { fill: l.locType === t ? K.or : 'transparent', c: l.locType === t ? '#FFFFFF' : K.sub, r: 16, s: 9.5, id: 'seg-' + t,
       onClick: () => {
-        if (t === 'Transfer') { if (mode === 'edit') Notify('To make this a transfer, delete it and record a transfer.', 'warning'); else Navigate('scrTransfer'); return; }
+        if (t === 'Transfer') { if (mode === 'edit') Notify('To make this a transfer, delete it and record a transfer.', 'warning'); else Replace('scrTransfer'); return; }
         l.locType = t; l.locCat = ''; rerender();
       } });
     const row = (y, ic, cap, ctrl) => html`
@@ -249,12 +264,12 @@ export const scrTxnEdit = {
     const resH = ps.matches.length ? ps.matches.length * 44 + 8 : 44 + 8;
 
     const form = html`
-      ${Box(30, 4, 306, 38, html`${seg('Expense', 3)}${seg('Income', 103)}${seg('Transfer', 203)}`, { fill: K.card, r: 19, b: K.line })}
+      ${Box(30, 4, 306, 38, html`${seg('Expense', 3)}${seg('Income', 103)}${seg('Transfer', 203)}`, { fill: SURFACE, r: 19, b: HAIR })}
       ${L(0, 62, 366, 14, 'AMOUNT  ·  RM', { s: 7.5, w: 6, c: K.mute, a: 'c' })}
       ${TI(20, 78, 326, 56, l.amt, v => { l.amt = v; rerender(); }, { hint: '0.00', num: true, s: 26, w: 6, a: 'c', fill: 'transparent', bt: 0, c: income ? K.grn : K.text, pad: 0, id: 'amount' })}
       ${R(113, 136, 140, 2, income ? K.grn : K.or)}
       ${L(0, 144, 366, 18, (income ? 'Received' : 'Spent') + '  ·  ' + fmtD(l.locD_teDate, 'dddd, dd mmmm yyyy'), { s: 8, c: K.sub, a: 'c' })}
-      ${Card(0, 178, 366, 350, html`
+      ${Card(0, 178, 366, 292, html`
         ${row(13, 'Person', income ? 'PAYER' : 'PAYEE', null)}
         ${TI(54, 22, 266, 32, l.payeeQ, v => { l.payeeQ = v; rerender(); }, { hint: 'Type to search your payees', fill: K.card, bt: 0, pad: 6, id: 'payee',
           onChange: () => { const s = payeeState(l); if (s.exact) pickPayee(l, s.exact); else if (s.matches.length === 1) pickPayee(l, s.matches[0]); } })}
@@ -264,7 +279,7 @@ export const scrTxnEdit = {
         ${row(129, 'Money', income ? 'RECEIVED INTO' : 'PAID FROM', DD(54, 138, 296, 32, accs, accVal, v => { l.acc = v; rerender(); }, { fill: K.card, bt: 0, chev: K.sub, chevBg: K.card, pad: 6, id: 'account' }))}
         ${row(187, 'CalendarBlank', 'DATE', DateBox(l, 'teDate', 54, 196, 296, 32, { fill: K.card, border: false, pad: 6, icoRight: 4 }))}
         ${row(245, 'Edit', 'DESCRIPTION', TI(54, 254, 296, 32, l.desc, v => { l.desc = v; rerender(); }, { hint: 'What was it for?', fill: K.card, bt: 0, pad: 6, id: 'desc' }))}
-        ${row(303, 'Note', 'NOTES', TI(54, 312, 296, 32, l.note, v => { l.note = v; rerender(); }, { hint: 'Optional', fill: K.card, bt: 0, pad: 6, id: 'note' }))}`)}
+`, { fill: K.card })}
       ${ps.searching ? Box(46, 230, 304, resH, html`
         ${Gal(0, 4, 304, ps.matches.length * 44, ps.matches, 44, p => html`
           ${C(12, 11, 22, K.card)}${L(12, 11, 22, 22, p.PyName.slice(0, 1).toUpperCase(), { s: 7.5, w: 7, a: 'c', c: K.or })}
@@ -273,7 +288,7 @@ export const scrTxnEdit = {
           ${R(44, 43, 248, 1, K.line)}`, { onSelect: p => pickPayee(l, p), key: p => p.PyName })}
         ${!ps.matches.length ? L(14, 4, 276, 44, 'No payee matches. Add new payees in Settings → Payees.', { s: 8, c: K.sub, wrap: true }) : null}`,
       { fill: K.field, r: 12, b: K.or, id: 'payeeResults' }) : null}
-      ${L(0, 538, 366, 16, 'Only payees from your list can be used  ·  Settings → Payees', { s: 8, c: K.mute, a: 'c' })}`;
+      ${L(0, 482, 366, 16, 'Only payees from your list can be used  ·  Settings → Payees', { s: 8, c: K.mute, a: 'c' })}`;
 
     const onSave = () => guard(async () => {
       const amt = Value(l.amt);
@@ -314,7 +329,7 @@ export const scrTxnEdit = {
     const title = mode === 'edit' ? 'Edit transaction' : mode === 'dup' ? 'Duplicate transaction' : 'New transaction';
     return html`<div>
       ${DetailHeader(title)}
-      ${Flow(0, 66, 390, 700, Box(null, 0, 366, 566, form, { st: 'overflow:visible' }), { pad: [14, 12, 16, 12], gap: 8 })}
+      ${Flow(0, 66, 390, 700, Box(null, 0, 366, 508, form, { st: 'overflow:visible' }), { pad: [14, 12, 16, 12], gap: 8 })}
       ${SaveBar('Save transaction', onSave, 'saveTxn')}
       ${Calendar(l, 'teDate')}
     </div>`;
@@ -449,8 +464,8 @@ export const scrSplit = {
         ${L(16, 14, 246, 22, 'Add a line', { s: 11.5, w: 6 })}
         ${DD(16, 44, 334, 40, cats, catV, v => { l.cat = v; rerender(); }, { id: 'spCat' })}
         ${TI(16, 92, 216, 40, l.locFill, v => { l.locFill = v; rerender(); }, { hint: 'Amount', num: true, id: 'spAmt' })}
-        ${B(240, 92, 110, 40, 'Remaining', { fill: K.field, b: K.line, r: 10, s: 9.5, onClick: () => { l.locFill = String(Math.max(left, 0)); rerender(); }, id: 'spFill' })}`)}
-      ${B(null, 0, 366, 40, '＋  Add line', { fill: K.field, b: K.line, r: 20, s: 10, onClick: addLine, st: 'position:relative;flex:none;', id: 'spAdd' })}
+        ${B(240, 92, 110, 40, 'Remaining', { fill: K.field, b: HAIR, r: 10, s: 9.5, onClick: () => { l.locFill = String(Math.max(left, 0)); rerender(); }, id: 'spFill' })}`)}
+      ${B(null, 0, 366, 40, '＋  Add line', { fill: K.field, b: HAIR, r: 20, s: 10, onClick: addLine, st: 'position:relative;flex:none;', id: 'spAdd' })}
       ${P.TxIsSplit ? B(null, 0, 366, 40, 'Remove split', { fill: K.field, b: K.red, c: K.red, r: 20, s: 10, onClick: unsplit, st: 'position:relative;flex:none;', id: 'spRemove' }) : null}
       ${Box(null, 0, 366, 16, null)}`;
     return html`<div>

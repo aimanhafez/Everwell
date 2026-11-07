@@ -1,12 +1,13 @@
 // Everwell — start-up: scale the 390 x 844 canvas to the device, register screens, load data (App.OnStart).
 import { html, render } from './vendor/preact-htm.js';
 import { NAV, CONN, mount, rerender, loadAll, Navigate, stStart, Notify, K } from './core.js';
+import { autoSweep } from './sweep.js';
 import { scrHome } from './screens/home.js';
 import { scrAccounts, scrAccountDetail, scrAccountEdit } from './screens/accounts.js';
 import { scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit } from './screens/transactions.js';
-import { scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, connect } from './screens/more.js';
+import { scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, connect } from './screens/more.js';
 
-Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, connect });
+Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, connect });
 
 const stage = document.getElementById('stage');
 mount(stage);
@@ -47,6 +48,7 @@ async function boot() {
     await loadAll();
     NAV.stack = [];
     Navigate(stStart() ? 'scrHome' : 'scrSetup'); // StartScreen: If(IsBlank(StStart), scrSetup, scrHome)
+    autoSweep().then(() => rerender()).catch(e => Notify('Monthly sweep could not run: ' + e.message + ' It will retry next time you open Everwell.', 'error'));
   } catch (e) {
     if (e.code === 'AUTH') { CONN.authError = e.message; NAV.stack = []; Navigate('connect'); return; }
     splash(navigator.onLine ? e.message : "You're offline. Connect to the internet to load your data.", boot);

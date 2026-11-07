@@ -1,4 +1,4 @@
-# Everwell v4.2.5 (web version)
+# Everwell v4.3.0 (web version)
 
 *Live well today. Build well for tomorrow.*
 
@@ -18,6 +18,25 @@ The screens are Setup, Home, Accounts, Account detail, New/Edit account, Transac
 | `index.html`, `styles.css`, `js/` | The app |
 | `manifest.webmanifest`, `sw.js`, `icons/` | Makes it behave like an app on your iPhone |
 | `apps-script/Code.gs` | Goes into your Google Sheet (it replaces SharePoint) |
+
+## Updating from v4.2.5 to v4.3.0 (your data stays)
+
+1. **Google Sheet:** open Apps Script. Replace everything in `Code.gs` with the new `apps-script/Code.gs`, then **Save**. Go to **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The URL stays the same, and the Sheet gets new columns (`StSweepAuto`, `StSweepFrom`, `StSweepLog`, `AccSweep`) the next time the app connects.
+2. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js`, `icons` and `apps-script` folders**. Files with the same name are replaced. Click **Commit changes**.
+3. **iPhone:** close Everwell fully and open it again. You won't need to reconnect.
+
+## What's new in v4.3.0
+
+- **Home:** a new month heading, the date range under the month, the cash flow card without the month label, and up to 10 recent transactions. Two new cards: **Next 14 days** (bills, card payments, committed amount and safe to spend) and **Month-end forecast**.
+- **Transactions:** clearer Period, Account and Category filters, and the whole page scrolls as one. The Notes row is removed from Add transaction.
+- **Analysis:** shows "Deploying soon." for now.
+- **Settings:** Fund transfer and Alerts are removed. **Activity log** now has its own page with every entry. **Data** and **Data Connection** actions ask for the password first. This only stops mis-taps: the password sits in the app's code, which is public on GitHub.
+- **Accounts:** a **Monthly Balance Sweep** section. On the last day of each financial month, each linked account's balance moves into the **Balance Sweep** system account with a real transfer.
+  - Debit cards are linked by default. You can switch e-wallets and cash on in the account's settings. Credit cards are never swept.
+  - Zero balances are skipped, and negative balances are flagged for review, then retried.
+  - A month is never swept twice, and sweeps never go backwards in time.
+  - Automatic sweeps run when you open the app after month end.
+- **Design:** refined cards, labels, inputs and buttons, and a frosted bottom bar, all in the same colours and fonts.
 
 ---
 
@@ -86,7 +105,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'everwell-4.2.5-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'everwell-4.3.0-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting
