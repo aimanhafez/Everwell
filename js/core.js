@@ -1,0 +1,459 @@
+// Everwell — core: state, data access, Power Fx-like helpers and drawing primitives.
+// Every screen is drawn on a 390 x 844 canvas (the Power Apps phone layout) and scaled to the device.
+import { html, render } from './vendor/preact-htm.js';
+export { html };
+
+export const VERSION = '4.2.5';
+
+/* ───────────── Colours (same values as the Power App) ───────────── */
+export const K = {
+  bg: '#0D0F12', card: '#16191E', field: '#1E2228', line: '#262A31', sep: '#21252B',
+  text: '#F4F2EE', sub: '#9AA0A8', mute: '#626872', or: '#FF6A00', grn: '#34C77B', red: '#E5484D', gold: '#E9B949',
+  orSoft: 'rgba(255,106,0,0.12)', orBorder: 'rgba(255,106,0,0.45)', orTint: 'rgba(255,106,0,0.1)'
+};
+export const PALETTE = ['#FF6A00', '#E5484D', '#A3236F', '#E9B949', '#6B7178', '#34C77B'];
+
+/* ───────────── Data (the SharePoint lists, now Google Sheet tabs) ───────────── */
+export const DB = { settings: null, accounts: [], categories: [], payees: [], recurring: [], txns: [], audit: [] };
+
+/* ───────────── Global variables (Set(...) in the Power App) ───────────── */
+export const G = {
+  gblCycleDay: 28, gblMonth: 1, gblYear: 2026, gblFrom: '', gblTo: '',
+  gblAccId: 'ACC-0001', gblTxnId: '', gblEditMode: 'new', gblCatTab: 'Categories',
+  gblPrefill: { PfAcc: '', PfType: 'Expense', PfAmt: 0, PfCat: '', PfPayee: '', PfRule: '', PfDate: '' },
+  gblTxAll: true, gblTxFrom: '', gblTxTo: '', gblTxLbl: 'All time'
+};
+
+/* ───────────── Screen-local variables (UpdateContext) ───────────── */
+export const LOC = {};
+export function loc(scr) { return LOC[scr] || (LOC[scr] = {}); }
+
+/* ───────────── Dates (kept as 'yyyy-mm-dd' text) ───────────── */
+const p2 = n => (n < 10 ? '0' : '') + n;
+export function D(y, m, d) { // like Date(y, m, d) — overflow rolls over
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() + '-' + p2(dt.getUTCMonth() + 1) + '-' + p2(dt.getUTCDate());
+}
+export function parts(ds) { return ds.split('-').map(Number); }
+export function Year(ds) { return parts(ds)[0]; }
+export function Month(ds) { return parts(ds)[1]; }
+export function Day(ds) { return parts(ds)[2]; }
+export function Today() { const d = new Date(); return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()); }
+export function addDays(ds, n) { const [y, m, d] = parts(ds); return D(y, m, d + n); }
+export function addMonths(ds, n) { // DateAdd(..., Months) clamps to the month's last day
+  const [y, m, d] = parts(ds);
+  const idx = y * 12 + (m - 1) + n, ny = Math.floor(idx / 12), nm = idx % 12 + 1;
+  const last = new Date(Date.UTC(ny, nm, 0)).getUTCDate();
+  return D(ny, nm, Math.min(d, last));
+}
+export function addYears(ds, n) { return addMonths(ds, 12 * n); }
+export function diffDays(a, b) { const [y1, m1, d1] = parts(a), [y2, m2, d2] = parts(b); return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 864e5); }
+export function weekday(ds) { const [y, m, d] = parts(ds); return new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 1; } // Sunday = 1
+export const minD = (a, b) => (a < b ? a : b);
+export const maxD = (a, b) => (a > b ? a : b);
+
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export { MON };
+export function fmtD(ds, f) {
+  if (!ds) return '';
+  const [y, m, d] = parts(ds);
+  switch (f) {
+    case 'dd mmm yyyy': return p2(d) + ' ' + MON[m - 1] + ' ' + y;
+    case 'dd mmm': return p2(d) + ' ' + MON[m - 1];
+    case 'mmm yyyy': return MON[m - 1] + ' ' + y;
+    case 'mmmm yyyy': return MONTH[m - 1] + ' ' + y;
+    case 'dd/mm/yyyy': return p2(d) + '/' + p2(m) + '/' + y;
+    case 'dddd, dd mmmm yyyy': return DOW[weekday(ds) - 1] + ', ' + p2(d) + ' ' + MONTH[m - 1] + ' ' + y;
+    case 'mmm': return MON[m - 1];
+    case 'dd': return p2(d);
+    default: return ds;
+  }
+}
+export function fmtTime(iso, f) {
+  if (!iso) return '';
+  const t = new Date(iso);
+  const dd = p2(t.getDate()), mm = p2(t.getMonth() + 1), hh = p2(t.getHours()), mi = p2(t.getMinutes());
+  return f === 'dd/mm hh:mm' ? `${dd}/${mm} ${hh}:${mi}` : `${dd}/${mm}/${t.getFullYear()} ${hh}:${mi}`;
+}
+/** Parses "dd/mm/yyyy" the way the app's date boxes do. Returns a date or null. */
+export function parseDMY(text) {
+  const t = String(text || '').trim().replace(/[-.]/g, '/');
+  const p = t.split('/');
+  if (p.length !== 3) return null;
+  const d = Number(p[0]) || 0, m = Number(p[1]) || 0, y0 = Number(p[2]) || 0;
+  const y = y0 < 100 ? 2000 + y0 : y0;
+  if (m >= 1 && m <= 12 && d >= 1 && y >= 1900 && y <= 2100 && d <= new Date(Date.UTC(y, m, 0)).getUTCDate()) return D(y, m, d);
+  return null;
+}
+
+/* ───────────── Financial months (cycle day, default 28) ───────────── */
+export function CD() { return G.gblCycleDay || 28; }
+/** The month a date belongs to (first day of that calendar month). */
+export function PLABEL(ds, cd = CD()) {
+  const [y, m, d] = parts(ds);
+  return cd > 1 && d >= cd ? addMonths(D(y, m, 1), 1) : D(y, m, 1);
+}
+export function PSTART(y, m, cd = CD()) { return cd === 1 ? D(y, m, 1) : addMonths(D(y, m, cd), -1); }
+export function PEND(y, m, cd = CD()) { return addDays(addMonths(PSTART(y, m, cd), 1), -1); }
+export function perKey(ds) { const l = PLABEL(ds); return Year(l) * 100 + Month(l); }
+export function ordinal(o) { const k = o >= 11 && o <= 13 ? 0 : o % 10; return o + (k === 1 ? 'st' : k === 2 ? 'nd' : k === 3 ? 'rd' : 'th'); }
+
+export function setMonth(y, m) {
+  G.gblYear = y; G.gblMonth = m;
+  G.gblFrom = PSTART(y, m);
+  G.gblTo = addDays(addMonths(G.gblFrom, 1), -1);
+}
+export function monthLabel(f) { return fmtD(D(G.gblYear, G.gblMonth, 1), f); }
+export function resetTxPeriodToMonth() {
+  G.gblTxAll = false; G.gblTxFrom = G.gblFrom; G.gblTxTo = G.gblTo; G.gblTxLbl = monthLabel('mmm yyyy');
+}
+
+/* ───────────── Numbers ───────────── */
+const nf2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const nf0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+export const n2 = v => nf2.format(Math.round((Number(v) || 0) * 100) / 100);
+export const n0 = v => nf0.format(Math.round(Number(v) || 0));
+export const RM = v => 'RM ' + n2(v);
+export const sRM = v => (v < 0 ? '-' : '') + 'RM ' + n2(Math.abs(v)); // If(x<0,"-","") & "RM " & Text(Abs(x))
+export const pct = v => Math.round((Number(v) || 0) * 100) + '%';
+export function Value(t) { const s = String(t ?? '').replace(/,/g, '').trim(); if (s === '') return null; const n = Number(s); return isFinite(n) ? n : null; }
+export const sum = (list, f) => list.reduce((s, x) => s + (Number(f(x)) || 0), 0);
+export const round2 = v => Math.round(v * 100) / 100;
+
+/* ───────────── Derived figures (replace the EW_Summary list) ───────────── */
+export function bal(accId) {
+  let b = 0;
+  for (const t of DB.txns) if (t.TxAcc === accId && !t.TxParent) b += t.TxDir === 'In' ? t.TxAmt : -t.TxAmt;
+  return round2(b);
+}
+/** Account movement per month key (A|period|account) */
+export function accMoveUpTo(accId, key) {
+  let b = 0;
+  for (const t of DB.txns) if (t.TxAcc === accId && !t.TxParent && perKey(t.TxDate) <= key) b += t.TxDir === 'In' ? t.TxAmt : -t.TxAmt;
+  return round2(b);
+}
+/** Category totals for a month key or a year: {In, Out, N} — Income/Expense only, split lines instead of split parents. */
+export function catTotals(filter) {
+  const r = { In: 0, Out: 0, N: 0, by: {} };
+  for (const t of DB.txns) {
+    if (t.TxIsSplit || (t.TxType !== 'Income' && t.TxType !== 'Expense')) continue;
+    const k = perKey(t.TxDate);
+    if (!filter(k)) continue;
+    r.N++;
+    if (t.TxType === 'Income') r.In += t.TxAmt; else r.Out += t.TxAmt;
+    const c = r.by[t.TxCat] || (r.by[t.TxCat] = { In: 0, Out: 0, N: 0 });
+    c.N++; if (t.TxType === 'Income') c.In += t.TxAmt; else c.Out += t.TxAmt;
+  }
+  return r;
+}
+/** PSUM: sum of a type in the selected month (Home/Analysis) */
+export function psum(type, from = G.gblFrom, to = G.gblTo) {
+  let s = 0;
+  for (const t of DB.txns) if (!t.TxIsSplit && t.TxDate >= from && t.TxDate <= to && t.TxType === type) s += t.TxAmt;
+  return round2(s);
+}
+/** Spending by category for the selected month (Expense minus Refund), biggest first */
+export function catSpend(from = G.gblFrom, to = G.gblTo) {
+  const by = {};
+  for (const t of DB.txns) {
+    if (t.TxIsSplit || t.TxDate < from || t.TxDate > to) continue;
+    if (t.TxType === 'Expense') by[t.TxCat] = (by[t.TxCat] || 0) + t.TxAmt;
+    if (t.TxType === 'Refund') by[t.TxCat] = (by[t.TxCat] || 0) - t.TxAmt;
+  }
+  return DB.categories.filter(c => c.CatType === 'Expense' || c.CatType === 'Savings/Asset')
+    .map(c => ({ ...c, Amt: round2(by[c.CatName] || 0) })).filter(c => c.Amt > 0)
+    .sort((a, b) => b.Amt - a.Amt);
+}
+export const acc = id => DB.accounts.find(a => a.AccId === id);
+export const accByName = nm => DB.accounts.find(a => a.AccName === nm);
+export const txn = id => DB.txns.find(t => t.TxnId === id);
+export const dueCount = () => DB.recurring.filter(r => r.RcActive && r.RcNext <= Today()).length;
+export const txSortKey = t => t.TxDate.replace(/-/g, '') + String(t.TxSeq).padStart(6, '0');
+export const byTxDesc = (a, b) => (txSortKey(a) < txSortKey(b) ? 1 : -1);
+export function nextTxSeq() { return DB.txns.reduce((m, t) => Math.max(m, t.TxSeq || 0), 0) + 1; }
+export function shortName(nm) {
+  const t = nm.trim();
+  const sp = t.indexOf(' ');
+  return (sp < 0 ? t.slice(0, 2) : t[0] + t[sp + 1]).toUpperCase();
+}
+
+/* ───────────── Connection + API (SharePoint → Google Sheet) ───────────── */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* ignore */ } },
+  del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } }
+};
+export { store };
+export const CONN = { v: store.get('ew_conn', null) };
+
+let busyN = 0;
+function setBusy(d) { busyN += d; document.body.classList.toggle('busy', busyN > 0); }
+
+export async function api(action, payload, conn = CONN.v) {
+  if (!conn) throw new Error('Not connected.');
+  if (!navigator.onLine) throw new Error("You're offline. Connect to the internet to save to Google Sheets.");
+  setBusy(1);
+  try {
+    let res;
+    try {
+      res = await fetch(conn.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ key: conn.key, action, payload: payload || {} }) });
+    } catch (e) { throw new Error("Can't reach Google. Check your internet connection."); }
+    const text = await res.text();
+    let j;
+    try { j = JSON.parse(text); } catch (e) { throw new Error('Unexpected reply. Check the Web app URL and that access is set to "Anyone".'); }
+    if (!j.ok) { const err = new Error(j.error || 'Something went wrong.'); err.code = j.code; throw err; }
+    return j.data;
+  } finally { setBusy(-1); }
+}
+
+/** Loads every list (App.OnStart). */
+export async function loadAll() {
+  const d = await api('bootstrap');
+  DB.settings = d.settings ? { ...d.settings } : null;
+  DB.accounts = d.accounts;
+  DB.categories = d.categories;
+  DB.payees = d.payees;
+  DB.recurring = d.recurring;
+  DB.txns = d.transactions;
+  DB.audit = d.activity;
+  G.gblCycleDay = (DB.settings && DB.settings.StCycleDay) || 28;
+  const l = PLABEL(Today());
+  setMonth(Year(l), Month(l));
+  G.gblTxAll = false; G.gblTxFrom = G.gblFrom; G.gblTxTo = G.gblTo; G.gblTxLbl = monthLabel('mmm yyyy');
+  store.set('ew_cache_at', new Date().toISOString());
+  return d;
+}
+
+/**
+ * Saves a set of changes. ch = { up: {Table:[rows]}, del: {Table:[keys]}, log: [{AuAction, AuRef, AuDetail}] }
+ * The Google Sheet is updated first; the app's lists change only when the save worked.
+ */
+export async function save(ch) {
+  const r = await api('commit', { upserts: ch.up || {}, deletes: ch.del || {}, log: ch.log || [] });
+  const map = { EW_Accounts: ['accounts', 'AccId'], EW_Categories: ['categories', 'CatId'], EW_Payees: ['payees', 'PyName'], EW_Recurring: ['recurring', 'RcId'], EW_Transactions: ['txns', 'TxnId'] };
+  for (const [t, keys] of Object.entries(ch.del || {})) {
+    const [list, k] = map[t];
+    DB[list] = DB[list].filter(x => !keys.includes(x[k]));
+  }
+  for (const [t, rows] of Object.entries(ch.up || {})) {
+    if (t === 'EW_Settings') { DB.settings = { ...rows[0] }; continue; }
+    const [list, k] = map[t];
+    for (const row of rows) {
+      const i = DB[list].findIndex(x => x[k] === row[k]);
+      if (i >= 0) DB[list][i] = { ...row }; else DB[list].push({ ...row });
+    }
+  }
+  for (const l of r.logged || []) DB.audit.unshift(l);
+  return r;
+}
+export function settingsRow(over = {}) {
+  const s = DB.settings || { Title: 'Settings', StStart: '', StCycleDay: 28, StLowBal: 200, StCurrency: 'MYR' };
+  return { Title: 'Settings', StStart: s.StStart || '', StCycleDay: s.StCycleDay || 28, StLowBal: s.StLowBal ?? 200, StCurrency: s.StCurrency || 'MYR', ...over };
+}
+export const stStart = () => (DB.settings && DB.settings.StStart) || '';
+export const lowBal = () => (DB.settings ? Number(DB.settings.StLowBal) : 200);
+
+/* ───────────── Navigation (Navigate / Back) ───────────── */
+export const NAV = { stack: [], screens: {} };
+export function Navigate(name) {
+  NAV.stack.push(name);
+  if (NAV.stack.length > 40) NAV.stack.splice(0, NAV.stack.length - 40);
+  showScreen(name);
+}
+/** Leave the current (form) screen and go to `name`: back to it if it is just below, otherwise open it. */
+export function Replace(name) {
+  NAV.stack.pop();
+  if (NAV.stack[NAV.stack.length - 1] === name) showScreen(name);
+  else Navigate(name);
+}
+export function Back() {
+  if (NAV.stack.length > 1) NAV.stack.pop();
+  showScreen(NAV.stack[NAV.stack.length - 1]);
+}
+function showScreen(name) {
+  const s = NAV.screens[name];
+  if (s && s.onVisible) s.onVisible(loc(name));
+  rerender();
+  requestAnimationFrame(() => document.querySelectorAll('#stage .scroll').forEach(el => { el.scrollTop = 0; }));
+}
+export function current() { return NAV.stack[NAV.stack.length - 1]; }
+
+/* ───────────── Notify (Power Apps banner) ───────────── */
+let toastTimer;
+export function Notify(msg, kind = 'info') {
+  const el = document.getElementById('notify');
+  el.textContent = msg;
+  el.className = 'show ' + kind;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, kind === 'error' ? 5000 : 3000);
+}
+/** Runs a save action and reports errors like IfError(..., Notify("Couldn't save ...")) */
+export async function guard(fn) {
+  if (!navigator.onLine) { Notify("You're offline. Connect to the internet to save to Google Sheets.", 'error'); return; }
+  try { await fn(); } catch (e) {
+    if (e.code === 'AUTH') { CONN.authError = e.message; NAV.stack = ['connect']; rerender(); return; }
+    Notify("Couldn't save to Google Sheets: " + e.message, 'error');
+  }
+  rerender();
+}
+
+/* ───────────── Rendering ───────────── */
+let root;
+export function mount(el) { root = el; }
+let pending = false;
+export function rerender() {
+  if (pending) return;
+  pending = true;
+  // After the current event finishes (a microtask could redraw while a tap is still bubbling).
+  setTimeout(() => {
+    pending = false;
+    const name = current();
+    const s = NAV.screens[name];
+    render(s ? s.view(loc(name)) : html``, root);
+  }, 0);
+}
+
+/* ───────────── Drawing primitives (absolute, in canvas pixels) ───────────── */
+export const fs = pt => (pt * 4 / 3).toFixed(2) + 'px'; // Power Apps sizes are points
+const W = { 6: 600, 7: 700, 4: 400 };
+/** Absolute position. y can be {b: n} to anchor n px from the bottom of the 844 canvas. */
+export function pos(x, y, w, h) {
+  let s = `left:${x}px;width:${w}px;`;
+  if (typeof y === 'object') s += `bottom:${y.b}px;height:${h}px;`;
+  else s += `top:${y}px;height:${h}px;`;
+  return s;
+}
+export const fromBottom = (y, h) => ({ b: 844 - y - h });
+
+/** Label */
+export function L(x, y, w, h, text, o = {}) {
+  const st = pos(x, y, w, h) + `color:${o.c || K.text};font-size:${fs(o.s || 10)};font-weight:${W[o.w] || 400};` +
+    `text-align:${o.a === 'c' ? 'center' : o.a === 'r' ? 'right' : 'left'};` +
+    (o.wrap ? `white-space:normal;align-items:${o.top ? 'flex-start' : 'center'};line-height:1.25;` : '') + (o.font ? `font-family:${o.font};` : '') + (o.ls ? `letter-spacing:${o.ls}px;` : '') + (o.st || '');
+  return html`<div class="lbl ${o.wrap ? 'wrap' : ''} ${o.onClick ? 'tap' : ''}" style=${st} onClick=${o.onClick} data-t=${o.id}><span>${text}</span></div>`;
+}
+/** Rectangle */
+export function R(x, y, w, h, fill, o = {}) {
+  const st = pos(x, y, w, h) + `background:${fill};border-radius:${o.r || 0}px;` + (o.b ? `box-shadow:inset 0 0 0 ${o.bt || 1}px ${o.b};` : '') + (o.st || '');
+  return html`<div class="abs ${o.onClick ? 'tap' : ''}" style=${st} onClick=${o.onClick}></div>`;
+}
+/** Circle */
+export function C(x, y, d, fill, o = {}) { return R(x, y, d, d, fill, { ...o, r: d / 2 }); }
+/** Icon (Power Apps icon names) */
+export function I(x, y, w, h, name, color, o = {}) {
+  const pad = o.pad ?? 4;
+  const st = pos(x, y, w, h) + `color:${color};padding:${pad}px;` + (o.st || '');
+  return html`<div class="abs icon ${o.onClick ? 'tap' : ''}" style=${st} onClick=${o.onClick} aria-label=${o.label || name} role=${o.onClick ? 'button' : undefined}>${icon(name)}</div>`;
+}
+/** Button */
+export function B(x, y, w, h, text, o = {}) {
+  const st = pos(x, y, w, h) + `background:${o.fill || K.field};color:${o.c || K.text};border-radius:${o.r ?? Math.round(h / 2)}px;` +
+    `font-size:${fs(o.s || 10)};font-weight:${W[o.w || 6]};` + (o.b ? `box-shadow:inset 0 0 0 ${o.bt || 1}px ${o.b};` : '') + (o.st || '');
+  return html`<button class="btn" style=${st} disabled=${!!o.disabled} onClick=${o.onClick} data-t=${o.id}>${text}</button>`;
+}
+/** Card / container (manual layout). In a flow, pass x=null to stack. */
+export function Box(x, y, w, h, kids, o = {}) {
+  const st = (x === null ? `position:relative;flex:none;width:${w}px;height:${h}px;` : pos(x, y, w, h) + 'position:absolute;') +
+    `background:${o.fill || 'transparent'};border-radius:${o.r || 0}px;` + (o.b ? `box-shadow:inset 0 0 0 ${o.bt || 1}px ${o.b};` : '') + (o.st || '');
+  return html`<div class="box" style=${st} data-t=${o.id}>${kids}</div>`;
+}
+export const Card = (x, y, w, h, kids, o = {}) => Box(x, y, w, h, kids, { fill: K.card, r: 14, b: K.line, ...o });
+/** Vertical auto-layout scroll container (LayoutMode.Auto). Top stays at y, bottom stays (844 - y - h) from the canvas bottom. */
+export function Flow(x, y, w, h, kids, o = {}) {
+  const pad = o.pad || [4, 12, 16, 12];
+  const st = `left:${x}px;width:${w}px;top:${y}px;bottom:${844 - y - h}px;padding:${pad[0]}px ${pad[1]}px ${pad[2]}px ${pad[3]}px;gap:${o.gap ?? 10}px;` + (o.st || '');
+  return html`<div class="scroll flow" style=${st}>${kids}</div>`;
+}
+/** Gallery: a list of fixed-height rows. o.scroll makes it scroll; o.stretch keeps its bottom edge anchored. o.wrap = columns. */
+export function Gal(x, y, w, h, items, size, tpl, o = {}) {
+  let st = pos(x, y, w, h);
+  if (o.stretch) st = `left:${x}px;width:${w}px;top:${y}px;bottom:${844 - y - h}px;`;
+  if (o.inset) st = `left:${x}px;width:${w}px;top:${o.inset[0]}px;bottom:${o.inset[1]}px;`;
+  if (o.horizontal) {
+    return html`<div class="abs gal hz" style=${st}>${items.map((it, i) => html`<div class="row" style=${`width:${size}px;height:${h}px;`} key=${o.key ? o.key(it) : i} onClick=${o.onSelect ? () => o.onSelect(it) : undefined}>${tpl(it, i)}</div>`)}</div>`;
+  }
+  const cw = o.wrap ? w / o.wrap : w;
+  return html`<div class="abs gal ${o.scroll ? 'scroll' : ''} ${o.wrap ? 'wrapg' : ''}" style=${st}>
+    ${items.map((it, i) => html`<div class="row ${o.onSelect ? 'tap' : ''}" style=${`width:${cw}px;height:${size}px;`} key=${o.key ? o.key(it) : i} onClick=${o.onSelect ? () => o.onSelect(it) : undefined}>${tpl(it, i)}</div>`)}
+  </div>`;
+}
+/** Text input */
+export function TI(x, y, w, h, value, onInput, o = {}) {
+  const st = pos(x, y, w, h) + `background:${o.fill || K.field};color:${o.c || K.text};font-size:${fs(o.s || 12)};font-weight:${W[o.w] || 400};border-radius:${o.r ?? 8}px;` +
+    `padding:0 ${o.padR ?? o.pad ?? 12}px 0 ${o.pad ?? 12}px;text-align:${o.a === 'c' ? 'center' : 'left'};` + (o.bt === 0 ? 'box-shadow:none;' : `box-shadow:inset 0 0 0 1px ${o.b || K.line};`) + (o.st || '');
+  if (o.multiline) {
+    return html`<textarea class="inp" style=${st + 'padding-top:10px;padding-bottom:10px;resize:none;'} placeholder=${o.hint || ''} value=${value ?? ''} maxlength=${o.max} onInput=${e => onInput(e.target.value)} data-t=${o.id}></textarea>`;
+  }
+  return html`<input class="inp ${o.bt === 0 ? 'nob' : ''}" style=${st} placeholder=${o.hint || ''} value=${value ?? ''} maxlength=${o.max}
+    inputmode=${o.num ? 'decimal' : undefined} autocomplete="off" autocorrect="off" spellcheck="false"
+    onInput=${e => onInput(e.target.value)} onChange=${o.onChange ? e => o.onChange(e.target.value) : undefined}
+    onKeyDown=${o.onChange ? e => { if (e.key === 'Enter') e.target.blur(); } : undefined} data-t=${o.id} />`;
+}
+/** Dropdown (classic) */
+export function DD(x, y, w, h, items, value, onChange, o = {}) {
+  const st = pos(x, y, w, h) + `background:${o.fill || K.field};border-radius:${o.r ?? 0}px;` + (o.bt === 0 ? '' : `box-shadow:inset 0 0 0 1px ${o.b || K.line};`);
+  return html`<div class="abs dd" style=${st}>
+    <select style=${`color:${K.text};font-size:${fs(o.s || 12)};padding:0 ${h}px 0 ${o.pad ?? 12}px;`} value=${value ?? ''} onChange=${e => onChange(e.target.value)} data-t=${o.id}>
+      ${o.allowEmpty || !items.includes(value) ? html`<option value="">${''}</option>` : null}
+      ${items.map(v => html`<option value=${v}>${v}</option>`)}
+    </select>
+    <div class="chev" style=${`width:${Math.min(h, 40)}px;background:${o.chevBg || o.fill || K.field};color:${o.chev || K.or};`}>${icon('ChevronDown')}</div>
+  </div>`;
+}
+/** Toggle */
+export function Tog(x, y, w, h, on, onChange) {
+  return html`<div class="abs tog ${on ? 'on' : ''}" style=${pos(x, y, w, h)} onClick=${() => onChange(!on)} role="switch" aria-checked=${on}><i></i></div>`;
+}
+/** HtmlViewer brand mark */
+export function Brand(x, y, w, h, center, big) {
+  return html`<div class="abs brand ${center ? 'c' : ''}" style=${pos(x, y, w, h)}>
+    <div class="mark" style=${`font-size:${big ? 30 : 25}px`}>Everwell<span>.</span></div>
+    <div class="tag" style=${`margin-top:${big ? 7 : 5}px;letter-spacing:${big ? 1.8 : 1.7}px`}>LIVE WELL TODAY. BUILD WELL FOR TOMORROW.</div>
+  </div>`;
+}
+/** Image from an SVG string */
+export function Svg(x, y, w, h, svg, o = {}) {
+  return html`<div class="abs svgimg ${o.stretch ? 'stretch' : ''}" style=${pos(x, y, w, h)} dangerouslySetInnerHTML=${{ __html: svg }}></div>`;
+}
+export function heroBg(h) {
+  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 366 ${h}' preserveAspectRatio='none'><defs><linearGradient id='g${h}' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#23272E'/><stop offset='1' stop-color='#121418'/></linearGradient><radialGradient id='r${h}' cx='1' cy='0' r='0.75'><stop offset='0' stop-color='#FF6A00' stop-opacity='0.30'/><stop offset='1' stop-color='#FF6A00' stop-opacity='0'/></radialGradient></defs><rect width='366' height='${h}' rx='16' fill='url(#g${h})'/><rect width='366' height='${h}' rx='16' fill='url(#r${h})'/><rect x='0.5' y='0.5' width='365' height='${h - 1}' rx='15.5' fill='none' stroke='#2C3038'/></svg>`;
+}
+export const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+
+/* ───────────── Icons (Power Apps icon set, drawn as SVG) ───────────── */
+const P = {
+  Reset: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/>',
+  Bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  ChevronLeft: '<path d="M15 4 7 12l8 8"/>',
+  ChevronRight: '<path d="m9 4 8 8-8 8"/>',
+  ChevronDown: '<path d="m4 8 8 8 8-8"/>',
+  Add: '<path d="M12 3v18M3 12h18"/>',
+  Home: '<path d="M3 11 12 3l9 8"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/>',
+  Money: '<rect x="2" y="6" width="20" height="12" rx="1.5"/><circle cx="12" cy="12" r="3"/><path d="M5.5 9v.01M18.5 15v.01"/>',
+  DetailList: '<path d="M9 5h12M9 12h12M9 19h12"/><rect x="3" y="3.5" width="3" height="3"/><rect x="3" y="10.5" width="3" height="3"/><rect x="3" y="17.5" width="3" height="3"/>',
+  Trending: '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+  Settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
+  Search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8"/>',
+  CalendarBlank: '<rect x="3" y="5" width="18" height="16" rx="1.5"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  Sync: '<path d="M20 11a8 8 0 0 0-14.3-4.3L4 9"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.3L20 15"/><path d="M20 20v-5h-5"/>',
+  Tag: '<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  ShoppingCart: '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.6 12.4a1 1 0 0 0 1 .8h9.7a1 1 0 0 0 1-.8L21 7H6"/>',
+  Person: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.4-4 4.4-6 8-6s6.6 2 8 6"/>',
+  Edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+  Note: '<path d="M5 3h10l4 4v14H5z"/><path d="M15 3v4h4M8 12h8M8 16h8"/>',
+  Cancel: '<path d="M5 5l14 14M19 5 5 19"/>',
+  Check: '<path d="m4 12.5 5 5L20 6.5"/>',
+  ArrowDown: '<path d="M12 4v16M5 13l7 7 7-7"/>',
+  Trash: '<path d="M4 6h16M9 6V4h6v2M6 6l1 15h10l1-15"/><path d="M10 10v7M14 10v7"/>'
+};
+export function icon(name) {
+  return html`<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" dangerouslySetInnerHTML=${{ __html: P[name] || '' }}></svg>`;
+}
+
+/** A full transaction row with every column filled in. */
+export function mkTxn(f) {
+  return { TxnId: '', TxSeq: 0, TxAcc: '', TxDate: Today(), TxType: 'Expense', TxDir: 'Out', TxAmt: 0, TxCat: '', TxPayee: '', TxDesc: '', TxNote: '', TxTrf: '', TxRef: '', TxParent: '', TxIsSplit: false, TxRule: '', ...f };
+}
+export const txnId = (date, seq) => 'TXN-' + Year(date) + '-' + String(seq).padStart(6, '0');
