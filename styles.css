@@ -1,0 +1,66 @@
+/* Everwell — shared styles. Layout itself is absolute, like the Power Apps canvas (390 x 844). */
+html, body { margin: 0; padding: 0; height: 100%; background: #0D0F12; overflow: hidden; overscroll-behavior: none; }
+body { -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+#safe-probe { position: fixed; visibility: hidden; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+#frame { position: fixed; left: 0; right: 0; top: 0; bottom: 0; overflow: hidden; background: #0D0F12; }
+#stage {
+  position: absolute; left: 0; top: 0; width: 390px; height: 844px; transform-origin: 0 0; overflow: hidden;
+  background: #0D0F12; color: #F4F2EE;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+#stage > div { position: absolute; inset: 0; }
+
+/* Primitives */
+.abs, .lbl, .box, .btn, .inp, .scroll { position: absolute; }
+.lbl { display: flex; align-items: center; overflow: hidden; white-space: nowrap; line-height: 1.2; }
+.lbl > span { width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.lbl.wrap > span { white-space: normal; overflow: visible; }
+.tap { cursor: pointer; }
+.btn { border: 0; margin: 0; padding: 0 4px; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.15; white-space: nowrap; overflow: hidden; }
+.btn:active:not(:disabled) { filter: brightness(1.15); }
+.btn:disabled { opacity: .45; cursor: default; }
+.icon { display: block; }
+.icon svg { display: block; }
+.icon.tap:active { opacity: .6; }
+.inp { border: 0; outline: none; margin: 0; font-family: inherit; appearance: none; -webkit-appearance: none; }
+.inp::placeholder { color: #626872; opacity: 1; }
+.inp:focus { box-shadow: inset 0 0 0 1px #FF6A00 !important; }
+.inp.nob:focus { box-shadow: none !important; }
+.box { overflow: hidden; }
+.scroll { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+.flow { display: flex; flex-direction: column; align-items: stretch; }
+.flow > * { flex: none; }
+.gal { overflow: hidden; }
+.gal.scroll { overflow-y: auto; }
+.gal .row { position: relative; flex: none; }
+.gal.hz { display: flex; flex-direction: row; overflow-x: auto; }
+.gal.wrapg { display: flex; flex-wrap: wrap; align-content: flex-start; }
+.row.tap:active { background: rgba(255, 255, 255, .03); }
+.dd select { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; outline: none; background: transparent; appearance: none; -webkit-appearance: none; font-family: inherit; cursor: pointer; }
+.dd select option { background: #1E2228; color: #F4F2EE; }
+.dd .chev { position: absolute; right: 1px; top: 1px; bottom: 1px; padding: 0 10px; display: flex; align-items: center; pointer-events: none; border-radius: 0; }
+.dd .chev svg { width: 100%; height: 14px; }
+.tog { border-radius: 99px; background: #626872; cursor: pointer; transition: background .15s; }
+.tog i { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.tog.on { background: #FF6A00; }
+.tog.on i { transform: translateX(28px); }
+.brand .mark { font-family: Georgia, "Times New Roman", serif; line-height: 1; color: #F4F2EE; letter-spacing: .4px; }
+.brand .mark span { color: #FF6A00; }
+.brand .tag { font-family: "Segoe UI", Arial, sans-serif; font-size: 7.5px; color: #8E949C; }
+.brand.c { text-align: center; }
+.svgimg svg { width: 100%; height: 100%; display: block; }
+.dim { background: rgba(0, 0, 0, .62); }
+
+/* Power Apps-style notification banner */
+#notify { position: fixed; left: 0; right: 0; top: 0; z-index: 100; padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px; font: 600 14px/1.35 "Segoe UI", -apple-system, Arial, sans-serif; color: #fff; transform: translateY(-110%); transition: transform .2s; pointer-events: none; }
+#notify.show { transform: none; }
+#notify.success { background: #1F7A4D; }
+#notify.error { background: #B4262B; }
+#notify.info, #notify.warning { background: #2A2F37; }
+#notify.warning { background: #8A6100; }
+#busybar { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 101; overflow: hidden; pointer-events: none; }
+body.busy #busybar::after { content: ""; position: absolute; top: 0; bottom: 0; width: 30%; background: #FF6A00; animation: ewbusy 1s linear infinite; }
+body.busy #frame { pointer-events: none; }
+@keyframes ewbusy { from { left: -30%; } to { left: 100%; } }
