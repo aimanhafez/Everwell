@@ -1,9 +1,9 @@
-// Everwell — core: state, data access, Power Fx-like helpers and drawing primitives.
+// Pocket Dreamer — core: state, data access, Power Fx-like helpers and drawing primitives.
 // Every screen is drawn on a 390 x 844 canvas (the Power Apps phone layout) and scaled to the device.
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '4.5.0';
+export const VERSION = '4.6.0';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -186,8 +186,10 @@ export function catSpend(from = G.gblFrom, to = G.gblTo) {
     const f = flowOf(t);
     if (f && f.side === 'Out') by[t.TxCat] = (by[t.TxCat] || 0) + f.v;
   }
-  return DB.categories.filter(c => c.CatType === 'Expense' || c.CatType === 'Savings/Asset')
-    .map(c => ({ ...c, Amt: round2(by[c.CatName] || 0) })).filter(c => c.Amt > 0)
+  const known = new Set(DB.categories.map(c => c.CatName));
+  const extra = Object.keys(by).filter(k => !known.has(k)).map(k => ({ CatName: k || 'Uncategorised', CatType: 'Expense' }));
+  return DB.categories.filter(c => c.CatType === 'Expense' || c.CatType === 'Savings/Asset').concat(extra)
+    .map(c => ({ ...c, Amt: round2(by[c.CatName === 'Uncategorised' && !known.has('Uncategorised') ? '' : c.CatName] || 0) })).filter(c => c.Amt > 0)
     .sort((a, b) => b.Amt - a.Amt);
 }
 export const acc = id => DB.accounts.find(a => a.AccId === id);
@@ -514,7 +516,7 @@ export function Tog(x, y, w, h, on, onChange) {
 /** HtmlViewer brand mark */
 export function Brand(x, y, w, h, center, big) {
   return html`<div class="abs brand ${center ? 'c' : ''}" style=${pos(x, y, w, h)}>
-    <div class="mark" style=${`font-size:${big ? 30 : 25}px`}>Everwell<span>.</span></div>
+    <div class="mark" style=${`font-size:${big ? 30 : 25}px`}>Pocket Dreamer<span>.</span></div>
     <div class="tag" style=${`margin-top:${big ? 7 : 5}px;letter-spacing:${big ? 1.8 : 1.7}px`}>LIVE WELL TODAY. BUILD WELL FOR TOMORROW.</div>
   </div>`;
 }

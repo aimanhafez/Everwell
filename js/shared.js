@@ -1,7 +1,7 @@
 // Pieces used on many screens: headers, bottom bar, save bar, month picker, cash-flow card, date box + calendar.
 import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Gal, TI, Brand, fs, Navigate, Back, Notify, loadAll, rerender, dueCount, HAIR, SURFACE,
-  fmtD, parseDMY, D, Year, Month, Day, addDays, addMonths, weekday, Today, setMonth, PSTART, RM, sRM, pct, monthLabel, guard, fromBottom
+  fmtD, parseDMY, D, Year, Month, Day, addDays, addMonths, weekday, Today, setMonth, PSTART, RM, sRM, pct, round2, monthLabel, guard, fromBottom
 } from './core.js';
 
 /* Top of the five main tabs: brand, refresh and bell. */
@@ -91,27 +91,27 @@ export function MonthGrid(year, setYear, isOn, pick, o = {}) {
 
 /* Cash-flow card: in, out, net, bar and a one-line summary. */
 export function FlowCard(inV, outV, label, o = {}) {
-  const net = inV - outV;
-  const tot = inV + outV;
-  const share = tot === 0 ? 0.5 : inV / tot;
-  const rate = inV === 0 ? (outV === 0 ? 'No activity in this period' : 'No income recorded in this period')
-    : net >= 0 ? 'You kept ' + pct(net / inV) + ' of your income'
-      : outV > 2 * inV ? 'Spending is RM ' + RM(-net).slice(3) + ' ahead of income so far'
-        : 'You spent ' + pct(outV / inV) + ' of your income';
+  const net = round2(inV - outV);
+  // one quiet badge instead of bars: how much of the income was kept (or overspent)
+  const badge = inV === 0 && outV === 0 ? ['NO ACTIVITY', K.mute, 'rgba(255,255,255,0.04)', 'rgba(255,255,255,0.08)']
+    : inV === 0 ? ['NO INCOME YET', K.sub, 'rgba(255,255,255,0.04)', 'rgba(255,255,255,0.08)']
+      : net >= 0 ? ['KEPT ' + pct(net / inV), K.grn, 'rgba(52,199,123,0.08)', 'rgba(52,199,123,0.28)']
+        : ['SPENT ' + pct(outV / inV), K.red, 'rgba(229,72,77,0.08)', 'rgba(229,72,77,0.3)'];
+  const netC = o.netColor ? o.netColor(net) : (net < 0 ? K.red : K.grn);
+  const cell = (x, cap, v, id) => html`
+    ${L(x, 11, 140, 13, cap, { s: 6.5, w: 6, c: K.mute, st: 'letter-spacing:1.4px' })}
+    ${L(x, 26, 150, 20, RM(v), { s: 11, w: 6, id })}`;
   const body = html`
-    ${L(16, 12, 160, 22, 'Cash flow', { s: 11.5, w: 6 })}
-    ${label ? L(190, 12, 160, 22, label.toUpperCase(), { s: 7.5, w: 6, c: K.or, a: 'r' }) : null}
-    ${C(16, 47, 6, K.grn)}${L(26, 43, 111, 14, 'MONEY IN', { s: 7.5, w: 6, c: K.sub })}
-    ${L(16, 58, 111, 20, RM(inV), { s: 12.5, w: 6 })}
-    ${C(127, 47, 6, K.or)}${L(137, 43, 111, 14, 'MONEY OUT', { s: 7.5, w: 6, c: K.sub })}
-    ${L(127, 58, 111, 20, RM(outV), { s: 12.5, w: 6 })}
-    ${L(238, 43, 111, 14, 'NET', { s: 7.5, w: 6, c: K.sub, a: 'r' })}
-    ${L(238, 58, 111, 20, sRM(net), { s: 12.5, w: 6, a: 'r', c: o.netColor ? o.netColor(net) : (net < 0 ? K.red : K.grn) })}
-    ${R(16, 90, 334, 5, K.field)}
-    ${R(16, 90, Math.max(2, 334 * share - 2), 5, K.grn)}
-    ${R(16 + 334 * share + 2, 90, Math.max(2, 334 * (1 - share) - 2), 5, K.or)}
-    ${L(16, 98, 334, 16, rate, { s: 8.5, c: K.sub })}`;
-  return Card(o.x ?? null, o.y ?? 0, 366, 118, body, { id: o.id });
+    ${L(16, 14, 200, 22, 'Cash flow', { s: 11.5, w: 6 })}
+    ${label ? L(16, 34, 200, 14, label.toUpperCase(), { s: 7, w: 6, c: K.or }) : null}
+    ${B(350 - 92, 14, 92, 22, badge[0], { fill: badge[2], b: badge[3], c: badge[1], r: 11, s: 6.5, flat: true, id: 'flowBadge' })}
+    ${L(16, label ? 56 : 50, 200, 13, 'NET', { s: 6.5, w: 6, c: K.mute, st: 'letter-spacing:1.6px' })}
+    ${L(16, label ? 70 : 64, 334, 34, sRM(net), { s: 19, w: 6, c: netC, st: 'letter-spacing:-0.3px' })}
+    ${Box(16, label ? 112 : 106, 334, 56, html`
+      ${cell(16, 'MONEY IN', inV)}
+      ${R(167, 12, 1, 32, 'rgba(255,255,255,0.07)')}
+      ${cell(184, 'MONEY OUT', outV)}`, { fill: 'rgba(255,255,255,0.025)', r: 12, b: 'rgba(255,255,255,0.05)' })}`;
+  return Card(o.x ?? null, o.y ?? 0, 366, label ? 184 : 178, body, { id: o.id });
 }
 
 /* ── Date box (dd/mm/yyyy text + calendar icon) and its calendar overlay ── */

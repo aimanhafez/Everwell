@@ -2,7 +2,7 @@
 import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, heroBg, Navigate, rerender,
   bal, psum, flowSum, catSpend, acc, byTxDesc, dueCount, lowBal, stStart, fmtD, Today, PLABEL, Year, Month, diffDays, minD,
-  RM, sRM, n0, pct, PALETTE, esc, monthLabel, resetTxPeriodToMonth, round2
+  RM, sRM, n0, pct, PALETTE, esc, monthLabel, resetTxPeriodToMonth, round2, fs
 } from '../core.js';
 import { TabHeader, NavBar, Fab, PeriodCard, FlowCard, SectionHead } from '../shared.js';
 import { addDays as addD, addMonths as addM, PSTART as PST, Day as DayOf, D as mkD, perKey } from '../core.js';
@@ -53,6 +53,26 @@ export function donutSvg(top, label = 'SPENT') {
   return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><circle cx='80' cy='80' r='54' fill='none' stroke='#2A2E35' stroke-width='22'/>${arcs}<text x='80' y='74' text-anchor='middle' font-family='Segoe UI,Arial' font-size='10' letter-spacing='2' fill='#A0A6AE'>${label}</text><text x='80' y='95' text-anchor='middle' font-family='Segoe UI,Arial' font-size='17' font-weight='700' fill='#FFFFFF'>RM ${esc(n0(tot))}</text></svg>`;
 }
 
+/** Thin ring with small gaps between segments (Home). Text is drawn in HTML on top, in the app font. */
+export function ringSvg(parts, total) {
+  const R0 = 62, c = 2 * Math.PI * R0, gap = parts.length > 1 ? 3 : 0;
+  let o = 0, arcs = '';
+  parts.forEach(p => {
+    const len = Math.max(p.Amt / total * c - gap, 0.5);
+    arcs += `<circle cx='80' cy='80' r='${R0}' fill='none' stroke='${p.Col}' stroke-width='9' stroke-linecap='butt' stroke-dasharray='${len.toFixed(2)} ${c.toFixed(2)}' stroke-dashoffset='${(-o / total * c).toFixed(2)}' transform='rotate(-90 80 80)'/>`;
+    o += p.Amt;
+  });
+  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><circle cx='80' cy='80' r='${R0}' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='9'/><circle cx='80' cy='80' r='50' fill='none' stroke='rgba(255,255,255,0.04)' stroke-width='1'/>${arcs}</svg>`;
+}
+/** Top 4 categories + "Others", shares of the whole month */
+function spendParts(spend) {
+  const tot = spend.reduce((s, x) => s + x.Amt, 0);
+  const top = spend.slice(0, spend.length > 5 ? 4 : 5).map((c, i) => ({ Nm: c.CatName, Amt: c.Amt, Col: PALETTE[i] }));
+  const rest = round2(tot - top.reduce((s, x) => s + x.Amt, 0));
+  if (spend.length > 5 && rest > 0) top.push({ Nm: 'Others', Amt: rest, Col: '#4A4F57' });
+  return { tot: round2(tot), parts: top };
+}
+
 export const scrHome = {
   onVisible(l) { l.locPick = false; l.locPickYear = G.gblYear; },
   view(l) {
@@ -68,8 +88,7 @@ export const scrHome = {
 
     const { In: inc, Out: out } = flowSum();
     const spend = catSpend();
-    const top5 = spend.slice(0, 5);
-    const spendTot = spend.reduce((s, x) => s + x.Amt, 0);
+    const SP = spendParts(spend);
     const recent = DB.txns.filter(t => !t.TxParent && !(t.TxType === 'Transfer' && t.TxDir === 'In') && t.TxType !== 'Opening Balance' && t.TxDate >= G.gblFrom && t.TxDate <= G.gblTo).sort(byTxDesc).slice(0, 10);
 
     // insights
@@ -91,7 +110,7 @@ export const scrHome = {
 
     const kids = html`
       ${!hasAcc ? Card(null, 0, 366, 146, html`
-        ${L(18, 14, 330, 28, 'Welcome to Everwell.', { s: 15 })}
+        ${L(18, 14, 330, 28, 'Welcome to Pocket Dreamer.', { s: 15 })}
         ${L(18, 44, 330, 34, stStart() ? 'Tracking from ' + fmtD(stStart(), 'dd mmm yyyy') + '. Add your first account with its balance on that date.' : 'Add your first account to get started.', { s: 8.5, c: K.sub, wrap: true })}
         ${B(18, 86, 330, 42, '＋   Add your first account', { fill: K.or, c: '#FFFFFF', r: 21, s: 10, onClick: () => { G.gblEditMode = 'new'; Navigate('scrAccountEdit'); }, id: 'addFirst' })}`, { b: K.or }) : null}
       ${hasAcc ? Box(null, 0, 366, 172, html`
@@ -124,15 +143,22 @@ export const scrHome = {
       ${PeriodCard(l)}
       ${FlowCard(inc, out, '', { id: 'homeFlow' })}
       ${hasAcc ? Forecast(inc, out) : null}
-      ${Card(null, 0, 366, 206, html`
+      ${Card(null, 0, 366, 218, html`
         ${L(16, 14, 246, 22, 'Spending', { s: 11.5, w: 6 })}
         ${L(250, 14, 100, 22, 'Analysis  ›', { s: 8.5, w: 6, c: K.or, a: 'r', onClick: () => Navigate('scrAnalysis') })}
-        ${Svg(10, 46, 150, 150, donutSvg(top5))}
-        ${Gal(172, 54, 180, 140, top5.map((c, i) => ({ Idx: i + 1, Nm: c.CatName, Amt: c.Amt })), 28, it => html`
-          ${C(0, 10, 8, PALETTE[Math.max(1, Math.min(6, it.Idx)) - 1])}
-          ${L(16, 0, 100, 28, it.Nm, { s: 8.5 })}
-          ${L(126, 0, 54, 28, pct(it.Amt / Math.max(spendTot, 1)), { s: 8.5, w: 6, c: K.sub, a: 'r' })}`)}
-        ${!spend.length ? L(172, 100, 180, 30, 'No spending in this month', { s: 8.5, c: K.mute }) : null}`)}
+        ${Svg(12, 50, 150, 150, ringSvg(SP.parts.length ? SP.parts : [{ Amt: 1, Col: 'rgba(255,255,255,0.05)' }], SP.tot || 1))}
+        ${L(12, 100, 150, 13, 'TOTAL SPENT', { s: 5.5, w: 6, c: K.mute, a: 'c', ls: 1.6 })}
+        <div class="abs" style="left:12px;top:113px;width:150px;height:26px;display:flex;align-items:center;justify-content:center;white-space:nowrap;color:#F4F2EE" data-t="spendTotal">
+          <span><span style=${`font-size:${fs(7)};font-weight:600;color:${K.sub};margin-right:3px;vertical-align:5px`}>RM</span><span style=${`font-size:${fs(14)};font-weight:600;letter-spacing:-0.4px`}>${n0(Math.round(SP.tot))}</span></span>
+        </div>
+        ${L(12, 139, 150, 13, monthLabel('mmm yyyy').toUpperCase(), { s: 5.5, w: 6, c: K.mute, a: 'c', ls: 1.4 })}
+        ${Gal(178, 50, 172, 160, SP.parts, 32, it => html`
+          ${R(0, 6, 3, 20, it.Col, { r: 2 })}
+          ${L(12, 2, 104, 15, it.Nm, { s: 8.5, w: 6 })}
+          ${L(12, 17, 104, 12, pct(it.Amt / Math.max(SP.tot, 1)) + ' of spending', { s: 6.5, c: K.mute })}
+          ${L(112, 2, 60, 15, RM(it.Amt).replace(/\.\d\d$/, ''), { s: 8.5, w: 6, a: 'r' })}
+          ${it === SP.parts[SP.parts.length - 1] ? null : R(12, 31, 160, 1, 'rgba(255,255,255,0.04)')}`, { id: 'spendList' })}
+        ${!spend.length ? L(178, 110, 172, 30, 'No spending in this month', { s: 8.5, c: K.mute }) : null}`, { id: 'spendCard' })}
       ${Card(null, 0, 366, 52 + Math.max(recent.length, 1) * 54 + 4, html`
         ${L(16, 14, 246, 22, 'Recent activity', { s: 11.5, w: 6 })}
         ${L(250, 14, 100, 22, 'See all  ›', { s: 8.5, w: 6, c: K.or, a: 'r', onClick: () => { resetTxPeriodToMonth(); Navigate('scrTransactions'); } })}
@@ -171,23 +197,24 @@ function Forecast(inc, out) {
   const head = past ? 'Month result' : 'Month-end forecast';
   const big = future ? '—' : RM(projected);
   const cap = past ? 'TOTAL SPENT' : 'PROJECTED SPENDING BY ' + fmtD(to, 'dd mmm').toUpperCase();
-  const dTxt = delta === null ? 'No spending last month' : (delta > 0 ? '▲ ' : '▼ ') + pct(Math.abs(delta)) + (delta > 0 ? ' more' : ' less') + ' than last month';
-  return Card(null, 0, 366, 178, html`
+  const dTxt = delta === null ? '' : (delta > 0 ? '▲ ' : '▼ ') + pct(Math.abs(delta)) + ' vs last month';
+  const dC = delta === null ? K.mute : delta > 0 ? K.red : K.grn;
+  const showBar = !past && !future;
+  return Card(null, 0, 366, showBar ? 150 : 134, html`
     ${C(16, 16, 30, K.field)}${I(22, 22, 18, 18, 'Gauge', K.or, { pad: 1 })}
-    ${L(56, 14, 200, 18, head, { s: 11.5, w: 6 })}
-    ${L(56, 32, 200, 14, future ? 'This month has not started yet' : elapsed + ' of ' + days + ' days', { s: 7.5, c: K.sub })}
-    ${L(16, 60, 220, 14, cap, { s: 7, w: 6, c: K.sub })}
-    ${L(16, 76, 220, 30, big, { s: 18, w: 6, id: 'forecast' })}
-    ${L(16, 106, 220, 16, future ? '' : dTxt, { s: 8, w: 6, c: delta === null ? K.mute : delta > 0 ? K.red : K.grn })}
-    ${R(250, 62, 1, 58, 'rgba(255,255,255,0.07)')}
-    ${L(264, 60, 90, 14, 'DAILY AVG', { s: 7, w: 6, c: K.sub })}
+    ${L(56, 14, 170, 18, head, { s: 11.5, w: 6 })}
+    ${L(56, 32, 170, 14, future ? 'This month has not started yet' : past ? 'Closed  ·  ' + days + ' days' : 'Day ' + elapsed + ' of ' + days, { s: 7.5, c: K.sub })}
+    ${dTxt ? B(350 - 132, 18, 132, 22, dTxt, { fill: delta > 0 ? 'rgba(229,72,77,0.08)' : 'rgba(52,199,123,0.08)', b: delta > 0 ? 'rgba(229,72,77,0.3)' : 'rgba(52,199,123,0.28)', c: dC, r: 11, s: 6.5, flat: true, id: 'fcDelta' }) : null}
+    ${L(16, 62, 220, 13, cap, { s: 6.5, w: 6, c: K.mute, ls: 1.4 })}
+    ${L(16, 77, 220, 32, big, { s: 18, w: 6, id: 'forecast', st: 'letter-spacing:-0.3px' })}
+    ${R(250, 62, 1, 50, 'rgba(255,255,255,0.07)')}
+    ${L(264, 60, 90, 13, 'DAILY AVG', { s: 6.5, w: 6, c: K.mute, ls: 1.4 })}
     ${L(264, 74, 90, 18, future ? '—' : RM(daily), { s: 9.5, w: 6 })}
-    ${L(264, 96, 90, 14, past ? 'NET' : 'PROJ. NET', { s: 7, w: 6, c: K.sub })}
+    ${L(264, 96, 90, 13, past ? 'NET' : 'PROJ. NET', { s: 6.5, w: 6, c: K.mute, ls: 1.4 })}
     ${L(264, 110, 90, 18, future ? '—' : sRM(projNet), { s: 9.5, w: 6, c: projNet < 0 ? K.red : K.grn })}
-    ${R(16, 142, 334, 4, K.field, { r: 2 })}
-    ${R(16, 142, Math.max(4, 334 * share), 4, 'linear-gradient(90deg, rgba(255,106,0,0.5), #FF6A00)', { r: 2 })}
-    ${L(16, 152, 167, 14, fmtD(from, 'dd mmm'), { s: 7.5, c: K.mute })}
-    ${L(183, 152, 167, 14, fmtD(to, 'dd mmm'), { s: 7.5, c: K.mute, a: 'r' })}`, { id: 'forecastCard' });
+    ${showBar ? html`
+      ${R(16, 132, 334, 3, 'rgba(255,255,255,0.06)', { r: 2 })}
+      ${R(16, 132, Math.max(4, 334 * share), 3, 'linear-gradient(90deg, rgba(255,106,0,0.35), #FF6A00)', { r: 2 })}` : null}`, { id: 'forecastCard' });
 }
 
 /* ── Next 14 days: bills from Recurring + credit card due dates, and what is safe to spend ── */

@@ -1,4 +1,4 @@
-// Everwell — start-up: scale the 390 x 844 canvas to the device, register screens, load data (App.OnStart).
+// Pocket Dreamer — start-up: scale the 390 x 844 canvas to the device, register screens, load data (App.OnStart).
 import { html, render } from './vendor/preact-htm.js';
 import { NAV, CONN, mount, rerender, loadAll, loadCached, flush, beaconOutbox, flushCache, Navigate, stStart, Notify, K } from './core.js';
 import { autoSweep } from './sweep.js';
@@ -32,7 +32,7 @@ fit();
 
 function splash(msg, retry) {
   render(html`<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
-    <div class="brand c"><div class="mark" style="font-size:30px">Everwell<span>.</span></div><div class="tag" style="margin-top:7px;letter-spacing:1.8px">LIVE WELL TODAY. BUILD WELL FOR TOMORROW.</div></div>
+    <div class="brand c"><div class="mark" style="font-size:30px">Pocket Dreamer<span>.</span></div><div class="tag" style="margin-top:7px;letter-spacing:1.8px">LIVE WELL TODAY. BUILD WELL FOR TOMORROW.</div></div>
     <div style=${`color:${K.sub};font-size:12px;max-width:300px;text-align:center`}>${msg}</div>
     ${retry ? html`<button class="btn" style=${`position:relative;width:160px;height:40px;border-radius:20px;background:${K.or};color:#fff;font-weight:600`} onClick=${retry}>Try again</button>` : null}
   </div>`, stage);
@@ -50,7 +50,7 @@ async function boot() {
     await loadAll({ quiet: cached });
     if (!cached) start(); else rerender();
     flush();
-    autoSweep().then(() => rerender()).catch(e => Notify('Monthly sweep could not run: ' + e.message + ' It will retry next time you open Everwell.', 'error'));
+    autoSweep().then(() => rerender()).catch(e => Notify('Monthly sweep could not run: ' + e.message + ' It will retry next time you open Pocket Dreamer.', 'error'));
   } catch (e) {
     if (e.code === 'AUTH') { CONN.authError = e.message; NAV.stack = []; Navigate('connect'); return; }
     if (cached) { flush(); return; } // keep working with the copy on this phone

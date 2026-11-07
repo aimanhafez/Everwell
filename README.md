@@ -1,4 +1,4 @@
-# Everwell v4.5.0 (web version)
+# Pocket Dreamer v4.6.0 (web version, formerly Everwell)
 
 *Live well today. Build well for tomorrow.*
 
@@ -24,6 +24,21 @@ The screens are Setup, Home, Accounts, Account detail, New/Edit account, Transac
 1. **Google Sheet:** open Apps Script. Replace everything in `Code.gs` with the new `apps-script/Code.gs`, then **Save**. Go to **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The URL stays the same, and the Sheet gets new columns (`StSweepAuto`, `StSweepFrom`, `StSweepLog`, `AccSweep`) the next time the app connects.
 2. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js`, `icons` and `apps-script` folders**. Files with the same name are replaced. Click **Commit changes**.
 3. **iPhone:** close Everwell fully and open it again. You won't need to reconnect.
+
+## Updating to v4.6.0
+
+Only **GitHub** changes; `Code.gs` stays the same. Upload the whole folder (including `js` and `icons`) and commit.
+
+The new name and icon only show on the iPhone once you add the app to the Home Screen again. In Safari, open your GitHub link, tap **Share → Add to Home Screen**, then delete the old Everwell icon. The new copy will ask for your Web App URL and key once. Your data is safe because it lives in the Google Sheet.
+
+## What's new in v4.6.0
+
+- **New name: Pocket Dreamer**, with a new "P." icon in the same style.
+- **Home · Cash flow:** calmer design. The net is the main number, a small badge shows how much you kept (or overspent), and Money in / Money out sit in one quiet panel. There are no more thick bars.
+- **Home · Month result / forecast:** the date labels are gone. "vs last month" is now a small badge that only shows when last month has data. The progress line only shows while the month is running.
+- **Home · Spending:** a thin ring with small gaps, and the total in the middle in the app font. The total now covers **all** categories (before, it only added up the top 5). The top 4 are listed with amounts and the rest are grouped as **Others**.
+- **Transactions:** the filters are one compact row (Period · Account · Category). The year button in the period sheet just says **2026**.
+- **Settings:** **Download CSV** opens the iPhone share sheet, so you can Save to Files, WhatsApp or Mail it; **Copy as text** copies it. The Google Sheet card no longer overlaps the CONNECTED badge.
 
 ## Updating to v4.5.0 from v4.4.x
 
@@ -134,7 +149,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'everwell-4.5.0-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'pocketdreamer-4.6.0-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting

@@ -243,18 +243,32 @@ export const scrMore = {
       ['Note', 'Activity log', 'Every change you make, newest first', () => Navigate('scrActivity')],
       ['CalendarBlank', 'Tracking period', 'From ' + fmtD(stStart(), 'dd mmm yyyy') + '  ·  months start on day ' + G.gblCycleDay, () => Navigate('scrSetup')]
     ];
-    const buildCsv = () => {
+    const csvText = () => {
       const rows = DB.txns.filter(t => t.TxType !== 'Opening Balance' && t.TxDate >= G.gblFrom && t.TxDate <= G.gblTo)
         .sort((a, b) => (a.TxDate + String(a.TxSeq).padStart(6, '0') < b.TxDate + String(b.TxSeq).padStart(6, '0') ? -1 : 1));
       const c = s => String(s || '').replace(/,/g, ' ');
-      l.locCsv = 'Date,Account,Type,Amount,Category,Payee,Description,Notes,TransferId,SplitOf,Id\n' + rows.map(t =>
+      return 'Date,Account,Type,Amount,Category,Payee,Description,Notes,TransferId,SplitOf,Id\n' + rows.map(t =>
         [t.TxDate, c((acc(t.TxAcc) || {}).AccName), t.TxType, (t.TxDir === 'Out' ? '-' : '') + t.TxAmt.toFixed(2), c(t.TxCat), c(t.TxPayee), c(t.TxDesc), c(t.TxNote), t.TxTrf, t.TxParent, t.TxnId].join(',')).join('\n');
-      rerender();
+    };
+    const csvName = () => 'PocketDreamer-' + G.gblYear + '-' + String(G.gblMonth).padStart(2, '0') + '.csv';
+    const flash = (k, msg) => { l[k] = msg; rerender(); setTimeout(() => { l[k] = ''; rerender(); }, 1800); };
+    /** iPhone: opens the share sheet (Save to Files, WhatsApp, Mail…). Elsewhere: downloads the file. */
+    const download = async () => {
+      const text = csvText();
+      const file = typeof File === 'function' ? new File([text], csvName(), { type: 'text/csv' }) : null;
+      try {
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: csvName() }); return; }
+      } catch (e) { if (e && e.name === 'AbortError') return; }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.download = csvName();
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      flash('dlNote', 'Saved ✓');
     };
     const copy = async () => {
-      try { await navigator.clipboard.writeText(l.locCsv || ''); }
-      catch (e) { const ta = document.querySelector('[data-t=csv]'); if (ta) { ta.select(); document.execCommand('copy'); } }
-      l.copied = true; rerender(); setTimeout(() => { l.copied = false; rerender(); }, 1800);
+      const text = csvText();
+      try { await navigator.clipboard.writeText(text); }
+      catch (e) { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+      flash('copied', 'Copied ✓');
     };
     const recalc = () => askPassword(l, 'recalculate monthly totals', () => guard(async () => {
       Notify('Recalculating…', 'info');
@@ -273,7 +287,6 @@ export const scrMore = {
     const disconnect = () => askPassword(l, 'disconnect this device', () => {
       store.del('ew_conn'); store.del('ew_data'); store.del('ew_outbox'); SYNC.outbox = []; CONN.v = null; NAV.stack = []; Navigate('connect');
     });
-    const csvH = l.locCsv ? 320 : 112;
     const actionRow = (y, ic, title, sub, color, onClick, id, last) => html`
       ${C(16, y + 13, 36, color === K.red ? 'rgba(229,72,77,0.12)' : K.field)}
       ${I(25, y + 22, 18, 18, ic, color, { pad: 0 })}
@@ -292,12 +305,12 @@ export const scrMore = {
         ${I(326, 23 + 62 * i, 24, 24, 'ChevronRight', K.mute, { pad: 3 })}
         ${i < 4 ? R(64, 65 + 62 * i, 286, 1, K.sep) : null}
         ${B(0, 4 + 62 * i, 366, 62, '', { fill: 'transparent', r: 0, flat: true, onClick: go, id: 'menu-' + nm })}`)}`)}
-      ${Card(null, 0, 366, csvH, html`
-        ${L(16, 14, 246, 22, 'Export (CSV)', { s: 11.5, w: 6 })}
-        ${L(16, 38, 334, 16, 'Transactions for ' + monthLabel('mmmm yyyy') + '  ·  ' + fmtD(G.gblFrom, 'dd mmm') + ' – ' + fmtD(G.gblTo, 'dd mmm'), { s: 8, c: K.sub })}
-        ${B(16, 62, 162, 38, 'Build CSV', { fill: K.field, b: HAIR, r: 19, s: 10, onClick: buildCsv, id: 'csvBuild' })}
-        ${B(188, 62, 162, 38, l.copied ? 'Copied ✓' : 'Copy', { fill: K.or, c: '#FFFFFF', r: 19, s: 10, onClick: copy, id: 'csvCopy' })}
-        ${l.locCsv ? TI(16, 110, 334, 196, l.locCsv, () => {}, { multiline: true, s: 9, id: 'csv' }) : null}`)}
+      ${Card(null, 0, 366, 128, html`
+        ${C(16, 14, 36, K.field)}${I(25, 23, 18, 18, 'Note', K.or, { pad: 0 })}
+        ${L(64, 13, 230, 20, 'Export transactions', { s: 10.5, w: 6 })}
+        ${L(64, 33, 280, 16, monthLabel('mmmm yyyy') + '  ·  ' + DB.txns.filter(t => t.TxType !== 'Opening Balance' && t.TxDate >= G.gblFrom && t.TxDate <= G.gblTo).length + ' rows  ·  for Excel or Google Sheets', { s: 8, c: K.sub })}
+        ${B(16, 70, 162, 40, l.dlNote || 'Download CSV', { fill: K.or, c: '#FFFFFF', r: 20, s: 10, onClick: download, id: 'csvDownload' })}
+        ${B(188, 70, 162, 40, l.copied || 'Copy as text', { fill: K.field, b: HAIR, r: 20, s: 10, onClick: copy, id: 'csvCopy' })}`, { id: 'exportCard' })}
       ${SubHead('Data')}
       ${Card(null, 0, 366, 124, html`
         ${actionRow(0, 'Sync', 'Recalculate monthly totals', 'Reload everything from your Google Sheet', K.or, recalc, 'recalc')}
@@ -305,12 +318,12 @@ export const scrMore = {
       ${SubHead('Data Connection')}
       ${Card(null, 0, 366, 124, html`
         ${C(16, 13, 36, K.field)}${I(25, 22, 18, 18, 'Shield', K.grn, { pad: 0 })}
-        ${L(64, 12, 230, 20, 'Google Sheet', { s: 10.5, w: 6 })}
-        ${L(64, 32, 270, 16, url.length > 44 ? url.slice(0, 30) + '…' + url.slice(-12) : url, { s: 8, c: K.sub })}
-        ${B(278, 16, 72, 24, 'CONNECTED', { fill: 'rgba(52,199,123,0.1)', b: 'rgba(52,199,123,0.35)', c: K.grn, r: 12, s: 6.5, flat: true })}
+        ${L(64, 12, 196, 20, 'Google Sheet', { s: 10.5, w: 6 })}
+        ${L(64, 32, 196, 16, url.length > 34 ? url.slice(0, 22) + '…' + url.slice(-9) : url, { s: 8, c: K.sub, st: 'overflow:hidden;' })}
+        ${B(268, 21, 82, 22, 'CONNECTED', { fill: 'rgba(52,199,123,0.08)', b: 'rgba(52,199,123,0.3)', c: K.grn, r: 11, s: 6.5, flat: true, id: 'connPill' })}
         ${R(64, 61, 286, 1, K.sep)}
         ${actionRow(62, 'Lock', 'Disconnect this device', 'You will need the URL and key again', K.red, disconnect, 'disconnect', true)}`, { id: 'connCard' })}
-      ${L(null, 0, 366, 30, 'Everwell  ·  v' + VERSION, { s: 8, c: K.mute, a: 'c', st: 'position:relative;flex:none;' })}
+      ${L(null, 0, 366, 30, 'Pocket Dreamer  ·  v' + VERSION, { s: 8, c: K.mute, a: 'c', st: 'position:relative;flex:none;' })}
       ${Box(null, 0, 366, 16, null)}`;
     return html`<div>
       ${TabHeader()}
@@ -401,7 +414,7 @@ export const scrSetup = {
       ${!l.locFirst ? I(6, 20, 36, 36, 'ChevronLeft', K.text, { pad: 6, onClick: () => Back(), label: 'Back' }) : null}
       ${Brand(0, 44, 390, 52, true, true)}
       ${L(12, 116, 366, 30, l.locFirst ? 'Set your starting point' : 'Tracking period', { s: 18, a: 'c' })}
-      ${L(32, 150, 326, 34, 'Everwell measures your money from a start date, in months that begin on a day you choose.', { s: 8.5, c: K.sub, a: 'c', wrap: true })}
+      ${L(32, 150, 326, 34, 'Pocket Dreamer measures your money from a start date, in months that begin on a day you choose.', { s: 8.5, c: K.sub, a: 'c', wrap: true })}
       ${Card(12, 196, 366, 112, html`
         ${C(16, 14, 30, K.field)}${I(22, 20, 18, 18, 'CalendarBlank', K.or, { pad: 1 })}
         ${L(56, 22, 294, 14, 'TRACKING STARTS ON', { s: 7.5, w: 6, c: K.sub })}
@@ -422,7 +435,7 @@ export const scrSetup = {
         ${B(238, 12, 110, 22, st ? nMonths + (nMonths === 1 ? ' MONTH' : ' MONTHS') + ' TO DATE' : '—', { fill: K.orSoft, b: K.orBorder, c: K.or, r: 11, s: 7.5 })}
         ${L(18, 36, 330, 30, first ? fmtD(first, 'mmmm yyyy') : '—', { s: 16, id: 'firstMonth' })}
         ${L(18, 66, 330, 18, first ? fmtD(PSTART(Year(first), Month(first), day), 'dd mmm yyyy') + '  –  ' + fmtD(PEND(Year(first), Month(first), day), 'dd mmm yyyy') : '', { s: 8.5, c: K.sub })}`, { b: 'rgba(255,106,0,0.55)' })}
-      ${L(22, { b: 86 }, 346, 32, l.locFirst ? 'Your data is saved in your Everwell Google Sheet, so it shows on every device you use.' : 'Changing the start day only regroups your months. No transaction is changed.', { s: 8, c: K.mute, a: 'c', wrap: true })}
+      ${L(22, { b: 86 }, 346, 32, l.locFirst ? 'Your data is saved in your Google Sheet, so it shows on every device you use.' : 'Changing the start day only regroups your months. No transaction is changed.', { s: 8, c: K.mute, a: 'c', wrap: true })}
       ${B(12, { b: 30 }, 366, 48, l.locFirst ? 'Begin with my own accounts' : 'Save changes', { fill: K.or, c: '#FFFFFF', r: 24, s: 11, onClick: onBegin, id: 'begin' })}
       </div></div>
       ${Calendar(l, 'suStart')}

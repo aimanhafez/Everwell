@@ -1,4 +1,4 @@
-/* Everwell — shared styles. Layout itself is absolute, like the Power Apps canvas (390 x 844). */
+/* Pocket Dreamer — shared styles. Layout itself is absolute, like the Power Apps canvas (390 x 844). */
 html, body { margin: 0; padding: 0; height: 100%; background: #0D0F12; overflow: hidden; overscroll-behavior: none; }
 body { -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; touch-action: manipulation; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }

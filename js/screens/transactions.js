@@ -37,32 +37,29 @@ export const scrTransactions = {
     const anyOn = perOn || accOn || catOn || l.locTxType !== 'All' || !!q;
 
     const open = s => { l.locSheet = s; if (s === 'per') l.locTxYear = G.gblTxAll ? Year(Today()) : Year(addDays(G.gblTxFrom, 10)); rerender(); };
-    const chip = (x, w, on, ic, cap, val, sub, sheet, id) => {
+    // compact filter pill: small caption over the value, one row of three
+    const chip = (x, w, on, cap, val, sheet, id) => {
       const go = () => open(sheet);
-      return Box(x, 0, w, 56, html`
-        ${B(0, 0, w, 56, '', { fill: on ? 'rgba(255,106,0,0.07)' : SURFACE, b: on ? 'rgba(255,106,0,0.5)' : HAIR, r: 14, onClick: go, id })}
-        ${C(12, 12, 32, on ? 'rgba(255,106,0,0.14)' : K.field, { onClick: go })}
-        ${I(20, 20, 16, 16, ic, on ? K.or : K.sub, { pad: 0, onClick: go })}
-        ${L(54, 10, w - 84, 14, cap, { s: 6.5, w: 6, c: on ? K.or : K.mute, onClick: go })}
-        ${L(54, 25, w - (sub ? 170 : 84), 20, val, { s: 10.5, w: 6, onClick: go })}
-        ${sub ? L(w - 140, 25, 108, 20, sub, { s: 8, c: K.sub, a: 'r', onClick: go }) : null}
-        ${I(w - 26, 22, 12, 12, 'ChevronDown', K.sub, { pad: 0, onClick: go })}`);
+      return html`
+        ${B(x, 0, w, 50, '', { fill: on ? 'rgba(255,106,0,0.07)' : SURFACE, b: on ? 'rgba(255,106,0,0.45)' : HAIR, r: 14, onClick: go, id })}
+        ${L(x + 14, 9, w - 36, 13, cap, { s: 6, w: 6, c: on ? K.or : K.mute, ls: 1.4, onClick: go })}
+        ${L(x + 14, 22, w - 34, 20, val, { s: 9.5, w: 6, onClick: go, st: 'overflow:hidden;' })}
+        ${I(x + w - 24, 25, 11, 11, 'ChevronDown', on ? K.or : K.sub, { pad: 0, onClick: go })}`;
     };
     const typeBtn = (t, x) => B(x, 4, 89.5, 30, t, { fill: l.locTxType === t ? K.or : 'transparent', c: l.locTxType === t ? '#FFFFFF' : K.sub, r: 15, s: 8.5, flat: true, onClick: () => { l.locTxType = t; rerender(); }, id: 'tt-' + t });
     const clear = () => {
       G.gblTxAll = false; G.gblTxFrom = curMonthStart(); G.gblTxTo = addDays(addMonths(G.gblTxFrom, 1), -1); G.gblTxLbl = fmtD(G.gblTxTo, 'mmm yyyy');
       l.locTxAcc = ''; l.locTxCat = 'All'; l.locTxType = 'All'; l.q = ''; rerender();
     };
-    const range = G.gblTxAll ? (stStart() ? 'Since ' + fmtD(stStart(), 'dd mmm yyyy') : '') : fmtD(G.gblTxFrom, 'dd mmm') + ' – ' + fmtD(G.gblTxTo, 'dd mmm');
 
     const kids = html`
       ${Box(null, 0, 366, 44, html`
         ${TI(0, 0, 366, 44, q, v => { l.q = v; rerender(); }, { hint: 'Search payee, description or category', fill: SURFACE, r: 22, pad: 44, padR: 14, b: HAIR, id: 'search' })}
         ${I(16, 13, 18, 18, 'Search', K.sub, { pad: 1 })}`)}
-      ${Box(null, 0, 366, 56, chip(0, 366, perOn, 'CalendarBlank', 'PERIOD', G.gblTxAll ? 'All time' : G.gblTxLbl, range, 'per', 'pillPer'))}
-      ${Box(null, 0, 366, 56, html`
-        ${chip(0, 179, accOn, 'Money', 'ACCOUNT', accOn ? (acc(l.locTxAcc) || {}).AccName : 'All accounts', '', 'acc', 'pillAcc')}
-        ${chip(187, 179, catOn, 'Tag', 'CATEGORY', catOn ? l.locTxCat : 'All categories', '', 'cat', 'pillCat')}`)}
+      ${Box(null, 0, 366, 50, html`
+        ${chip(0, 120, perOn, 'PERIOD', G.gblTxAll ? 'All time' : G.gblTxLbl, 'per', 'pillPer')}
+        ${chip(126, 114, accOn, 'ACCOUNT', accOn ? (acc(l.locTxAcc) || {}).AccName : 'All', 'acc', 'pillAcc')}
+        ${chip(246, 120, catOn, 'CATEGORY', catOn ? l.locTxCat : 'All', 'cat', 'pillCat')}`)}
       ${Box(null, 0, 366, 38, html`${typeBtn('All', 4)}${typeBtn('Expense', 93.5)}${typeBtn('Income', 183)}${typeBtn('Transfer', 272.5)}`, { fill: SURFACE, r: 19, b: HAIR })}
       ${FlowCard(inV, outV, '', { id: 'txFlow' })}
       ${Box(null, 0, 366, 22, html`
@@ -98,7 +95,7 @@ function Sheet(l) {
   if (l.locSheet === 'per') {
     body = html`
       ${B(20, 64, 170, 36, 'All time', { fill: G.gblTxAll ? K.or : K.field, c: G.gblTxAll ? '#FFFFFF' : K.sub, b: G.gblTxAll ? K.or : K.line, r: 18, s: 9.5, onClick: () => { G.gblTxAll = true; G.gblTxLbl = 'All time'; close(); }, id: 'allTime' })}
-      ${B(200, 64, 170, 36, 'Whole year ' + yr, { fill: wholeOn ? K.or : K.field, c: wholeOn ? '#FFFFFF' : K.sub, b: wholeOn ? K.or : K.line, r: 18, s: 9.5, onClick: () => { G.gblTxAll = false; G.gblTxFrom = ys; G.gblTxTo = ye; G.gblTxLbl = 'Year ' + yr; close(); }, id: 'wholeYear' })}
+      ${B(200, 64, 170, 36, String(yr), { fill: wholeOn ? K.or : K.field, c: wholeOn ? '#FFFFFF' : K.sub, b: wholeOn ? K.or : K.line, r: 18, s: 9.5, onClick: () => { G.gblTxAll = false; G.gblTxFrom = ys; G.gblTxTo = ye; G.gblTxLbl = String(yr); close(); }, id: 'wholeYear' })}
       ${MonthGrid(yr, v => { l.locTxYear = v; rerender(); },
         no => !G.gblTxAll && PSTART(yr, no) === G.gblTxFrom && diffDays(G.gblTxFrom, G.gblTxTo) < 32,
         no => { const st = PSTART(yr, no); G.gblTxAll = false; G.gblTxFrom = st; G.gblTxTo = addDays(addMonths(st, 1), -1); G.gblTxLbl = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][no - 1] + ' ' + yr; close(); },
