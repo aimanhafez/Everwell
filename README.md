@@ -31,23 +31,23 @@ Only **GitHub** changes; `Code.gs` stays the same. Upload the whole folder (it h
 
 ## What's new in v1.9 · Import past transactions
 
-**Settings → Import transactions**
+**Settings → Import transactions** reads your own bank sheet, either **Excel (.xlsx)** or CSV.
 
-1. **Download template.** It has 8 columns: Date, Type, Amount, Account, Category, Payee, Description, To account.
-   - Type is Expense, Income or Transfer.
-   - Dates are dd/mm/yyyy.
-   - For a transfer, Account is where the money comes from and To account is where it goes.
-2. Fill it in Excel, then **File → Save As → CSV (Comma delimited)**.
-3. **Choose CSV file.** Every row is checked before anything is saved:
-   - **Needs fixing:** unknown account, bad date or amount, before your tracking start, in a closed month, or in the future. These rows are skipped.
-   - **New payees:** ticked payees are added with their category. Unticked names go into the description. Near-matches ask "Looks like Lotus's? Same / New payee".
-   - **New categories:** pick the type (Expense, Savings/Asset or Income).
-   - **Already in the app:** same date, account, amount and payee are skipped (you can switch this off).
-4. **Import.** Rows are saved in batches. Transfers become proper two-sided pairs, and one activity-log entry is written.
+- **Columns:** Date · Payee / Payer · Description · Account Code · Debit · Credit · Balance. The header row can be anywhere near the top, extra columns like "No." are ignored, and dates like 28/02/26 work.
+- **One file is one account.** Choose it under **This file is for**. If the workbook has several sheets, pick the sheet too.
+- **Debit is money out and Credit is money in.** A Credit under an expense code (for example a friend paying back snooker) lowers that category's spending; it isn't counted as income.
+- **Your codes:** link each Account Code once to a category, to **⇄ Transfer**, or to **＋ New category** (with its type). Your choices are remembered for next time.
+- **Transfer accounts:** for transfer codes, the Payee is the other account (MAE, Maybank Shopee (CC)…). It's matched automatically. Debit means money went to that account and Credit means it came from it.
+- **Balance check:** your Balance column is checked row by row, and the app's balance after the import is compared with your file's last balance.
+- **Other checks:**
+  - New payees can be added, with an **All** switch and near-match questions.
+  - Rows already in the app are skipped.
+  - Rows in closed months, before your tracking start, or in the future need attention and are skipped.
+- **Recent imports → Undo** (password) removes every transaction from that import. This is useful for testing.
 
-**Fix:** on the Transactions page, the cash flow skipped split transactions, so a filtered account (for example a credit card with a split purchase) could show a net that didn't match its balance. Split lines are now counted.
+The older Type/Amount/Account template layout is still accepted.
 
-Accounts must exist in the app before importing. To import into closed months, reopen them in Accounts → Balance Sweep first.
+**Fix:** on the Transactions page, the cash flow skipped split transactions, so a filtered account could show a net that didn't match its balance. Split lines are now counted.
 
 ## Updating to v1.8
 
@@ -211,7 +211,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'pocketdreamer-1.9-2'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'pocketdreamer-1.9-3'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting

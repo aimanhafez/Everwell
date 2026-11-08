@@ -155,7 +155,7 @@ export const scrHome = {
           ${R(0, 6, 3, 20, it.Col, { r: 2 })}
           ${L(12, 2, 104, 15, it.Nm, { s: 8.5, w: 6 })}
           ${L(12, 17, 104, 12, pct(it.Amt / Math.max(SP.tot, 1)) + ' of spending', { s: 6.5, c: K.mute })}
-          ${L(112, 2, 60, 15, RM(it.Amt).replace(/\.\d\d$/, ''), { s: 8.5, w: 6, a: 'r' })}
+          ${L(112, 2, 60, 15, 'RM ' + n0(Math.round(it.Amt)), { s: 8.5, w: 6, a: 'r' })}
           ${it === SP.parts[SP.parts.length - 1] ? null : R(12, 31, 160, 1, 'rgba(255,255,255,0.04)')}`, { id: 'spendList' })}
         ${!spend.length ? L(178, 110, 172, 30, 'No spending in this month', { s: 8.5, c: K.mute }) : null}`, { id: 'spendCard' })}
       ${Card(null, 0, 366, 52 + Math.max(recent.length, 1) * 54 + 4, html`
