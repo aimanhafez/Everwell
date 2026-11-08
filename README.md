@@ -1,4 +1,4 @@
-# Dreamer · Pocket v2.0 (web version, formerly Everwell)
+# Dreamer · v2.0.1 (web version, formerly Everwell)
 
 *Live well today. Build well for tomorrow.*
 
@@ -24,6 +24,22 @@ The screens are Setup, Home, Accounts, Account detail, New/Edit account, Transac
 1. **Google Sheet:** open Apps Script. Replace everything in `Code.gs` with the new `apps-script/Code.gs`, then **Save**. Go to **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The URL stays the same, and the Sheet gets new columns (`StSweepAuto`, `StSweepFrom`, `StSweepLog`, `AccSweep`) the next time the app connects.
 2. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js`, `icons` and `apps-script` folders**. Files with the same name are replaced. Click **Commit changes**.
 3. **iPhone:** close Everwell fully and open it again. You won't need to reconnect.
+
+## Updating to 2.0.1 (from 2.0)
+
+Only the main page changes. **No Apps Script update is needed.**
+
+1. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js` and `icons` folders**. There is a new folder, `icons/apps`, holding the app icons. Click **Commit changes**.
+2. **iPhone:** close Dreamer fully and open it again. If you still see the old main page, close it once more and reopen. The new files load on the second open.
+
+## What's new in 2.0.1
+
+- **New main page**, styled like the iPhone dark home screen. It has one icon per app, in two groups:
+  - **Pennywise:** **Pocket** (Open), **Compass** (budget, P&L, forecast and goals; coming soon), and one more app, still hidden.
+  - **Roaming Dreamer:** three apps, still hidden.
+- Apps that haven't launched yet are blurred and say only "Soon".
+- The **gear** at the top right opens Settings.
+- Pocket itself didn't change: the same screens, data, Google Sheet, import, sweep and backup.
 
 ## Updating to Pocket 2.0
 
@@ -230,7 +246,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'dreamer-2.0-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'dreamer-2.0.1-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting
