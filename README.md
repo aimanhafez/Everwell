@@ -29,17 +29,21 @@ The screens are Setup, Home, Accounts, Account detail, New/Edit account, Transac
 
 Only the main page changes. **No Apps Script update is needed.**
 
-1. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js` and `icons` folders**. There is a new folder, `icons/apps`, holding the app icons. Click **Commit changes**.
-2. **iPhone:** close Dreamer fully and open it again. If you still see the old main page, close it once more and reopen. The new files load on the second open.
+1. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js`, `icons` and `fonts` folders**. There are two new folders: `fonts` (the main page's fonts) and `icons/apps` (the Dreamer logo). Click **Commit changes**.
+2. **iPhone:** close Dreamer fully and open it again. If you still see the old main page, close and reopen it once more. The new files load on the second open.
 
 ## What's new in 2.0.1
 
-- **New main page**, styled like the iPhone dark home screen. It has one icon per app, in two groups:
-  - **Pennywise:** **Pocket** (Open), **Compass** (budget, P&L, forecast and goals; coming soon), and one more app, still hidden.
+- **New "one door" main page.** It is clean and dark, with an orange grid glow, the headline "All your dreams, one door." and an **Open Pocket** button.
+- **One card per app**, in two groups:
+  - **Pennywise:** **Pocket** (open), **Lens** (budget, P&L, forecast and goals; coming soon), and one more app, still hidden.
   - **Roaming Dreamer:** three apps, still hidden.
 - Apps that haven't launched yet are blurred and say only "Soon".
 - The **gear** at the top right opens Settings.
 - Pocket itself didn't change: the same screens, data, Google Sheet, import, sweep and backup.
+- **Credits:**
+  - Fonts: Space Grotesk and IBM Plex Mono, under the SIL Open Font License.
+  - Icons: Phosphor Icons, under the MIT license.
 
 ## Updating to Pocket 2.0
 
@@ -246,7 +250,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'dreamer-2.0.1-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'dreamer-2.0.1-2'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting
