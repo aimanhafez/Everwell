@@ -216,11 +216,8 @@ export function SweepSection(l) {
 
   const noteH = skipped.length ? 58 : 0;
   const card = Card(null, 0, 366, 214 + noteH + (l.sweepOpen && last ? lastH + 8 : 0), html`
-    ${C(16, 16, 38, 'rgba(255,106,0,0.12)', { b: 'rgba(255,106,0,0.3)' })}
-    ${I(26, 26, 18, 18, 'Sync', K.or, { pad: 0 })}
-    ${L(66, 15, 200, 20, 'Balance Sweep', { s: 10.5, w: 6 })}
-    ${L(66, 35, 200, 16, 'System account  ·  ' + eligible.length + ' linked', { s: 8, c: K.sub })}
-    ${statusPill(272, 22, status, 78)}
+    ${L(16, 18, 240, 24, 'Balance Sweep', { s: 11.5, w: 6 })}
+    ${statusPill(272, 19, status, 78)}
     ${L(16, 66, 220, 14, 'ACCUMULATED BALANCE', { s: 7, w: 6, c: K.sub })}
     ${L(16, 80, 334, 28, RM(balance), { s: 16, w: 6, id: 'sweepBal', onClick: sa ? () => { G.gblAccId = SWEEP_ID; l.goDetail && l.goDetail(); } : undefined })}
     ${Box(12, 116, 342, 52, html`

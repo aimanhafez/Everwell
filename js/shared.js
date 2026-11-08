@@ -1,13 +1,16 @@
 // Pieces used on many screens: headers, bottom bar, save bar, month picker, cash-flow card, date box + calendar.
 import {
-  html, K, G, DB, L, R, C, I, B, Box, Card, Gal, TI, Brand, fs, Navigate, Back, Notify, loadAll, rerender, dueCount, HAIR, SURFACE,
+  html, K, G, DB, NAV, L, R, C, I, B, Box, Card, Gal, TI, Brand, fs, Navigate, Back, Notify, loadAll, rerender, dueCount, HAIR, SURFACE,
   fmtD, parseDMY, D, Year, Month, Day, addDays, addMonths, weekday, Today, setMonth, PSTART, RM, sRM, pct, round2, monthLabel, guard, fromBottom
 } from './core.js';
 
 /* Top of the five main tabs: brand, refresh and bell. */
-export function TabHeader() {
+/** Header inside a module: tap the name or the grid to go back to the Dreamer main page */
+export function TabHeader(name = 'Pocket Dreamer') {
+  const home = () => { NAV.stack = []; Navigate('scrDreamer'); };
   return html`
-    ${Brand(18, 18, 276, 44)}
+    ${Brand(18, 18, 276, 44, false, false, name, home)}
+    ${I(258, 20, 36, 36, 'Grid', K.sub, { pad: 9, onClick: home, label: 'Dreamer' })}
     ${I(298, 20, 36, 36, 'Reset', K.sub, { pad: 9, onClick: () => syncNow(), label: 'Refresh' })}
     ${I(338, 20, 36, 36, 'Bell', K.text, { pad: 7, onClick: () => Navigate('scrRecurring'), label: 'Recurring' })}
     ${dueCount() > 0 ? C(362, 24, 8, K.or) : null}`;

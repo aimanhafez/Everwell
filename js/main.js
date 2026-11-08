@@ -7,8 +7,9 @@ import { scrAccounts, scrAccountDetail, scrAccountEdit } from './screens/account
 import { scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit } from './screens/transactions.js';
 import { scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, connect } from './screens/more.js';
 import { scrImport } from './screens/import.js';
+import { scrDreamer } from './screens/dreamer.js';
 
-Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, scrImport, connect });
+Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, scrImport, scrDreamer, connect });
 
 const stage = document.getElementById('stage');
 mount(stage);
@@ -44,7 +45,7 @@ async function boot() {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
   if (!CONN.v) { NAV.stack = []; Navigate('connect'); return; }
-  const start = () => { NAV.stack = []; Navigate(stStart() ? 'scrHome' : 'scrSetup'); }; // StartScreen: If(IsBlank(StStart), scrSetup, scrHome)
+  const start = () => { NAV.stack = []; Navigate(stStart() ? 'scrDreamer' : 'scrSetup'); }; // StartScreen: If(IsBlank(StStart), scrSetup, scrHome)
   const cached = loadCached();
   if (cached) start(); else splash('Loading your money…');
   try {

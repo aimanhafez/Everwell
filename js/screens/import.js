@@ -22,6 +22,21 @@ const NEWCAT = '＋ New category';
 const BATCH = 250;
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* ignore */ } } };
 
+/* ── Import memory: in the Google Sheet (SYS_ tabs, shared by every device) when the Apps Script is v2.0+, else on this phone ── */
+const MAP_CODE = 'code', MAP_TRF = 'trf', MAP_ACC = 'acc';
+function memory(kind) {
+  const local = store.get(kind === MAP_CODE ? 'pd_imp_codes' : kind === MAP_TRF ? 'pd_imp_trf' : 'pd_imp_acc', kind === MAP_ACC ? '' : {});
+  if (kind === MAP_ACC) { const r = (DB.importMap || []).find(x => x.MapKind === MAP_ACC); return (r && r.MapTo) || local; }
+  const out = { ...local };
+  (DB.importMap || []).filter(x => x.MapKind === kind).forEach(x => { out[x.MapFrom] = x.MapTo; });
+  return out;
+}
+function importMeta() {
+  const out = { ...store.get('pd_imports', {}) };
+  (DB.imports || []).forEach(r => { out[r.ImpId] = { file: r.ImpFile, at: r.ImpWhen, n: r.ImpRows, status: r.ImpStatus }; });
+  return out;
+}
+
 /* ── Reading files ── */
 function splitCsv(text) {
   const lines = String(text || '').replace(/^﻿/, '').split(/\r?\n/).filter(x => x.trim());
@@ -258,9 +273,9 @@ export const scrImport = {
         if (si < 0) return Notify('No header row found. The file needs columns like ' + TEMPLATE_HEAD.join(', ') + '.', 'error');
         Object.assign(l, { book, sheet: si, file: f.name, codeNew: {}, payOn: {}, paySame: {}, catType: {} });
         // remembered choices from earlier imports, then best guesses
-        const mem = store.get('pd_imp_codes', {}), tmem = store.get('pd_imp_trf', {});
+        const mem = memory(MAP_CODE);
         const acc0 = DB.accounts.find(a => a.AccType !== 'System' && (similar(a.AccName, book[si].name) || key(f.name).includes(key(a.AccName))));
-        l.accId = (acc0 || {}).AccId || store.get('pd_imp_acc', '') || '';
+        l.accId = (acc0 || {}).AccId || memory(MAP_ACC) || '';
         const probe = analyse(book[si], { accId: l.accId });
         l.codeMap = {}; l.guessed = {};
         Object.keys(probe.codes).forEach(c => { if (mem[c]) l.codeMap[c] = mem[c]; else { const g = guessCode(c); if (g) { l.codeMap[c] = g; l.guessed[c] = true; } } });
@@ -285,7 +300,7 @@ export const scrImport = {
 
     if (!l.book) {
       // imports are tagged with their id, so one import can be taken back out
-      const meta = store.get('pd_imports', {});
+      const meta = importMeta();
       const groups = {};
       DB.txns.forEach(t => { if (t.TxRule && t.TxRule.startsWith('IMP-')) { const g = groups[t.TxRule] || (groups[t.TxRule] = { id: t.TxRule, ids: [], n: 0, from: t.TxDate, to: t.TxDate }); g.ids.push(t.TxnId); if (!(t.TxType === 'Transfer' && t.TxDir === 'In')) g.n++; if (t.TxDate < g.from) g.from = t.TxDate; if (t.TxDate > g.to) g.to = t.TxDate; } });
       const recent = Object.values(groups).map(g => ({ ...g, file: (meta[g.id] || {}).file || 'Import ' + g.id.slice(4), at: (meta[g.id] || {}).at || '' })).sort((a, b) => (a.id < b.id ? 1 : -1)).slice(0, 3);
@@ -293,6 +308,7 @@ export const scrImport = {
         if (DB.txns.some(t => g.ids.includes(t.TxnId) && isLocked(t.TxDate))) return Notify('Part of this import is in a closed month. Reopen it in Accounts → Balance Sweep first.', 'error');
         askPassword(l, 'undo the import of ' + g.n + ' transactions', () => guard(async () => {
           const all = g.ids.concat(DB.txns.filter(t => t.TxParent && g.ids.includes(t.TxParent)).map(t => t.TxnId)); // split lines made later
+          if (DB.sysOk && (DB.imports || []).some(r => r.ImpId === g.id)) await save({ up: { SYS_Imports: [{ ...DB.imports.find(r => r.ImpId === g.id), ImpStatus: 'Undone' }] }, log: [] });
           await save({ del: { EW_Transactions: all }, log: [{ AuAction: 'Undo import', AuRef: g.id, AuDetail: g.n + ' transaction(s) from ' + g.file + ' removed' }] });
           Notify('Import undone: ' + g.n + ' transaction(s) removed.', 'info');
         }));
@@ -330,7 +346,7 @@ export const scrImport = {
     const sheet = l.book[l.sheet];
     let res = analyse(sheet, { accId: l.accId, codeMap: l.codeMap, codeNew: l.codeNew, trfMap: l.trfMap });
     // payees used for transfers: fill in remembered or matching accounts the first time they appear
-    const tmem = store.get('pd_imp_trf', {});
+    const tmem = memory(MAP_TRF);
     const fresh = Object.keys(res.trfNames).filter(nm => !(nm in l.trfMap));
     if (fresh.length) {
       fresh.forEach(nm => { const g = tmem[nm] || guessAccount(nm, l.accId); l.trfMap[nm] = g && g !== l.accId ? g : ''; });
@@ -387,14 +403,23 @@ export const scrImport = {
         if (i === 0) { if (catRows.length) up.EW_Categories = catRows; if (payRows.length) up.EW_Payees = payRows; }
         await save({ up, log: i === 0 ? [{ AuAction: 'Import', AuRef: impId, AuDetail: ok.length + ' transaction(s) from ' + (l.file || 'file') + (mode === 'statement' ? ' into ' + accName(l.accId) : '') + (catRows.length ? ' · ' + catRows.length + ' new categories' : '') + (payRows.length ? ' · ' + payRows.length + ' new payees' : '') }] : [] });
       }
+      // remember code links, transfer accounts and this import (Sheet when available, phone otherwise)
+      const when = new Date().toISOString();
+      const maps = [];
       if (mode === 'statement') {
-        const mem = store.get('pd_imp_codes', {}); Object.entries(l.codeMap).forEach(([c, v]) => { if (v && v !== NEWCAT) mem[c] = v; });
-        allNew.forEach(c => { if (c.fromCode) mem[c.fromCode] = c.name; });
-        store.set('pd_imp_codes', mem);
+        const codes = {}; Object.entries(l.codeMap).forEach(([c, v]) => { if (v && v !== NEWCAT) codes[c] = v; });
+        allNew.forEach(c => { if (c.fromCode) codes[c.fromCode] = c.name; });
+        Object.entries(codes).forEach(([c, v]) => maps.push({ MapKey: MAP_CODE + ':' + c, MapKind: MAP_CODE, MapFrom: c, MapTo: v, MapWhen: when }));
+        Object.entries(l.trfMap).forEach(([p, a]) => { if (a) maps.push({ MapKey: MAP_TRF + ':' + p, MapKind: MAP_TRF, MapFrom: p, MapTo: a, MapWhen: when }); });
+        maps.push({ MapKey: MAP_ACC, MapKind: MAP_ACC, MapFrom: '', MapTo: l.accId, MapWhen: when });
+        store.set('pd_imp_codes', { ...store.get('pd_imp_codes', {}), ...codes });
         const tm = store.get('pd_imp_trf', {}); Object.entries(l.trfMap).forEach(([p, a]) => { if (a) tm[p] = a; }); store.set('pd_imp_trf', tm);
         store.set('pd_imp_acc', l.accId);
       }
-      const meta = store.get('pd_imports', {}); meta[impId] = { file: l.file, at: new Date().toISOString(), n: ok.length }; store.set('pd_imports', meta);
+      const ds = ok.map(r => r.date).sort();
+      const impRow = { ImpId: impId, ImpFile: l.file || 'file', ImpAcc: l.accId || '', ImpRows: ok.length, ImpFrom: ds[0], ImpTo: ds[ds.length - 1], ImpWhen: when, ImpStatus: 'Imported' };
+      if (DB.sysOk) await save({ up: { SYS_Imports: [impRow], ...(maps.length ? { SYS_ImportMap: maps } : {}) }, log: [] });
+      const meta = store.get('pd_imports', {}); meta[impId] = { file: l.file, at: when, n: ok.length }; store.set('pd_imports', meta);
       Notify('Imported ' + ok.length + ' transaction(s). They are saving to your Google Sheet now.', 'info');
       l.book = null; Back();
     });

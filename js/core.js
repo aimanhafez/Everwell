@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '1.9';
+export const VERSION = '2.0';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -14,7 +14,7 @@ export const K = {
 export const PALETTE = ['#FF6A00', '#E5484D', '#A3236F', '#E9B949', '#6B7178', '#34C77B'];
 
 /* ───────────── Data (the SharePoint lists, now Google Sheet tabs) ───────────── */
-export const DB = { settings: null, accounts: [], categories: [], payees: [], recurring: [], txns: [], audit: [] };
+export const DB = { settings: null, accounts: [], categories: [], payees: [], recurring: [], txns: [], audit: [], importMap: [], imports: [], sysOk: false };
 
 /* ───────────── Global variables (Set(...) in the Power App) ───────────── */
 export const G = {
@@ -251,7 +251,7 @@ export async function api(action, payload, conn = CONN.v, opts = {}) {
  * Every save is applied on the phone straight away and put in an "outbox" kept in phone storage.
  * The outbox is sent to Google one batch at a time. Each batch is safe to send twice (rows are keyed),
  * so nothing is lost if the app is closed, offline or interrupted: it is sent again next time. */
-const MAP = { EW_Accounts: ['accounts', 'AccId'], EW_Categories: ['categories', 'CatId'], EW_Payees: ['payees', 'PyName'], EW_Recurring: ['recurring', 'RcId'], EW_Transactions: ['txns', 'TxnId'] };
+const MAP = { SYS_ImportMap: ['importMap', 'MapKey'], SYS_Imports: ['imports', 'ImpId'], EW_Accounts: ['accounts', 'AccId'], EW_Categories: ['categories', 'CatId'], EW_Payees: ['payees', 'PyName'], EW_Recurring: ['recurring', 'RcId'], EW_Transactions: ['txns', 'TxnId'] };
 export const SYNC = { outbox: store.get('ew_outbox', []), flushing: false, failed: false, timer: null };
 function applyLocal(p) {
   for (const [t, keys] of Object.entries(p.deletes || {})) {
@@ -277,7 +277,7 @@ function syncState() {
 }
 function persistOutbox() { store.set('ew_outbox', SYNC.outbox); syncState(); }
 let cacheTimer = null;
-const writeCache = () => { cacheTimer = null; store.set('ew_data', { at: Date.now(), settings: DB.settings, accounts: DB.accounts, categories: DB.categories, payees: DB.payees, recurring: DB.recurring, txns: DB.txns, audit: DB.audit.slice(0, 30) }); };
+const writeCache = () => { cacheTimer = null; store.set('ew_data', { at: Date.now(), settings: DB.settings, accounts: DB.accounts, categories: DB.categories, payees: DB.payees, recurring: DB.recurring, txns: DB.txns, audit: DB.audit.slice(0, 30), importMap: DB.importMap, imports: DB.imports, sysOk: DB.sysOk }); };
 function persistCache() { clearTimeout(cacheTimer); cacheTimer = setTimeout(writeCache, 300); }
 /** Write a pending cache save now (the app is being closed / hidden). */
 export function flushCache() { if (cacheTimer) { clearTimeout(cacheTimer); writeCache(); } }
@@ -322,6 +322,9 @@ function applyLoaded(d) {
   DB.recurring = d.recurring;
   DB.txns = d.transactions || d.txns;
   DB.audit = d.activity || d.audit || [];
+  // Dreamer tabs exist only once the Apps Script is v2.0 or newer
+  DB.sysOk = Array.isArray(d.importMap) || !!d.sysOk;
+  DB.importMap = d.importMap || []; DB.imports = d.imports || [];
   for (const item of SYNC.outbox) applyLocal(item.p); // changes not yet on Google stay visible
   G.gblCycleDay = (DB.settings && DB.settings.StCycleDay) || 28;
   const l = PLABEL(Today());
@@ -527,9 +530,9 @@ export function Tog(x, y, w, h, on, onChange) {
   return html`<div class="abs tog ${on ? 'on' : ''}" style=${pos(x, y, w, h)} onClick=${() => onChange(!on)} role="switch" aria-checked=${on}><i></i></div>`;
 }
 /** HtmlViewer brand mark */
-export function Brand(x, y, w, h, center, big) {
-  return html`<div class="abs brand ${center ? 'c' : ''}" style=${pos(x, y, w, h)}>
-    <div class="mark" style=${`font-size:${big ? 30 : 25}px`}>Pocket Dreamer<span>.</span></div>
+export function Brand(x, y, w, h, center, big, name = 'Dreamer', onClick) {
+  return html`<div class="abs brand ${center ? 'c' : ''} ${onClick ? 'tap' : ''}" style=${pos(x, y, w, h)} onClick=${onClick} data-t="brand">
+    <div class="mark" style=${`font-size:${big ? 30 : 25}px`}>${name}<span>.</span></div>
     <div class="tag" style=${`margin-top:${big ? 7 : 5}px;letter-spacing:${big ? 1.8 : 1.7}px`}>LIVE WELL TODAY. BUILD WELL FOR TOMORROW.</div>
   </div>`;
 }
@@ -571,6 +574,11 @@ const P = {
   Clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   Gauge: '<path d="M4 17a8 8 0 1 1 16 0"/><path d="m12 17 4-5"/>',
   Download: '<path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/>',
+  Grid: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
+  Wallet: '<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H17v3"/><rect x="4" y="8" width="16" height="11" rx="2.5"/><path d="M15.5 13.5h4.5"/><circle cx="16.5" cy="13.5" r=".6"/>',
+  Bars: '<path d="M5 19v-4"/><path d="M10 19v-7"/><path d="M15 19v-10"/><path d="M20 19V5"/>',
+  Globe: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.6 2.4 3.8 5.2 3.8 8.5s-1.2 6.1-3.8 8.5c-2.6-2.4-3.8-5.2-3.8-8.5S9.4 5.9 12 3.5z"/>',
+  History: '<path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4.5v3.6h3.6"/><path d="M12 8v4.2l2.8 1.8"/>',
   Trash: '<path d="M4 6h16M9 6V4h6v2M6 6l1 15h10l1-15"/><path d="M10 10v7M14 10v7"/>'
 };
 export function icon(name) {

@@ -1,4 +1,4 @@
-# Pocket Dreamer v1.9 (web version, formerly Everwell)
+# Dreamer · Pocket v2.0 (web version, formerly Everwell)
 
 *Live well today. Build well for tomorrow.*
 
@@ -24,6 +24,25 @@ The screens are Setup, Home, Accounts, Account detail, New/Edit account, Transac
 1. **Google Sheet:** open Apps Script. Replace everything in `Code.gs` with the new `apps-script/Code.gs`, then **Save**. Go to **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The URL stays the same, and the Sheet gets new columns (`StSweepAuto`, `StSweepFrom`, `StSweepLog`, `AccSweep`) the next time the app connects.
 2. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js`, `icons` and `apps-script` folders**. Files with the same name are replaced. Click **Commit changes**.
 3. **iPhone:** close Everwell fully and open it again. You won't need to reconnect.
+
+## Updating to Pocket 2.0
+
+This update has **two parts**. Do both.
+
+1. **Google Sheet:** open Apps Script and replace everything in `Code.gs` with the new `apps-script/Code.gs`, then **Save**. Then **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The web address stays the same. The next time the app opens, two new tabs appear in your Sheet: `SYS_ImportMap` and `SYS_Imports`.
+2. **GitHub:** upload the whole folder, including `js` and `icons`, and commit. There are new files: `js/screens/dreamer.js` and `js/backup.js`.
+3. **iPhone:** to get the new **D.** icon and the name **Dreamer**, add the app to the Home Screen again (Safari → your GitHub link → Share → Add to Home Screen), then remove the old icon. It asks for your web address and key once. Your data is all in the Sheet, so nothing is lost.
+
+If you skip step 1, the app still works, but Import keeps its memory on each phone instead of in the Sheet.
+
+## What's new in Pocket 2.0 · Dreamer
+
+- **Dreamer main page.** The app now opens on it. You see the greeting, your Pocket card (net worth, 6-month trend, this month's spending, kept, accounts) and tiles for **Financial** and **Roaming** (coming soon). Tap the Pocket card to go in. Inside Pocket, tap **▦** or the name **Pocket Dreamer** to come back.
+- **New logo and name:** the **D.** monogram, called "Dreamer" on the Home Screen.
+- **Balance Sweep card:** cleaner, without the icon and the "System account · N linked" line.
+- **Import memory is saved in your Google Sheet.** Your code links (SPT → Sports), transfer accounts (MAE → MAE), the last account you used, and **Recent imports** with Undo now work on every device: your phone, laptop or a new phone.
+- **Backup:** Settings → **Download backup (Excel)** saves every tab in one `.xlsx` file, with account names instead of IDs. On iPhone it opens the share sheet, so you can save it to Files, Google Drive or Mail.
+- Spending keeps both Expense and Savings/Asset categories (ASB, gold), as before.
 
 ## Updating to v1.9
 
@@ -211,7 +230,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'pocketdreamer-1.9-3'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'dreamer-2.0-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting

@@ -1,6 +1,6 @@
 {
-  "name": "Pocket Dreamer",
-  "short_name": "Pocket Dreamer",
+  "name": "Dreamer",
+  "short_name": "Dreamer",
   "description": "Live well today. Build well for tomorrow.",
   "start_url": "./",
   "scope": "./",

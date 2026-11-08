@@ -17,7 +17,7 @@
  * Helpers you can run from the editor: showApiKey(), resetApiKey()
  */
 
-var EW_VERSION = '4.4.0';
+var EW_VERSION = '2.0.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -27,7 +27,10 @@ var TABLES = {
   EW_Payees: { key: 'PyName', cols: { PyName: 's', PyCat: 's' } },
   EW_Recurring: { key: 'RcId', cols: { RcId: 's', RcSeq: 'n', RcName: 's', RcAcc: 's', RcType: 's', RcAmt: 'n', RcCat: 's', RcPayee: 's', RcFreq: 's', RcNext: 'd', RcMode: 's', RcActive: 'b' } },
   EW_Transactions: { key: 'TxnId', cols: { TxnId: 's', TxSeq: 'n', TxAcc: 's', TxDate: 'd', TxType: 's', TxDir: 's', TxAmt: 'n', TxCat: 's', TxPayee: 's', TxDesc: 's', TxNote: 's', TxTrf: 's', TxRef: 's', TxParent: 's', TxIsSplit: 'b', TxRule: 's' } },
-  EW_ActivityLog: { key: 'AuId', cols: { AuId: 's', AuWhen: 't', AuAction: 's', AuRef: 's', AuDetail: 's' } }
+  EW_ActivityLog: { key: 'AuId', cols: { AuId: 's', AuWhen: 't', AuAction: 's', AuRef: 's', AuDetail: 's' } },
+  // Dreamer: what Import remembers, shared by every device
+  SYS_ImportMap: { key: 'MapKey', cols: { MapKey: 's', MapKind: 's', MapFrom: 's', MapTo: 's', MapWhen: 't' } },
+  SYS_Imports: { key: 'ImpId', cols: { ImpId: 's', ImpFile: 's', ImpAcc: 's', ImpRows: 'n', ImpFrom: 'd', ImpTo: 'd', ImpWhen: 't', ImpStatus: 's' } }
 };
 var WRITE_ACTIONS = ['commit', 'startFresh'];
 
@@ -124,6 +127,8 @@ var ACTIONS = {
       recurring: readTable_(ss, 'EW_Recurring'),
       transactions: readTable_(ss, 'EW_Transactions'),
       activity: log.slice(0, 30),
+      importMap: readTable_(ss, 'SYS_ImportMap'),
+      imports: readTable_(ss, 'SYS_Imports'),
       serverTime: new Date().toISOString()
     };
   },
@@ -159,7 +164,7 @@ var ACTIONS = {
 
   /** Settings → Start fresh: removes accounts, transactions, recurring and the log. Keeps categories and payees. */
   startFresh: function (ss) {
-    ['EW_Transactions', 'EW_Accounts', 'EW_Recurring', 'EW_ActivityLog'].forEach(function (t) {
+    ['EW_Transactions', 'EW_Accounts', 'EW_Recurring', 'EW_ActivityLog', 'SYS_Imports'].forEach(function (t) {
       var sh = ss.getSheetByName(t);
       if (sh.getLastRow() > 1) sh.deleteRows(2, sh.getLastRow() - 1);
     });

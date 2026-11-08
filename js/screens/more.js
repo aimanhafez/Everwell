@@ -7,6 +7,7 @@ import {
 } from '../core.js';
 import { TabHeader, NavBar, DetailHeader, SaveBar, DateBox, Calendar, Fab, FlowCard, PeriodCard, AuditRows, askPassword, PasswordDialog } from '../shared.js';
 import { donutSvg } from './home.js';
+import { buildBackup, shareOrDownload } from '../backup.js';
 import { isLocked, lockMsg, lastSwept } from '../sweep.js';
 
 /* ───────────── Recurring ───────────── */
@@ -273,6 +274,16 @@ export const scrMore = {
       catch (e) { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
       flash('copied', 'Copied ✓');
     };
+    const backup = () => guard(async () => {
+      l.bkNote = 'Preparing…'; rerender();
+      try {
+        const { name, blob, counts } = await buildBackup();
+        const how = await shareOrDownload(name, blob);
+        l.bkNote = how === 'cancelled' ? '' : 'Saved ✓';
+        l.bkInfo = counts.Transactions + ' transactions · ' + counts.Accounts + ' accounts · ' + Object.keys(counts).length + ' tabs';
+      } catch (e) { l.bkNote = ''; Notify("Couldn't build the backup: " + (e.message || e), 'error'); }
+      rerender(); setTimeout(() => { l.bkNote = ''; rerender(); }, 2500);
+    });
     const recalc = () => askPassword(l, 'recalculate monthly totals', () => guard(async () => {
       Notify('Recalculating…', 'info');
       await loadAll();
@@ -315,6 +326,12 @@ export const scrMore = {
         ${L(64, 33, 280, 16, monthLabel('mmmm yyyy') + '  ·  ' + DB.txns.filter(t => t.TxType !== 'Opening Balance' && t.TxDate >= G.gblFrom && t.TxDate <= G.gblTo).length + ' rows  ·  for Excel or Google Sheets', { s: 8, c: K.sub })}
         ${B(16, 70, 162, 40, l.dlNote || 'Download CSV', { fill: K.or, c: '#FFFFFF', r: 20, s: 10, onClick: download, id: 'csvDownload' })}
         ${B(188, 70, 162, 40, l.copied || 'Copy as text', { fill: K.field, b: HAIR, r: 20, s: 10, onClick: copy, id: 'csvCopy' })}`, { id: 'exportCard' })}
+      ${SubHead('Backup')}
+      ${Card(null, 0, 366, 128, html`
+        ${C(16, 14, 36, K.field)}${I(25, 23, 18, 18, 'Download', K.or, { pad: 0 })}
+        ${L(64, 13, 280, 20, 'Back up everything', { s: 10.5, w: 6 })}
+        ${L(64, 33, 284, 16, l.bkInfo || 'Every tab of your Google Sheet in one Excel file', { s: 8, c: K.sub, id: 'bkInfo' })}
+        ${B(16, 70, 334, 42, l.bkNote || 'Download backup (Excel)', { fill: K.or, c: '#FFFFFF', r: 21, s: 10, onClick: backup, id: 'backup' })}`, { id: 'backupCard' })}
       ${SubHead('Data')}
       ${Card(null, 0, 366, 124, html`
         ${actionRow(0, 'Sync', 'Recalculate monthly totals', 'Reload everything from your Google Sheet', K.or, recalc, 'recalc')}
@@ -622,7 +639,7 @@ export const connect = {
         CONN.v = conn; store.set('ew_conn', conn); CONN.authError = '';
         await loadAll();
         NAV.stack = [];
-        Navigate(stStart() ? 'scrHome' : 'scrSetup');
+        Navigate(stStart() ? 'scrDreamer' : 'scrSetup');
       } catch (e) { Notify(e.message, 'error'); }
     };
     return html`<div class="scroll" style="position:absolute;inset:0"><div style="position:relative;height:844px">

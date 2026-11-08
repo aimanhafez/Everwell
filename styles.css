@@ -49,7 +49,7 @@ body { -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; touc
 .tog.on i { transform: translateX(28px); }
 .brand .mark { font-family: Georgia, "Times New Roman", serif; line-height: 1; color: #F4F2EE; letter-spacing: .4px; }
 .brand .mark span { color: #FF6A00; }
-.brand .tag { font-family: "Segoe UI", Arial, sans-serif; font-size: 7.5px; color: #8E949C; }
+.brand .tag { white-space: nowrap; font-family: "Segoe UI", Arial, sans-serif; font-size: 7.5px; color: #8E949C; }
 .brand.c { text-align: center; }
 .svgimg svg { width: 100%; height: 100%; display: block; }
 .dim { background: rgba(0, 0, 0, .62); }
