@@ -243,6 +243,7 @@ export const scrMore = {
       ['Tag', 'Categories', 'F&B, Transport, Sports and more', () => { G.gblCatTab = 'Categories'; Navigate('scrCategories'); }],
       ['Sync', 'Recurring', 'Salary, rent and bills', () => Navigate('scrRecurring')],
       ['Note', 'Activity log', 'Every change you make, newest first', () => Navigate('scrActivity')],
+      ['Download', 'Import transactions', 'Bring in past records from a CSV file', () => Navigate('scrImport')],
       ['CalendarBlank', 'Tracking period', 'From ' + fmtD(stStart(), 'dd mmm yyyy') + '  ·  months start on day ' + G.gblCycleDay, () => Navigate('scrSetup')]
     ];
     const csvText = () => {
@@ -300,13 +301,13 @@ export const scrMore = {
       ${B(0, y, 366, 62, '', { fill: 'transparent', r: 0, flat: true, onClick, id })}`;
     const url = CONN.v ? CONN.v.url.replace(/^https:\/\//, '') : '';
     const kids = html`
-      ${Card(null, 0, 366, 318, html`${menu.map(([ic, nm, sb, go], i) => html`
+      ${Card(null, 0, 366, menu.length * 62 + 8, html`${menu.map(([ic, nm, sb, go], i) => html`
         ${C(16, 17 + 62 * i, 36, K.field)}
         ${I(25, 26 + 62 * i, 18, 18, ic, K.or, { pad: 0 })}
         ${L(64, 16 + 62 * i, 256, 20, nm, { s: 10.5, w: 6 })}
         ${L(64, 36 + 62 * i, 256, 16, sb, { s: 8, c: K.sub })}
         ${I(326, 23 + 62 * i, 24, 24, 'ChevronRight', K.mute, { pad: 3 })}
-        ${i < 4 ? R(64, 65 + 62 * i, 286, 1, K.sep) : null}
+        ${i < menu.length - 1 ? R(64, 65 + 62 * i, 286, 1, K.sep) : null}
         ${B(0, 4 + 62 * i, 366, 62, '', { fill: 'transparent', r: 0, flat: true, onClick: go, id: 'menu-' + nm })}`)}`)}
       ${Card(null, 0, 366, 128, html`
         ${C(16, 14, 36, K.field)}${I(25, 23, 18, 18, 'Note', K.or, { pad: 0 })}

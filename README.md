@@ -1,4 +1,4 @@
-# Pocket Dreamer v1.8 (web version, formerly Everwell)
+# Pocket Dreamer v1.9 (web version, formerly Everwell)
 
 *Live well today. Build well for tomorrow.*
 
@@ -24,6 +24,30 @@ The screens are Setup, Home, Accounts, Account detail, New/Edit account, Transac
 1. **Google Sheet:** open Apps Script. Replace everything in `Code.gs` with the new `apps-script/Code.gs`, then **Save**. Go to **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The URL stays the same, and the Sheet gets new columns (`StSweepAuto`, `StSweepFrom`, `StSweepLog`, `AccSweep`) the next time the app connects.
 2. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js`, `icons` and `apps-script` folders**. Files with the same name are replaced. Click **Commit changes**.
 3. **iPhone:** close Everwell fully and open it again. You won't need to reconnect.
+
+## Updating to v1.9
+
+Only **GitHub** changes; `Code.gs` stays the same. Upload the whole folder (it has a new file, `js/screens/import.js`) and commit, then close and reopen the app.
+
+## What's new in v1.9 · Import past transactions
+
+**Settings → Import transactions**
+
+1. **Download template.** It has 8 columns: Date, Type, Amount, Account, Category, Payee, Description, To account.
+   - Type is Expense, Income or Transfer.
+   - Dates are dd/mm/yyyy.
+   - For a transfer, Account is where the money comes from and To account is where it goes.
+2. Fill it in Excel, then **File → Save As → CSV (Comma delimited)**.
+3. **Choose CSV file.** Every row is checked before anything is saved:
+   - **Needs fixing:** unknown account, bad date or amount, before your tracking start, in a closed month, or in the future. These rows are skipped.
+   - **New payees:** ticked payees are added with their category. Unticked names go into the description. Near-matches ask "Looks like Lotus's? Same / New payee".
+   - **New categories:** pick the type (Expense, Savings/Asset or Income).
+   - **Already in the app:** same date, account, amount and payee are skipped (you can switch this off).
+4. **Import.** Rows are saved in batches. Transfers become proper two-sided pairs, and one activity-log entry is written.
+
+**Fix:** on the Transactions page, the cash flow skipped split transactions, so a filtered account (for example a credit card with a split purchase) could show a net that didn't match its balance. Split lines are now counted.
+
+Accounts must exist in the app before importing. To import into closed months, reopen them in Accounts → Balance Sweep first.
 
 ## Updating to v1.8
 
@@ -187,7 +211,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'pocketdreamer-1.8-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'pocketdreamer-1.9-2'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting

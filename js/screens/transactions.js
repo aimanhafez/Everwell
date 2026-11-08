@@ -28,8 +28,12 @@ export const scrTransactions = {
     let inV = 0, outV = 0;
     for (const t of F) {
       if (t.TxType === 'Transfer') { if (l.locTxAcc) { if (t.TxDir === 'In') inV += t.TxAmt; else outV += t.TxAmt; } continue; }
-      const f = flowOf(t); if (!f) continue;
-      if (f.side === 'In') inV += f.v; else outV += f.v;
+      // a split counts by its lines (each line has its own category)
+      const parts = t.TxIsSplit ? DB.txns.filter(x => x.TxParent === t.TxnId && (l.locTxCat === 'All' || x.TxCat === l.locTxCat || t.TxCat === l.locTxCat)) : [t];
+      for (const x of parts) {
+        const f = flowOf(x); if (!f) continue;
+        if (f.side === 'In') inV += f.v; else outV += f.v;
+      }
     }
     inV = round2(inV); outV = round2(outV);
     const list = F.slice().sort(byTxDesc);

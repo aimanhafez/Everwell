@@ -6,8 +6,9 @@ import { scrHome } from './screens/home.js';
 import { scrAccounts, scrAccountDetail, scrAccountEdit } from './screens/accounts.js';
 import { scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit } from './screens/transactions.js';
 import { scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, connect } from './screens/more.js';
+import { scrImport } from './screens/import.js';
 
-Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, connect });
+Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, scrImport, connect });
 
 const stage = document.getElementById('stage');
 mount(stage);
