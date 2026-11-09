@@ -84,5 +84,12 @@ export function payslipYear(y) {
 }
 /** KWSP (you + employer) by month, all employers together, for Lens: [{k, payDate, amt}] */
 export function kwspFlows() { return psMonths().map(monthPay).filter(Boolean).map(p => ({ k: p.k, payDate: p.payDate, amt: p.kwsp })); }
+/** Pocket income categories that hold salary: the ones payslips link to, plus any named like salary. */
+export function salaryCats() {
+  const ids = new Set(DB.payslips.filter(r => r.PsGroup === 'meta' && r.PsTxn).map(r => r.PsTxn));
+  const s = new Set(DB.txns.filter(t => ids.has(t.TxnId)).map(t => t.TxCat).filter(Boolean));
+  (DB.categories || []).forEach(c => { if (catTypeOf(c.CatName) === 'Income' && /salary|gaji|payroll/i.test(c.CatName)) s.add(c.CatName); });
+  return s;
+}
 export const hasPayslips = () => DB.payslips.some(r => r.PsGroup !== 'meta');
 export { perKey };

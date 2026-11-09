@@ -1,4 +1,4 @@
-# MansWell · v3.1.1 (Pocket + Payslip + Lens)
+# MansWell · v3.1.2 (Pocket + Payslip + Lens)
 
 *Live well today. Build well for tomorrow.*
 
@@ -6,6 +6,23 @@ MansWell is the new name for Dreamer (and, before that, Pocket Dreamer and Everw
 
 - **Pocket** is where money is recorded: accounts, transactions, Balance Sweep, import and backup, plus **Payslip** (new in 3.1).
 - **Lens** is where money is understood. It has five pages: P&L, Assets, Plan, Budget and Settings.
+
+## Updating to 3.1.2
+
+- **GitHub only:** upload everything from this folder (including the new `js/lens/guide.js`) and click **Commit changes**.
+- **No Apps Script change:** keep the 3.1 `Code.gs` you already deployed.
+- **No data changes:** nothing in your Sheet changes.
+
+What changed:
+
+- **KWSP follows your payslips** even when it's linked to a Pocket category. KWSP's "+ In" = KWSP on your payslips (you + employer) + any KWSP movement in Pocket, such as a withdrawal. Tap KWSP to see the split.
+- **P&L, Gross view:** one **Income** group. Gross pay, then your own KWSP, PCB tax, zakat, PERKESO + SIP and other deductions, then **Net salary** (your Salary credits in Pocket), then other income such as interest, then Total income. The "Incl. KWSP" row is gone. The savings rate is Total savings ÷ Total income. Export follows the same layout.
+- **Assets:**
+  - The roll-forward headers fit.
+  - The sub-lines under each name and the note under the table are gone.
+  - **Growth** is now a line from your opening balance to today, with a point at each month-end. Pick Total or one asset, and tap or drag to read any month.
+- **Guides:** the book icon at the top of P&L and Assets opens a guide to that page.
+- **Fixed:** a value of nothing showed as "-0". It now shows 0.
 
 ## Updating to 3.1.1 (from 3.1)
 
@@ -334,7 +351,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'manswell-3.1.1-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'manswell-3.1.2-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting

@@ -15,7 +15,7 @@ function sheetOpening(l) {
   openSheet(l, {
     title: 'Opening balances',
     body: () => html`<div class="lnote">As at <b>${fmtD(E.openDate(), 'dd mmm yyyy')}</b>, the day before Pocket starts. Changing one changes every figure after it, so it asks for your password.</div>
-      ${RF.list.map(r => html`<div class="lr" style="grid-template-columns:1fr 128px;margin-top:6px"><div><div class="t" style="font-size:14px">${r.a.AsName}</div><div class="s">${r.a.AsKind === 'account' ? 'From Pocket' : r.a.AsKind === 'category' ? 'Pocket category' : 'You update'}</div></div>
+      ${RF.list.map(r => html`<div class="lr" style="grid-template-columns:1fr 128px;margin-top:6px"><div><div class="t" style="font-size:14px">${r.a.AsName}</div><div class="s">${r.a.AsKind === 'account' ? 'From Pocket' : r.a.AsKind === 'category' ? (r.ps ? 'Pocket category + payslips' : 'Pocket category') : 'You update'}</div></div>
         ${r.a.AsKind === 'account' ? html`<div class="lfx" style="padding:9px 10px;text-align:right;font-weight:600;opacity:.6">${W2(r.open)}</div>` : html`<input class="lin r" inputmode="decimal" value=${f[r.a.AsId]} onInput=${e => { f[r.a.AsId] = e.target.value; }} data-t=${'ob-' + r.a.AsName} />`}</div>`)}`,
     onSave: () => {
       const ch = RF.list.filter(r => r.a.AsKind !== 'account' && num(f[r.a.AsId]) !== Number(r.a.AsOpen || 0)).map(r => ({ ...r.a, AsOpen: num(f[r.a.AsId]) }));
@@ -27,7 +27,7 @@ function sheetOpening(l) {
 function sheetAssets(l) {
   openSheet(l, {
     title: 'Assets & links',
-    body: () => html`${E.assets().map(a => html`<div class="lr tap" style="grid-template-columns:1fr auto;cursor:pointer" onClick=${() => editAsset(l, a)}><div><div class="t" style="font-size:14px">${a.AsName}</div><div class="s">${a.AsKind === 'account' ? 'Pocket account · Balance Sweep' : a.AsKind === 'category' ? 'Linked to Pocket category “' + a.AsCat + '”' : 'You update' + (a.AsMonthly ? ' · ' + W0(a.AsMonthly) + '/mo estimate' : '')} · ${['Ready now', 'Within days', 'Retirement'][Number(a.AsLiq) || 0]}</div></div>${iconHtml('right', K.sub, 16)}</div>`)}
+    body: () => html`${E.assets().map(a => html`<div class="lr tap" style="grid-template-columns:1fr auto;cursor:pointer" onClick=${() => editAsset(l, a)}><div><div class="t" style="font-size:14px">${a.AsName}</div><div class="s">${a.AsKind === 'account' ? 'Pocket account · Balance Sweep' : a.AsKind === 'category' ? 'Linked to Pocket category “' + a.AsCat + '”' + (E.payslipFed(a) ? ' + payslips' : '') : 'You update' + (a.AsMonthly ? ' · ' + W0(a.AsMonthly) + '/mo estimate' : '')} · ${['Ready now', 'Within days', 'Retirement'][Number(a.AsLiq) || 0]}</div></div>${iconHtml('right', K.sub, 16)}</div>`)}
       <div style="margin-top:12px"><button class="lbtn o" style="width:100%;padding:11px" onClick=${() => editAsset(l, null)}>+ Add asset</button></div>`
   });
 }

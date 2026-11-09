@@ -127,8 +127,10 @@ export function acctBal(accId, upTo) { let b = 0; for (const t of DB.txns) if (t
 export function catFlow(cat, from, to) { let s = 0; for (const t of DB.txns) { if (t.TxCat !== cat || (from && t.TxDate < from) || (to && t.TxDate > to)) continue; const f = flowOf(t); if (f && f.side === 'Out') s += f.v; } return round2(s); }
 export const valuesOf = id => DB.lnValues.filter(v => v.VaAsset === id).sort((a, b) => (a.VaDate < b.VaDate ? -1 : a.VaDate > b.VaDate ? 1 : 0));
 export function openingOf(a) { return a.AsKind === 'account' ? acctBal(a.AsAcc, openDate()) : Number(a.AsOpen) || 0; }
-/** KWSP-type assets grow from Pocket payslips (you + employer). Months without a payslip use the monthly estimate. */
-export const payslipFed = a => a.AsKind === 'manual' && (a.AsCat === 'payslip:kwsp' || /kwsp|epf/i.test(a.AsName || ''));
+/** KWSP-type assets grow from Pocket payslips (you + employer). Months without a payslip use the monthly estimate.
+ *  That holds whether KWSP is a value you update or linked to a Pocket category (then top-ups and withdrawals in Pocket count too). */
+export const isKwsp = a => a.AsCat === 'payslip:kwsp' || /kwsp|epf/i.test(a.AsName || '') || (a.AsKind === 'category' && /kwsp|epf/i.test(a.AsCat || ''));
+export const payslipFed = a => (a.AsKind === 'manual' || a.AsKind === 'category') && isKwsp(a);
 export function manualFlows(a, fromExcl, toIncl) {
   const mo = Number(a.AsMonthly) || 0;
   if (!payslipFed(a) || !hasPayslips()) return { v: round2(mo * monthsBetween(fromExcl, toIncl)), est: mo > 0 && monthsBetween(fromExcl, toIncl) > 0, ps: false };
@@ -146,7 +148,7 @@ export function valueAt(a, date) {
   const vals = valuesOf(a.AsId).filter(v => v.VaDate <= date);
   const lastSet = [...vals].reverse().find(v => v.VaKind === 'value');
   const baseDate = lastSet ? lastSet.VaDate : openDate(), base = lastSet ? Number(lastSet.VaAmt) : Number(a.AsOpen) || 0;
-  const flows = a.AsKind === 'category' ? catFlow(a.AsCat, addDays(baseDate, 1), date) : manualFlows(a, baseDate, date).v;
+  const flows = a.AsKind === 'category' ? round2(catFlow(a.AsCat, addDays(baseDate, 1), date) + (payslipFed(a) ? manualFlows(a, baseDate, date).v : 0)) : manualFlows(a, baseDate, date).v;
   const adds = vals.filter(v => v.VaKind === 'add' && v.VaDate > baseDate).reduce((s, v) => s + Number(v.VaAmt), 0);
   return round2(base + flows + adds);
 }
@@ -154,19 +156,21 @@ export function rollForward() {
   const today = Today(), od = openDate();
   const list = assets().map(a => {
     const open = openingOf(a), now = valueAt(a, today);
-    const mf = a.AsKind === 'manual' ? manualFlows(a, od, today) : null;
-    const inn = a.AsKind === 'account' ? round2(now - open) : a.AsKind === 'category' ? catFlow(a.AsCat, addDays(od, 1), today) : mf.v;
+    const mf = a.AsKind === 'manual' || payslipFed(a) ? manualFlows(a, od, today) : null;
+    const pocket = a.AsKind === 'category' ? catFlow(a.AsCat, addDays(od, 1), today) : 0;
+    const inn = a.AsKind === 'account' ? round2(now - open) : a.AsKind === 'category' ? round2(pocket + (mf ? mf.v : 0)) : mf.v;
     const vals = valuesOf(a.AsId), last = vals[vals.length - 1];
-    return { a, open, inn, grow: round2(now - open - inn), now, est: !!(mf && mf.est), ps: !!(mf && mf.ps), last, liq: Number(a.AsLiq) || 0 };
+    return { a, open, inn, pocket, psIn: mf && mf.ps ? mf.v : 0, grow: round2(now - open - inn), now, est: !!(mf && mf.est), ps: !!(mf && mf.ps), last, liq: Number(a.AsLiq) || 0 };
   });
   const T = f => round2(list.reduce((s, r) => s + r[f], 0));
   return { list, open: T('open'), inn: T('inn'), grow: T('grow'), now: T('now') };
 }
-/** Month-end totals per asset for the growth chart: from the opening date to today. */
+/** Values for the growth chart: the opening balance, then each month-end, then today. Per asset and in total. */
 export function assetSeries() {
   const ks = []; for (let k = startKey(); k <= curKey() && ks.length < 36; k = kAdd(k, 1)) ks.push(k);
-  const dates = ks.map(k => (k === curKey() ? Today() : kEnd(k)));
-  return { ks, dates, rows: assets().map(a => ({ a, vals: dates.map(d => valueAt(a, d)) })) };
+  const dates = [openDate(), ...ks.map(k => (k === curKey() ? Today() : kEnd(k)))];
+  const rows = assets().map(a => ({ a, vals: dates.map(d => valueAt(a, d)) }));
+  return { ks: [null, ...ks], dates, rows, total: dates.map((d, i) => round2(rows.reduce((s, r) => s + r.vals[i], 0))) };
 }
 export const readyNow = () => round2(rollForward().list.filter(r => r.liq === 0).reduce((s, r) => s + r.now, 0));
 

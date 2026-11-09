@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '3.1.1';
+export const VERSION = '3.1.2';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -115,7 +115,7 @@ export function resetTxPeriodToMonth() {
 const nf2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const nf0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 export const n2 = v => nf2.format(Math.round((Number(v) || 0) * 100) / 100);
-export const n0 = v => nf0.format(Math.round(Number(v) || 0));
+export const n0 = v => nf0.format(Math.round(Number(v) || 0) || 0); // never "-0"
 export const RM = v => 'RM ' + n2(v);
 export const sRM = v => (v < 0 ? '-' : '') + 'RM ' + n2(Math.abs(v)); // If(x<0,"-","") & "RM " & Text(Abs(x))
 export const pct = v => Math.round((Number(v) || 0) * 100) + '%';
@@ -571,6 +571,7 @@ const P = {
   Umbrella: '<path d="M3 12a9 9 0 0 1 18 0z"/><path d="M12 12v6.5a2 2 0 0 1-4 0"/><path d="M12 3v0"/>',
   Table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 10v10"/>',
   Expand: '<path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/>',
+  Guide: '<path d="M3 5.5c3-1.2 6-1 9 1 3-2 6-2.2 9-1v13c-3-1.2-6-1-9 1-3-2-6-2.2-9-1z"/><path d="M12 6.5v13"/>',
   Reset: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/>',
   Bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
   ChevronLeft: '<path d="M15 4 7 12l8 8"/>',

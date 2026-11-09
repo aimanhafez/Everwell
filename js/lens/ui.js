@@ -70,7 +70,7 @@ select.lin{padding-right:30px;background-image:linear-gradient(45deg,transparent
 .ltbl td:first-child,.ltbl th:first-child{text-align:left;padding-left:16px;position:sticky;left:0;z-index:1;background:#171A1F;max-width:136px;min-width:136px;overflow:hidden;text-overflow:ellipsis;box-shadow:6px 0 8px -6px rgba(0,0,0,.7)}
 .ltbl td:last-child,.ltbl th:last-child{padding-right:16px}
 .ltbl .sec td{font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:${K.or};padding-top:14px;border-top:0;text-transform:uppercase}
-.ltbl .tot td{font-weight:700;border-top:1px solid #2E333B}
+.ltbl .tot td{font-weight:700;border-top:1px solid #2E333B}.ltbl .gp td{font-weight:600}
 .ltbl .key td{font-weight:700;font-size:12.5px;background:rgba(255,106,0,.05)}.ltbl .key td:first-child{background:#1D1B1A}
 .ltbl td.hi{background:rgba(255,106,0,.16);color:#FFB27A;border-radius:4px}
 .ltbl td.cur,.ltbl th.cur{background:rgba(255,255,255,.03)}
@@ -107,9 +107,10 @@ export const pctTxt = r => (r === null || r === undefined ? 'â€“' : (r < 0 ? 'âˆ
 /* page chrome */
 const TABS = [['Chart', 'P&L', 'scrLensPnl'], ['Coins', 'Assets', 'scrLensAssets'], ['Compass', 'Plan', 'scrLensPlan'], ['Calculator', 'Budget', 'scrLensBudget'], ['Settings', 'Settings', 'scrLensSettings']];
 export const goHome = () => { NAV.stack = []; Navigate('scrDreamer'); };
-export function LensHeader() {
+export function LensHeader(onGuide) {
   return html`
     ${Brand(18, 18, 276, 44, false, false, 'Lens', goHome)}
+    ${onGuide ? I(258, 20, 36, 36, 'Guide', K.sub, { pad: 9, onClick: onGuide, label: 'Guide' }) : null}
     ${I(298, 20, 36, 36, 'Grid', K.sub, { pad: 9, onClick: goHome, label: 'MansWell' })}
     ${I(338, 20, 36, 36, 'Reset', K.sub, { pad: 9, onClick: () => syncNow(), label: 'Refresh' })}`;
 }
@@ -121,10 +122,10 @@ export function LensNav(active) {
       ${I(26 + i * 78, { b: 41 }, 26, 26, ic, i === active ? K.or : K.mute, { pad: 4, onClick: () => Navigate(scr), label: 'Lens ' + lb })}
       ${L(i * 78, { b: 25 }, 78, 14, lb, { s: 7.5, c: i === active ? K.or : K.mute, w: i === active ? 6 : 4, a: 'c', ls: 0.3, onClick: () => Navigate(scr) })}`)}`;
 }
-export function Page(l, active, kids, id) {
+export function Page(l, active, kids, id, onGuide) {
   return html`<div>
     <style>${CSS}</style>
-    ${LensHeader()}
+    ${LensHeader(onGuide)}
     <div class="lz" data-t=${id} id=${id}>${kids}</div>
     ${LensNav(active)}
     ${Sheet(l)}
