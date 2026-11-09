@@ -2,6 +2,7 @@
 // Money is counted the way Pocket counts it (flowOf): the category decides the side, transfers and split parents
 // are left out, paybacks net off inside their category. Months are Pocket's financial months (cycle day).
 import { DB, Today, perKey, PSTART, PEND, addDays, addMonths, D, round2, flowOf, catTypeOf, stStart, MON } from '../core.js';
+import { kwspFlows, hasPayslips, payslip } from '../payslip-data.js';
 
 /* ───────── settings (LN_Settings: one row per key, JSON value) ───────── */
 const SINK_RX = /travel/i;
@@ -126,12 +127,26 @@ export function acctBal(accId, upTo) { let b = 0; for (const t of DB.txns) if (t
 export function catFlow(cat, from, to) { let s = 0; for (const t of DB.txns) { if (t.TxCat !== cat || (from && t.TxDate < from) || (to && t.TxDate > to)) continue; const f = flowOf(t); if (f && f.side === 'Out') s += f.v; } return round2(s); }
 export const valuesOf = id => DB.lnValues.filter(v => v.VaAsset === id).sort((a, b) => (a.VaDate < b.VaDate ? -1 : a.VaDate > b.VaDate ? 1 : 0));
 export function openingOf(a) { return a.AsKind === 'account' ? acctBal(a.AsAcc, openDate()) : Number(a.AsOpen) || 0; }
+/** KWSP-type assets grow from Pocket payslips (you + employer). Months without a payslip use the monthly estimate. */
+export const payslipFed = a => a.AsKind === 'manual' && (a.AsCat === 'payslip:kwsp' || /kwsp|epf/i.test(a.AsName || ''));
+export function manualFlows(a, fromExcl, toIncl) {
+  const mo = Number(a.AsMonthly) || 0;
+  if (!payslipFed(a) || !hasPayslips()) return { v: round2(mo * monthsBetween(fromExcl, toIncl)), est: mo > 0 && monthsBetween(fromExcl, toIncl) > 0, ps: false };
+  const flows = kwspFlows(), byK = new Map(flows.map(f => [f.k, f]));
+  let v = 0, est = false;
+  for (let k = perKey(addDays(fromExcl, 1)); k <= perKey(toIncl); k = kAdd(k, 1)) {
+    const f = byK.get(k);
+    if (f) { if (f.payDate > fromExcl && f.payDate <= toIncl) v += f.amt; }
+    else if (mo && kEnd(k) > fromExcl && kEnd(k) <= toIncl) { v += mo; est = true; }
+  }
+  return { v: round2(v), est, ps: true };
+}
 export function valueAt(a, date) {
   if (a.AsKind === 'account') return acctBal(a.AsAcc, date);
   const vals = valuesOf(a.AsId).filter(v => v.VaDate <= date);
   const lastSet = [...vals].reverse().find(v => v.VaKind === 'value');
   const baseDate = lastSet ? lastSet.VaDate : openDate(), base = lastSet ? Number(lastSet.VaAmt) : Number(a.AsOpen) || 0;
-  const flows = a.AsKind === 'category' ? catFlow(a.AsCat, addDays(baseDate, 1), date) : (Number(a.AsMonthly) || 0) * monthsBetween(baseDate, date);
+  const flows = a.AsKind === 'category' ? catFlow(a.AsCat, addDays(baseDate, 1), date) : manualFlows(a, baseDate, date).v;
   const adds = vals.filter(v => v.VaKind === 'add' && v.VaDate > baseDate).reduce((s, v) => s + Number(v.VaAmt), 0);
   return round2(base + flows + adds);
 }
@@ -139,9 +154,10 @@ export function rollForward() {
   const today = Today(), od = openDate();
   const list = assets().map(a => {
     const open = openingOf(a), now = valueAt(a, today);
-    const inn = a.AsKind === 'account' ? round2(now - open) : a.AsKind === 'category' ? catFlow(a.AsCat, addDays(od, 1), today) : round2((Number(a.AsMonthly) || 0) * monthsBetween(od, today));
+    const mf = a.AsKind === 'manual' ? manualFlows(a, od, today) : null;
+    const inn = a.AsKind === 'account' ? round2(now - open) : a.AsKind === 'category' ? catFlow(a.AsCat, addDays(od, 1), today) : mf.v;
     const vals = valuesOf(a.AsId), last = vals[vals.length - 1];
-    return { a, open, inn, grow: round2(now - open - inn), now, est: a.AsKind === 'manual' && Number(a.AsMonthly) > 0, last, liq: Number(a.AsLiq) || 0 };
+    return { a, open, inn, grow: round2(now - open - inn), now, est: !!(mf && mf.est), ps: !!(mf && mf.ps), last, liq: Number(a.AsLiq) || 0 };
   });
   const T = f => round2(list.reduce((s, r) => s + r[f], 0));
   return { list, open: T('open'), inn: T('inn'), grow: T('grow'), now: T('now') };
@@ -153,6 +169,14 @@ export function assetSeries() {
   return { ks, dates, rows: assets().map(a => ({ a, vals: dates.map(d => valueAt(a, d)) })) };
 }
 export const readyNow = () => round2(rollForward().list.filter(r => r.liq === 0).reduce((s, r) => s + r.now, 0));
+
+/** What a retirement-type asset receives a month: the average of the last 3 payslips if it is payslip-fed, else its estimate. */
+export function monthlyInto(a) {
+  if (payslipFed(a) && hasPayslips()) { const f = kwspFlows().slice(-3); if (f.length) return round2(f.reduce((s, x) => s + x.amt, 0) / f.length); }
+  return Number(a.AsMonthly) || 0;
+}
+/** Payroll for a P&L month (gross view): gross, deductions by kind and net salary, from the payslip. */
+export function payroll(k) { return payslip(k); }
 
 /* ───────── cards: is any balance carried past its due date? ───────── */
 export function cardStatus() {

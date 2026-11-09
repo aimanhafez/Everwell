@@ -19,7 +19,7 @@ export function syncNow() {
   guard(async () => { await loadAll(); Notify('Up to date.', 'success'); });
 }
 
-const TABS = [['Home', 'Home', 'scrHome'], ['Money', 'Accounts', 'scrAccounts'], ['DetailList', 'Transactions', 'scrTransactions'], ['Trending', 'Analysis', 'scrAnalysis'], ['Settings', 'Settings', 'scrMore']];
+const TABS = [['Home', 'Home', 'scrHome'], ['Money', 'Accounts', 'scrAccounts'], ['DetailList', 'Transactions', 'scrTransactions'], ['Receipt', 'Payslip', 'scrPayslip'], ['Settings', 'Settings', 'scrMore']];
 /* Bottom navigation (active = index 0..4) */
 export function NavBar(active) {
   return html`

@@ -139,7 +139,7 @@ export const Switch = (on, onClick, id) => html`<span class=${'lsw' + (on ? ' on
 /* sheet (bottom panel) */
 export function openSheet(l, s) { l.sheet = s; rerender(); }
 export function closeSheet(l) { l.sheet = null; rerender(); }
-function Sheet(l) {
+export function Sheet(l) {
   const s = l.sheet; if (!s) return null;
   return html`<div class="lsh" data-t="sheet">
     <div class="dim" onClick=${() => closeSheet(l)}></div>

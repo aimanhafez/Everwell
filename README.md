@@ -1,21 +1,20 @@
-# MansWell · v3.0.2 (Pocket + Lens)
+# MansWell · v3.1 (Pocket + Payslip + Lens)
 
 *Live well today. Build well for tomorrow.*
 
 MansWell is the new name for Dreamer (and, before that, Pocket Dreamer and Everwell). It now has two rooms:
 
-- **Pocket** is where money is recorded. It's exactly as before: accounts, transactions, Balance Sweep, import and backup.
+- **Pocket** is where money is recorded: accounts, transactions, Balance Sweep, import and backup, plus **Payslip** (new in 3.1).
 - **Lens** is where money is understood. It has five pages: P&L, Assets, Plan, Budget and Settings.
 
-## Updating to 3.0.2
+## Updating to 3.1
 
-3.0.2 is 3.0 with the main page laid out as full-width cards: an Open Pocket button, one Rooms label, Pocket and Lens cards (logo, name and subheader only), and two blurred Soon apps, Roaming and Memories. If you're coming from 2.0.1, follow all three steps below. If you already installed 3.0 or 3.0.1, only step 2 is needed.
-
+3.1 adds **Payslip** to Pocket (tab 4). If you're coming from 2.0.1, follow all three steps below. If you already run 3.0 or later, steps 1 and 2 are enough.
 
 Do all three parts.
 
-1. **Google Sheet:** open Apps Script and replace everything in `Code.gs` with the new `apps-script/Code.gs`, then **Save**. Then go to **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The web address stays the same. The next time the app opens, five new tabs appear in your Sheet: `LN_Settings`, `LN_Assets`, `LN_Values`, `LN_Goals` and `LN_Budget`. No Pocket tab is changed.
-2. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js` folder (with the new `js/lens` folder), `icons` and `apps-script`**. Click **Commit changes**.
+1. **Google Sheet:** open Apps Script and replace everything in `Code.gs` with the new `apps-script/Code.gs`, then **Save**. Then go to **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The web address stays the same. The next time the app opens, six new tabs appear in your Sheet: `EW_Payslips`, `LN_Settings`, `LN_Assets`, `LN_Values`, `LN_Goals` and `LN_Budget`. No existing tab is changed.
+2. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js` folder (with the new `js/lens` folder, `js/screens/payslip.js` and `js/payslip-data.js`), `icons` and `apps-script`**. Click **Commit changes**.
    - You can delete the old `fonts` and `icons/apps` folders from GitHub. They're no longer used.
 3. **iPhone:** to get the new **MansWell** name and logo on your Home Screen:
    1. Open your GitHub link in Safari.
@@ -23,7 +22,29 @@ Do all three parts.
    3. Remove the old Dreamer icon.
    It asks for your web address and key once. Your data is all in the Sheet, so nothing is lost.
 
-If you skip step 1, Pocket and the Lens P&L still work, but Lens can't save its own data (opening balances, goals, budgets). It shows a note asking for the update.
+If you skip step 1, Pocket and the Lens P&L still work, but Payslip and Lens can't save their own data. They show a note asking for the update.
+
+## What's new in 3.1 · Payslip
+
+Your bank book only sees net pay. **Pocket → Payslip** (tab 4) records the whole payslip.
+
+- **Gross to net:**
+  - **Earnings:** basic salary, allowances, overtime and any you add.
+  - **Deductions:** KWSP (EPF), PCB tax, zakat, PERKESO (SOCSO), SIP (EIS) and any you add, such as a loan, koperasi or insurance.
+  - **Net pay:** what reaches your bank.
+- **Matched to your bank book:**
+  - Net pay is linked to the Salary credit already in Pocket. Pocket picks it by amount when it can.
+  - If the payslip and the bank book disagree, it shows by how much.
+  - Payslips never add or change transactions, so nothing is counted twice.
+- **Paid by your employer:** KWSP, PERKESO and SIP from your employer, how much goes into KWSP each month, and your real package (gross + employer contributions).
+- **KWSP check:** confirms your 11%, and your employer's 13% (wages up to RM 5,000) or 12%, based on basic pay plus allowances. Overtime is left out. PCB, PERKESO and SIP are typed from your payslip.
+- **Copy last month:** payslips barely change. Copy, then edit only what's different.
+- **This year:** gross, net, PCB, zakat, KWSP (you + employer) and PERKESO + SIP for the year, ready to check against your EA form. Export to Excel.
+- **Connected to Lens:**
+  - **Assets:** KWSP grows by the real you + employer amounts from your payslips. The monthly estimate is used only for months without a payslip.
+  - **P&L:** a **Gross view** switch adds the payroll lines and a "savings rate incl. KWSP on gross". The net figures don't change.
+  - **Plan:** retirement uses the real KWSP amount from your payslips.
+- **Analysis:** it left the bottom bar, since Lens does analysis now. Open it from **Analysis ›** on Home.
 
 ## First time in Lens
 
@@ -297,7 +318,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'manswell-3.0.2-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'manswell-3.1-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting

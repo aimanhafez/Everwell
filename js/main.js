@@ -8,13 +8,14 @@ import { scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit } from
 import { scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, connect } from './screens/more.js';
 import { scrImport } from './screens/import.js';
 import { scrDreamer } from './screens/dreamer.js';
+import { scrPayslip } from './screens/payslip.js';
 import { scrLensPnl } from './lens/pnl.js';
 import { scrLensAssets } from './lens/assets.js';
 import { scrLensPlan } from './lens/plan.js';
 import { scrLensBudget } from './lens/budget.js';
 import { scrLensSettings } from './lens/settings.js';
 
-Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, scrImport, scrDreamer, connect, scrLensPnl, scrLensAssets, scrLensPlan, scrLensBudget, scrLensSettings });
+Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, scrImport, scrDreamer, connect, scrPayslip, scrLensPnl, scrLensAssets, scrLensPlan, scrLensBudget, scrLensSettings });
 
 const stage = document.getElementById('stage');
 mount(stage);

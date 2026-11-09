@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '3.0.2';
+export const VERSION = '3.1';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -15,7 +15,7 @@ export const PALETTE = ['#FF6A00', '#E5484D', '#A3236F', '#E9B949', '#6B7178', '
 
 /* ───────────── Data (the SharePoint lists, now Google Sheet tabs) ───────────── */
 export const DB = { settings: null, accounts: [], categories: [], payees: [], recurring: [], txns: [], audit: [], importMap: [], imports: [], sysOk: false,
-  lnSettings: [], lnAssets: [], lnValues: [], lnGoals: [], lnBudget: [], lnOk: false };
+  lnSettings: [], lnAssets: [], lnValues: [], lnGoals: [], lnBudget: [], lnOk: false, payslips: [], psOk: false };
 
 /* ───────────── Global variables (Set(...) in the Power App) ───────────── */
 export const G = {
@@ -252,7 +252,7 @@ export async function api(action, payload, conn = CONN.v, opts = {}) {
  * Every save is applied on the phone straight away and put in an "outbox" kept in phone storage.
  * The outbox is sent to Google one batch at a time. Each batch is safe to send twice (rows are keyed),
  * so nothing is lost if the app is closed, offline or interrupted: it is sent again next time. */
-const MAP = { LN_Settings: ['lnSettings', 'LsKey'], LN_Assets: ['lnAssets', 'AsId'], LN_Values: ['lnValues', 'VaId'], LN_Goals: ['lnGoals', 'GoId'], LN_Budget: ['lnBudget', 'BuKey'],
+const MAP = { EW_Payslips: ['payslips', 'PsKey'], LN_Settings: ['lnSettings', 'LsKey'], LN_Assets: ['lnAssets', 'AsId'], LN_Values: ['lnValues', 'VaId'], LN_Goals: ['lnGoals', 'GoId'], LN_Budget: ['lnBudget', 'BuKey'],
   SYS_ImportMap: ['importMap', 'MapKey'], SYS_Imports: ['imports', 'ImpId'], EW_Accounts: ['accounts', 'AccId'], EW_Categories: ['categories', 'CatId'], EW_Payees: ['payees', 'PyName'], EW_Recurring: ['recurring', 'RcId'], EW_Transactions: ['txns', 'TxnId'] };
 export const SYNC = { outbox: store.get('ew_outbox', []), flushing: false, failed: false, timer: null };
 function applyLocal(p) {
@@ -280,7 +280,7 @@ function syncState() {
 function persistOutbox() { store.set('ew_outbox', SYNC.outbox); syncState(); }
 let cacheTimer = null;
 const writeCache = () => { cacheTimer = null; store.set('ew_data', { at: Date.now(), settings: DB.settings, accounts: DB.accounts, categories: DB.categories, payees: DB.payees, recurring: DB.recurring, txns: DB.txns, audit: DB.audit.slice(0, 30), importMap: DB.importMap, imports: DB.imports, sysOk: DB.sysOk,
-  lens: { settings: DB.lnSettings, assets: DB.lnAssets, values: DB.lnValues, goals: DB.lnGoals, budget: DB.lnBudget }, lnOk: DB.lnOk }); };
+  lens: { settings: DB.lnSettings, assets: DB.lnAssets, values: DB.lnValues, goals: DB.lnGoals, budget: DB.lnBudget }, lnOk: DB.lnOk, payslips: DB.payslips, psOk: DB.psOk }); };
 function persistCache() { clearTimeout(cacheTimer); cacheTimer = setTimeout(writeCache, 300); }
 /** Write a pending cache save now (the app is being closed / hidden). */
 export function flushCache() { if (cacheTimer) { clearTimeout(cacheTimer); writeCache(); } }
@@ -328,6 +328,8 @@ function applyLoaded(d) {
   // Dreamer tabs exist only once the Apps Script is v2.0 or newer
   DB.sysOk = Array.isArray(d.importMap) || !!d.sysOk;
   DB.importMap = d.importMap || []; DB.imports = d.imports || [];
+  // Payslip tab exists only once the Apps Script is v3.1 or newer
+  DB.psOk = Array.isArray(d.payslips) || !!d.psOk; DB.payslips = d.payslips || [];
   // Lens tabs exist only once the Apps Script is v3.0 or newer
   const ln = d.lens || null;
   DB.lnOk = !!ln || !!d.lnOk;
@@ -555,6 +557,7 @@ export const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;'
 
 /* ───────────── Icons (Power Apps icon set, drawn as SVG) ───────────── */
 const P = {
+  Receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
   Coins: '<ellipse cx="9" cy="7" rx="6" ry="3"/><path d="M3 7v4c0 1.7 2.7 3 6 3s6-1.3 6-3V7"/><path d="M3 11v4c0 1.7 2.7 3 6 3 1.1 0 2.2-.2 3-.5"/><ellipse cx="16" cy="14" rx="5" ry="2.6"/><path d="M11 14v3.4c0 1.4 2.2 2.6 5 2.6s5-1.2 5-2.6V14"/>',
   Compass: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.1 4.9-4.9 2.1 2.1-4.9z"/>',
   Calculator: '<rect x="5" y="2.5" width="14" height="19" rx="2.5"/><path d="M8.5 6.5h7v3h-7z"/><path d="M8.5 13.5h.01M12 13.5h.01M15.5 13.5h.01M8.5 17.5h.01M12 17.5h.01M15.5 17.5h.01"/>',

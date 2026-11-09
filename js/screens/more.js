@@ -582,7 +582,7 @@ export const scrAnalysisFull = {
       ${TabHeader()}
       ${L(18, 68, 240, 32, 'Analysis', { s: 17 })}
       ${Flow(0, 104, 390, 662, kids)}
-      ${NavBar(3)}
+      ${NavBar(0)}
     </div>`;
   }
 };
@@ -621,7 +621,7 @@ export const scrAnalysis = {
       ${TabHeader()}
       ${L(18, 68, 240, 32, 'Analysis', { s: 17 })}
       ${Flow(0, 104, 390, 662, kids)}
-      ${NavBar(3)}
+      ${NavBar(0)}
     </div>`;
   }
 };

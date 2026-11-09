@@ -57,9 +57,10 @@ function editRetire(l) {
   });
 }
 function retirement() {
-  const RF = E.rollForward(), list = RF.list.filter(r => r.liq === 2), have = list.reduce((s, r) => s + r.now, 0), monthly = list.reduce((s, r) => s + (Number(r.a.AsMonthly) || 0), 0);
+  const RF = E.rollForward(), list = RF.list.filter(r => r.liq === 2), have = list.reduce((s, r) => s + r.now, 0), monthly = list.reduce((s, r) => s + E.monthlyInto(r.a), 0);
   const age = Number(E.lget('age', 0)), retAge = Number(E.lget('retAge', 55)), target = Number(E.lget('retTarget', 0));
-  if (!age || !target) return { have, monthly, set: false };
+  const ps = list.some(r => r.ps);
+  if (!age || !target) return { have, monthly, set: false, ps };
   const months = Math.max(0, (retAge - age) * 12), g = Math.max(0, E.assumptions().growth) / 100 / 12;
   const fv = g ? have * Math.pow(1 + g, months) + monthly * (Math.pow(1 + g, months) - 1) / g : have + monthly * months;
   const need = months > 0 ? Math.max(0, (target - (g ? have * Math.pow(1 + g, months) : have)) / (g ? (Math.pow(1 + g, months) - 1) / g : months)) : 0;
@@ -98,7 +99,7 @@ export const scrLensPlan = {
       ['shield', 'Emergency fund', ess > 0 ? `${cover.toFixed(1)} of ${efM} months · ${W0(ready)} of ${W0(efM * ess)}` : 'Needs a month of spending in Pocket first', cover >= efM ? ['c-grn', 'Done'] : ['c-gold', 'Building'], () => editEF(l)],
       ['card', 'No card debt carried', cards.none ? 'No credit cards in Pocket' : cards.carried > 0 ? `${W0(cards.carried)} carried past the due date` : cards.due ? 'Statement balance due ' + cards.due.slice(8) + ' ' + MON[Number(cards.due.slice(5, 7)) - 1] : 'Cards paid in full · from Pocket', cards.none ? ['c-mu', 'No cards'] : cards.carried > 0 ? ['c-red', 'Carried'] : cards.due ? ['c-gold', 'Due soon'] : ['c-grn', 'Done'], null],
       ['heart', 'Protection', protect ? 'Medical card and life cover in place' : 'Medical card and life cover · tap when in place', protect ? ['c-grn', 'Done'] : ['c-mu', 'Not set'], () => lsave({ up: { LN_Settings: [E.lrow('protect', !protect)] } }, 'Protection', protect ? 'not set' : 'in place')],
-      ['umbrella', 'Retirement', rt.set ? `${W0(rt.have)} now · projected ${W0(rt.fv)} at ${rt.retAge}` : `${W0(rt.have)} in retirement assets · set your target`, !rt.set ? ['c-mu', 'Not set'] : rt.ok ? ['c-grn', 'On track'] : ['c-red', 'Short ' + W0(rt.need - rt.monthly) + '/mo'], () => editRetire(l)]
+      ['umbrella', 'Retirement', rt.set ? `${W0(rt.have)} now · projected ${W0(rt.fv)} at ${rt.retAge}` : `${W0(rt.have)} · grows ${W0(rt.monthly)} a month${rt.ps ? ' from payslips' : ''} · set your target`, !rt.set ? ['c-mu', 'Not set'] : rt.ok ? ['c-grn', 'On track'] : ['c-red', 'Short ' + W0(rt.need - rt.monthly) + '/mo'], () => editRetire(l)]
     ];
     const kids = html`
       ${UpdateNote()}

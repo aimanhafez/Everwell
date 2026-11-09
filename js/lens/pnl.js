@@ -1,7 +1,7 @@
 // MansWell · Lens · P&L — built 100% from Pocket. Laid out like a personal P&L sheet:
 // Income · Savings & assets · Expenses · Leftover (swept) · Total savings · Savings rate · Status.
 import { html, render } from '../vendor/preact-htm.js';
-import { K, DB, rerender, Today, n0, current } from '../core.js';
+import { K, DB, rerender, Today, n0, current, store } from '../core.js';
 import { loadXlsx, shareOrDownload } from '../backup.js';
 import * as E from './engine.js';
 import { Page, Sect, STC, chipCls, iconHtml, W0, W2, acc, pctTxt, UpdateNote, CSS } from './ui.js';
@@ -29,14 +29,25 @@ export function Statement(P, o = {}) {
   const expShown = o.all ? P.exp : P.exp.slice(0, 8), hidden = P.exp.slice(expShown.length);
   const moreRow = hidden.length ? (() => { const vals = P.months.map((m, i) => hidden.reduce((s, r) => s + r.vals[i], 0)); const ytd = hidden.reduce((s, r) => s + r.ytd, 0);
     return html`<tr class="more" onClick=${o.onMore} data-t="pnlMore"><td>+ ${hidden.length} more</td>${cols.map(i => P.months[i].active ? html`<td>${acc(vals[i], true)}</td>` : html`<td class="lmu">–</td>`)}<td class="ytd">${acc(ytd, true)}</td><td>${acc(P.done.length ? ytd / P.done.length : 0, true)}</td></tr>`; })() : null;
+  const PR = o.gross ? P.months.map(m => E.payroll(m.k)) : null;
+  const prDone = PR ? P.months.map((m, i) => (m.closed && m.active && PR[i] ? i : -1)).filter(i => i >= 0) : [];
+  const prRow = (name, f, out, cls) => { if (!PR || !PR.some(Boolean)) return null; const ytd = prDone.reduce((s, i) => s + PR[i][f], 0);
+    if (!PR.some(p => p && Math.round(p[f]))) return null;
+    return html`<tr class=${cls || ''}><td>${name}</td>${cols.map(i => PR[i] ? html`<td class=${P.months[i].k === o.sel ? 'cur' : ''}>${acc(PR[i][f], out)}</td>` : html`<td class="lmu">–</td>`)}<td class="ytd">${acc(ytd, out)}</td><td class="lmu">${acc(prDone.length ? ytd / prDone.length : 0, out)}</td></tr>`; };
+  const PRV = PR ? P.months.map((m, i) => (PR[i] ? { ...PR[i], socsoEis: PR[i].socso + PR[i].eis } : null)) : null;
+  if (PR) PR.forEach((p, i) => { if (p) PR[i] = PRV[i]; });
+  const inclRate = (m, p) => (p ? (m.saved + p.kwspYou) / (m.totIn - p.net + p.gross) * 100 : null);
+  const ytdIncl = (() => { if (!PR || !prDone.length) return null; let a = 0, b = 0; P.done.forEach(m => { const i = P.months.indexOf(m), p = PR[i]; a += m.saved + (p ? p.kwspYou : 0); b += m.totIn + (p ? p.gross - p.net : 0); }); return b > 0 ? a / b * 100 : null; })();
   return html`<table class="ltbl" data-t="pnlTable">
     ${head}
+    ${PR && PR.some(Boolean) ? html`${sec('Payroll')}${prRow('Gross pay', 'gross', false, 'tot')}${prRow(html`KWSP · you <span class="lup" style="font-size:9.5px;font-weight:500">savings</span>`, 'kwspYou', true)}${prRow('PCB tax', 'pcb', true)}${prRow('Zakat', 'zakat', true)}${prRow('PERKESO + SIP', 'socsoEis', true)}${prRow('Other deductions', 'otherDed', true)}${prRow('Net salary', 'net', false, 'tot')}` : null}
     ${sec('Income')}${P.inc.map(r => line(r, false))}${totRow('Total income', 'totIn', false, 'tot')}
     ${P.sav.length ? html`${sec('Savings & assets')}${P.sav.map(r => line(r, true, false, sink.includes(r.n) ? html`${r.n} <span class="lmu" style="font-size:9.5px;font-weight:500">sinking</span>` : null))}` : null}
     ${sec('Expenses')}${expShown.map(r => line(r, true, true))}${moreRow}${totRow('Total expenses', 'totExp', true, 'tot')}
     ${totRow(html`Leftover <span class="lmu" style="font-weight:500">· swept</span>`, 'left', false, 'tot')}
     ${totRow('Total savings', 'saved', false, 'key')}
     <tr class="key"><td>Savings rate</td>${cols.map(i => { const m = P.months[i], s = E.status(m); return html`<td class=${m.k === o.sel ? 'cur' : ''} style=${s ? `color:${STC[s[1]]}` : ''}>${m.active ? pctTxt(m.rate) : html`<span class="lmu">–</span>`}</td>`; })}<td class="ytd lup">${pctTxt(P.ytd.rate)}</td><td></td></tr>
+    ${PR && PR.some(Boolean) ? html`<tr class="key"><td>Incl. KWSP · on gross</td>${cols.map(i => { const r = inclRate(P.months[i], PR[i]); return html`<td class=${P.months[i].k === o.sel ? 'cur' : ''} style=${r === null ? '' : `color:${r >= 0 ? K.grn : K.red}`}>${r === null ? html`<span class="lmu">–</span>` : pctTxt(r)}</td>`; })}<td class="ytd lup" data-t="pnlInclYtd">${pctTxt(ytdIncl)}</td><td></td></tr>` : null}
     <tr><td style="font-weight:700">Status</td>${cols.map(i => { const m = P.months[i], s = E.status(m); return html`<td>${!m.active ? html`<span class="lmu">–</span>` : !m.closed ? html`<span class="lmu" style="font-size:10.5px">Running</span>` : s ? html`<span class=${'lchip ' + chipCls(s[1])} style="font-size:8.5px;padding:2px 6px">${s[0]}</span>` : '–'}</td>`; })}<td class="ytd"><span class="lchip c-grn" style="font-size:8.5px;padding:2px 6px">${P.healthy}/${P.done.length}</span></td><td></td></tr>
   </table>`;
 }
@@ -54,7 +65,7 @@ function fullView(l, P) {
       <div style="display:flex;align-items:baseline;gap:10px;min-width:0"><span style="font:25px Georgia,serif">Lens<i style="color:#FF6A00;font-style:normal">.</i></span><span class="lcap">P&L statement · ${P.y} · RM</span></div>
       <div style="display:flex;gap:8px"><button class="lbtn" onClick=${() => exportPnl(P)} data-t="fullExport">${iconHtml('excel', K.grn, 15)}Export</button><button class="lbtn" onClick=${close} data-t="fullClose">Close</button></div>
     </div>
-    <div class="ltw" style="margin:0;flex:1;overflow:auto;padding:0 0 20px">${Statement(P, { all: true, sel: l.sel })}</div>
+    <div class="ltw" style="margin:0;flex:1;overflow:auto;padding:0 0 20px">${Statement(P, { all: true, sel: l.sel, gross: l.gross })}</div>
   </div>`, fullEl);
 }
 // held sideways on the P&L page: open the full year automatically
@@ -106,6 +117,8 @@ export const scrLensPnl = {
   view(l) {
     if (!l.y) this.onVisible(l);
     const P = E.pnlYear(l.y), th = E.thresholds();
+    if (l.gross === undefined) l.gross = !!store.get('lens_gross', false);
+    const hasPs = P.months.some(m => E.payroll(m.k));
     const sel = E.month(l.sel), mv = E.movers(l.sel), vb = E.vsBudget(l.sel), st = E.status(sel);
     const go = n => { l.y += n; l.sel = defaultSel(l.y); l.scrolled = false; rerender(); };
     const span = P.done.length ? MON[E.kM(P.done[0].k) - 1] + ' – ' + MON[E.kM(P.done[P.done.length - 1].k) - 1] + ' ' + l.y : '';
@@ -139,8 +152,10 @@ export const scrLensPnl = {
       </div>
       ${Sect('Statement', html`Full year ${iconHtml('expand', K.or, 13)}`, () => { l.full = true; rerender(); }, 'pnlFull')}
       <div class="lc" style="padding:14px 16px 10px">
+        ${hasPs ? html`<div style=${`display:flex;justify-content:space-between;align-items:center;padding:0 0 12px;margin-bottom:10px;border-bottom:1px solid ${K.sep}`}><div><div style="font-size:13.5px;font-weight:600">Gross view</div><div class="lsub" style="margin-top:2px;font-size:11px">Adds your payslip: gross pay, KWSP, tax, zakat</div></div>
+          <span class=${'lsw' + (l.gross ? ' on' : '')} onClick=${() => { l.gross = !l.gross; store.set('lens_gross', l.gross); rerender(); }} data-t="pnlGross" role="switch" aria-checked=${l.gross}><i></i></span></div>` : null}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="lcap">RM · swipe for other months</span><button class="lbtn" style="padding:6px 10px" onClick=${() => exportPnl(P)} data-t="pnlExport">${iconHtml('excel', K.grn, 15)}Export</button></div>
-        <div class="ltw">${Statement(P, { sel: l.sel, all: l.allExp, onMore: () => { l.allExp = true; rerender(); } })}</div>
+        <div class="ltw">${Statement(P, { sel: l.sel, all: l.allExp, gross: l.gross, onMore: () => { l.allExp = true; rerender(); } })}</div>
         <div class="lnote" style="margin-top:10px;display:flex;align-items:center;gap:8px"><span style="width:14px;height:10px;border-radius:3px;background:rgba(255,106,0,.3);display:inline-block;flex:none"></span>Unusually high: more than double that category's usual month.</div>
       </div>
       ${sel.active ? html`

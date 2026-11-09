@@ -17,7 +17,7 @@
  * Helpers you can run from the editor: showApiKey(), resetApiKey()
  */
 
-var EW_VERSION = '3.0.0';
+var EW_VERSION = '3.1.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -31,6 +31,8 @@ var TABLES = {
   // Dreamer: what Import remembers, shared by every device
   SYS_ImportMap: { key: 'MapKey', cols: { MapKey: 's', MapKind: 's', MapFrom: 's', MapTo: 's', MapWhen: 't' } },
   SYS_Imports: { key: 'ImpId', cols: { ImpId: 's', ImpFile: 's', ImpAcc: 's', ImpRows: 'n', ImpFrom: 'd', ImpTo: 'd', ImpWhen: 't', ImpStatus: 's' } },
+  // Pocket · Payslip: one row per payslip line (month|item). Net pay is linked to the Salary transaction.
+  EW_Payslips: { key: 'PsKey', cols: { PsKey: 's', PsMonth: 's', PsItem: 's', PsName: 's', PsGroup: 's', PsAmt: 'n', PsSeq: 'n', PsTxn: 's' } },
   // MansWell Lens: its own tabs. Lens only reads Pocket's tabs; it writes here and nowhere else.
   LN_Settings: { key: 'LsKey', cols: { LsKey: 's', LsVal: 's' } },
   LN_Assets: { key: 'AsId', cols: { AsId: 's', AsSeq: 'n', AsName: 's', AsKind: 's', AsCat: 's', AsAcc: 's', AsOpen: 'n', AsLiq: 'n', AsMonthly: 'n', AsNote: 's', AsActive: 'b' } },
@@ -135,6 +137,7 @@ var ACTIONS = {
       activity: log.slice(0, 30),
       importMap: readTable_(ss, 'SYS_ImportMap'),
       imports: readTable_(ss, 'SYS_Imports'),
+      payslips: readTable_(ss, 'EW_Payslips'),
       lens: { settings: readTable_(ss, 'LN_Settings'), assets: readTable_(ss, 'LN_Assets'), values: readTable_(ss, 'LN_Values'), goals: readTable_(ss, 'LN_Goals'), budget: readTable_(ss, 'LN_Budget') },
       serverTime: new Date().toISOString()
     };
