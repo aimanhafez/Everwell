@@ -254,7 +254,7 @@ export const scrMore = {
       return 'Date,Account,Type,Amount,Category,Payee,Description,Notes,TransferId,SplitOf,Id\n' + rows.map(t =>
         [t.TxDate, c((acc(t.TxAcc) || {}).AccName), t.TxType, (t.TxDir === 'Out' ? '-' : '') + t.TxAmt.toFixed(2), c(t.TxCat), c(t.TxPayee), c(t.TxDesc), c(t.TxNote), t.TxTrf, t.TxParent, t.TxnId].join(',')).join('\n');
     };
-    const csvName = () => 'PocketDreamer-' + G.gblYear + '-' + String(G.gblMonth).padStart(2, '0') + '.csv';
+    const csvName = () => 'MansWell-' + G.gblYear + '-' + String(G.gblMonth).padStart(2, '0') + '.csv';
     const flash = (k, msg) => { l[k] = msg; rerender(); setTimeout(() => { l[k] = ''; rerender(); }, 1800); };
     /** iPhone: opens the share sheet (Save to Files, WhatsApp, Mail…). Elsewhere: downloads the file. */
     const download = async () => {
@@ -344,7 +344,7 @@ export const scrMore = {
         ${B(268, 21, 82, 22, 'CONNECTED', { fill: 'rgba(52,199,123,0.08)', b: 'rgba(52,199,123,0.3)', c: K.grn, r: 11, s: 6.5, flat: true, id: 'connPill' })}
         ${R(64, 61, 286, 1, K.sep)}
         ${actionRow(62, 'Lock', 'Disconnect this device', 'You will need the URL and key again', K.red, disconnect, 'disconnect', true)}`, { id: 'connCard' })}
-      ${L(null, 0, 366, 30, 'Pocket Dreamer  ·  v' + VERSION, { s: 8, c: K.mute, a: 'c', st: 'position:relative;flex:none;' })}
+      ${L(null, 0, 366, 30, 'MansWell  ·  v' + VERSION, { s: 8, c: K.mute, a: 'c', st: 'position:relative;flex:none;' })}
       ${Box(null, 0, 366, 16, null)}`;
     return html`<div>
       ${TabHeader()}
@@ -436,7 +436,7 @@ export const scrSetup = {
       ${!l.locFirst ? I(6, 20, 36, 36, 'ChevronLeft', K.text, { pad: 6, onClick: () => Back(), label: 'Back' }) : null}
       ${Brand(0, 44, 390, 52, true, true)}
       ${L(12, 116, 366, 30, l.locFirst ? 'Set your starting point' : 'Tracking period', { s: 18, a: 'c' })}
-      ${L(32, 150, 326, 34, 'Pocket Dreamer measures your money from a start date, in months that begin on a day you choose.', { s: 8.5, c: K.sub, a: 'c', wrap: true })}
+      ${L(32, 150, 326, 34, 'MansWell measures your money from a start date, in months that begin on a day you choose.', { s: 8.5, c: K.sub, a: 'c', wrap: true })}
       ${Card(12, 196, 366, 112, html`
         ${C(16, 14, 30, K.field)}${I(22, 20, 18, 18, 'CalendarBlank', K.or, { pad: 1 })}
         ${L(56, 22, 294, 14, 'TRACKING STARTS ON', { s: 7.5, w: 6, c: K.sub })}

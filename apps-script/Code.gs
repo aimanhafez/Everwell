@@ -1,5 +1,5 @@
 /**
- * EVERWELL — Google Apps Script backend (replaces the SharePoint EW_ lists)
+ * MANSWELL — Google Apps Script backend (Pocket + Lens). Formerly Everwell / Dreamer.
  * "Live well today. Build well for tomorrow."
  *
  * Each tab in your Google Sheet plays the part of one SharePoint list:
@@ -17,7 +17,7 @@
  * Helpers you can run from the editor: showApiKey(), resetApiKey()
  */
 
-var EW_VERSION = '2.0.0';
+var EW_VERSION = '3.0.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -30,7 +30,13 @@ var TABLES = {
   EW_ActivityLog: { key: 'AuId', cols: { AuId: 's', AuWhen: 't', AuAction: 's', AuRef: 's', AuDetail: 's' } },
   // Dreamer: what Import remembers, shared by every device
   SYS_ImportMap: { key: 'MapKey', cols: { MapKey: 's', MapKind: 's', MapFrom: 's', MapTo: 's', MapWhen: 't' } },
-  SYS_Imports: { key: 'ImpId', cols: { ImpId: 's', ImpFile: 's', ImpAcc: 's', ImpRows: 'n', ImpFrom: 'd', ImpTo: 'd', ImpWhen: 't', ImpStatus: 's' } }
+  SYS_Imports: { key: 'ImpId', cols: { ImpId: 's', ImpFile: 's', ImpAcc: 's', ImpRows: 'n', ImpFrom: 'd', ImpTo: 'd', ImpWhen: 't', ImpStatus: 's' } },
+  // MansWell Lens: its own tabs. Lens only reads Pocket's tabs; it writes here and nowhere else.
+  LN_Settings: { key: 'LsKey', cols: { LsKey: 's', LsVal: 's' } },
+  LN_Assets: { key: 'AsId', cols: { AsId: 's', AsSeq: 'n', AsName: 's', AsKind: 's', AsCat: 's', AsAcc: 's', AsOpen: 'n', AsLiq: 'n', AsMonthly: 'n', AsNote: 's', AsActive: 'b' } },
+  LN_Values: { key: 'VaId', cols: { VaId: 's', VaAsset: 's', VaDate: 'd', VaKind: 's', VaAmt: 'n', VaNote: 's' } },
+  LN_Goals: { key: 'GoId', cols: { GoId: 's', GoSeq: 'n', GoName: 's', GoKind: 's', GoTarget: 'n', GoBy: 's', GoAsset: 's', GoHave: 'n', GoActive: 'b' } },
+  LN_Budget: { key: 'BuKey', cols: { BuKey: 's', BuYear: 'n', BuItem: 's', BuAmt: 'n', BuType: 's' } }
 };
 var WRITE_ACTIONS = ['commit', 'startFresh'];
 
@@ -129,6 +135,7 @@ var ACTIONS = {
       activity: log.slice(0, 30),
       importMap: readTable_(ss, 'SYS_ImportMap'),
       imports: readTable_(ss, 'SYS_Imports'),
+      lens: { settings: readTable_(ss, 'LN_Settings'), assets: readTable_(ss, 'LN_Assets'), values: readTable_(ss, 'LN_Values'), goals: readTable_(ss, 'LN_Goals'), budget: readTable_(ss, 'LN_Budget') },
       serverTime: new Date().toISOString()
     };
   },

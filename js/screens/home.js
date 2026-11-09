@@ -111,7 +111,7 @@ export const scrHome = {
 
     const kids = html`
       ${!hasAcc ? Card(null, 0, 366, 146, html`
-        ${L(18, 14, 330, 28, 'Welcome to Pocket Dreamer.', { s: 15 })}
+        ${L(18, 14, 330, 28, 'Welcome to Pocket.', { s: 15 })}
         ${L(18, 44, 330, 34, stStart() ? 'Tracking from ' + fmtD(stStart(), 'dd mmm yyyy') + '. Add your first account with its balance on that date.' : 'Add your first account to get started.', { s: 8.5, c: K.sub, wrap: true })}
         ${B(18, 86, 330, 42, '＋   Add your first account', { fill: K.or, c: '#FFFFFF', r: 21, s: 10, onClick: () => { G.gblEditMode = 'new'; Navigate('scrAccountEdit'); }, id: 'addFirst' })}`, { b: K.or }) : null}
       ${hasAcc ? Box(null, 0, 366, 172, html`

@@ -1,4 +1,4 @@
-// Pocket Dreamer — Import past transactions (Settings → Import).
+// MansWell · Pocket — Import past transactions (Settings → Import).
 // Two layouts are understood:
 //  • Statement:  Date · Payee / Payer · Description · Account Code · Debit · Credit · Balance   (one file = one bank account)
 //  • Template:   Date · Type · Amount · Account · Category · Payee · Description · To account
@@ -265,7 +265,7 @@ export const scrImport = {
     Object.assign(l, { book: null, sheet: 0, file: '', accId: '', codeMap: {}, codeNew: {}, trfMap: {}, payOn: {}, paySame: {}, catType: {}, skipDup: true, allPay: true });
   },
   view(l) {
-    const fileName = 'PocketDreamer-statement-template.csv';
+    const fileName = 'MansWell-statement-template.csv';
     const open = async f => {
       try {
         const book = await readFile(f);

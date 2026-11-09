@@ -5,12 +5,12 @@ import {
 } from './core.js';
 
 /* Top of the five main tabs: brand, refresh and bell. */
-/** Header inside a module: tap the name or the grid to go back to the Dreamer main page */
-export function TabHeader(name = 'Pocket Dreamer') {
+/** Header inside a module: tap the name or the grid to go back to the MansWell main page */
+export function TabHeader(name = 'Pocket') {
   const home = () => { NAV.stack = []; Navigate('scrDreamer'); };
   return html`
     ${Brand(18, 18, 276, 44, false, false, name, home)}
-    ${I(258, 20, 36, 36, 'Grid', K.sub, { pad: 9, onClick: home, label: 'Dreamer' })}
+    ${I(258, 20, 36, 36, 'Grid', K.sub, { pad: 9, onClick: home, label: 'MansWell' })}
     ${I(298, 20, 36, 36, 'Reset', K.sub, { pad: 9, onClick: () => syncNow(), label: 'Refresh' })}
     ${I(338, 20, 36, 36, 'Bell', K.text, { pad: 7, onClick: () => Navigate('scrRecurring'), label: 'Recurring' })}
     ${dueCount() > 0 ? C(362, 24, 8, K.or) : null}`;

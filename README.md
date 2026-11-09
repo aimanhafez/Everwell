@@ -1,29 +1,72 @@
-# Dreamer · v2.0.1 (web version, formerly Everwell)
+# MansWell · v3.0 (Pocket + Lens)
 
 *Live well today. Build well for tomorrow.*
 
-This is your Power Apps Everwell, rebuilt as a web app. It keeps the same 14 screens, layout, colours and rules. Two things change:
+MansWell is the new name for Dreamer (and, before that, Pocket Dreamer and Everwell). It now has two rooms:
 
-| Before | Now |
-|---|---|
-| Power Apps | A web app on **GitHub Pages**, added to your iPhone Home Screen |
-| SharePoint lists (EW_…) | Tabs with the same names in a **Google Sheet** in your Google Drive |
+- **Pocket** is where money is recorded. It's exactly as before: accounts, transactions, Balance Sweep, import and backup.
+- **Lens** is where money is understood. It has five pages: P&L, Assets, Plan, Budget and Settings.
 
-The screens are Setup, Home, Accounts, Account detail, New/Edit account, Transactions, Transaction detail, New/Edit/Duplicate transaction, Fund transfer, Split, Recurring, Categories & Payees, Analysis and Settings.
+## Updating to 3.0
 
-## What's in the folder
+Do all three parts.
 
-| File | What it is |
-|---|---|
-| `index.html`, `styles.css`, `js/` | The app |
-| `manifest.webmanifest`, `sw.js`, `icons/` | Makes it behave like an app on your iPhone |
-| `apps-script/Code.gs` | Goes into your Google Sheet (it replaces SharePoint) |
+1. **Google Sheet:** open Apps Script and replace everything in `Code.gs` with the new `apps-script/Code.gs`, then **Save**. Then go to **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The web address stays the same. The next time the app opens, five new tabs appear in your Sheet: `LN_Settings`, `LN_Assets`, `LN_Values`, `LN_Goals` and `LN_Budget`. No Pocket tab is changed.
+2. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js` folder (with the new `js/lens` folder), `icons` and `apps-script`**. Click **Commit changes**.
+   - You can delete the old `fonts` and `icons/apps` folders from GitHub. They're no longer used.
+3. **iPhone:** to get the new **MansWell** name and logo on your Home Screen:
+   1. Open your GitHub link in Safari.
+   2. Tap **Share → Add to Home Screen**.
+   3. Remove the old Dreamer icon.
+   It asks for your web address and key once. Your data is all in the Sheet, so nothing is lost.
 
-## Updating to v4.4.0 from older versions (your data stays)
+If you skip step 1, Pocket and the Lens P&L still work, but Lens can't save its own data (opening balances, goals, budgets). It shows a note asking for the update.
 
-1. **Google Sheet:** open Apps Script. Replace everything in `Code.gs` with the new `apps-script/Code.gs`, then **Save**. Go to **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. The URL stays the same, and the Sheet gets new columns (`StSweepAuto`, `StSweepFrom`, `StSweepLog`, `AccSweep`) the next time the app connects.
-2. **GitHub:** **Add file → Upload files**, then drag in everything from this folder, **including the `js`, `icons` and `apps-script` folders**. Files with the same name are replaced. Click **Commit changes**.
-3. **iPhone:** close Everwell fully and open it again. You won't need to reconnect.
+## First time in Lens
+
+1. Open **Lens** from the main page. The **P&L** is ready straight away. It is built entirely from Pocket.
+2. Go to **Assets** and confirm your **opening balances**: what ASB, KWSP, gold and your other savings held on the day before Pocket starts. Lens lists your Savings/Asset categories and Balance Sweep for you. Add KWSP, fixed deposits or anything else that isn't in Pocket.
+   - For KWSP, you can enter your monthly payslip contribution. Lens adds it each month as an estimate, then corrects itself when you enter a statement value.
+3. In **Plan**, add your goals. In **Budget**, start next year's budget from the suggestions.
+4. Check **Lens Settings → Savings rate rule**. By default, Travel Funds is left out because it's money set aside to spend, which matches your sheet. Turn categories on or off there.
+
+## What's new in 3.0
+
+- **MansWell:**
+  - The new name and your logo, traced in HD from your file (same outline, same orange) for the Home Screen, the main page and the headers.
+  - The main page shows Pocket (Balance Sweep, spent this month), Lens (last month's savings rate) and "4 more on the way". The "Synced" pill refreshes your data.
+- **Lens · P&L:** built entirely from Pocket and laid out like your own sheet: Income, Savings & assets, Expenses, Leftover (swept), Total savings and Savings rate.
+  - **Monthly status:** every month shows its savings rate and a rating of Strong (30%+), Healthy (20–30%), Watch (0–20%) or Deficit. You can change these levels.
+  - **Statement:** swipe through the months. Spending more than double a category's usual month is highlighted. Tap **Full year**, or turn the phone sideways, to see the whole year, and **Export** it to Excel.
+  - **Month, explained:** shows what pushed the month up or down compared with earlier months, and spending vs budget once you have a budget for that year.
+- **Lens · Assets:**
+  - Opening balances are confirmed once.
+  - Each asset rolls forward: Opening + In (from Pocket, or a monthly estimate) + Growth (the dividends and prices you record) = Now.
+  - Also: a growth chart, an Access view (Ready now / Within days / Retirement), and reminders when a value needs updating.
+  - Bank accounts stay in Pocket. Only Balance Sweep is brought in.
+- **Lens · Plan:**
+  - **Saving power:** your real average saved per month.
+  - **Foundations:** emergency fund, card debt, protection and retirement.
+  - **Goals:** funded in priority order on a timeline. A late goal gets three exact fixes (save more, move the date or lower the target), each checked to be on time. There is also a what-if slider.
+- **Lens · Budget:** next year's budget, built from this year's P&L.
+  - **Income:** income you can count on.
+  - **Save first:** your savings target comes off the top.
+  - **Categories:** suggestions by type (fixed, day-to-day or annual), with lumpy annual costs turned into a monthly set-aside, and a 50/30/20 check.
+  - **Lock:** you can only lock a budget once it balances.
+- **Lens · Settings:**
+  - Opening balances (password), assets and links, the savings rate rule, month status levels, essential spending, plan assumptions, and Excel export.
+  - **Reset Lens** clears only Lens data and asks for your password.
+- **Backup** now includes the Lens tabs too (14 sheets). The file is called `MansWell-backup-yyyy-mm-dd.xlsx`.
+
+## How Lens counts (and what it never does)
+
+- Lens **only reads** Pocket. It never adds, changes or deletes a Pocket account, transaction or category.
+- **Income and expenses:** each category's type decides the side, exactly as in Pocket. A payback nets off inside its own category. Split purchases count by their lines.
+- **Left out:** transfers between your own accounts, credit-card repayments and Balance Sweep moves are not income or expenses.
+- **Savings/Asset categories** (ASB, gold) count as **invested**, not spent.
+- **Total savings** = the savings categories that count + the leftover. **Savings rate** = Total savings ÷ Income.
+- **No double counting:** when you buy ASB from Maybank, cash goes down in Pocket and the ASB asset goes up by the same amount.
+- Months follow Pocket's financial months (your cycle day).
 
 ## Updating to 2.0.1 (from 2.0)
 
@@ -250,7 +293,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'dreamer-2.0.1-2'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'manswell-3.0-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting

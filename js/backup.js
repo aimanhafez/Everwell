@@ -1,4 +1,4 @@
-// Dreamer — Backup: every tab of the Google Sheet in one Excel file, readable by people (names, not IDs).
+// MansWell — Backup: every tab of the Google Sheet in one Excel file, readable by people (names, not IDs).
 import { DB, CONN, api, acc, Today, fmtD } from './core.js';
 
 let xlsxLoading = null;
@@ -31,7 +31,12 @@ export async function buildBackup() {
     ['Settings', DB.settings ? [{ ...DB.settings }] : []],
     ['Import memory', (DB.importMap || []).map(m => ({ Kind: m.MapKind, From: m.MapFrom, To: m.MapKind === 'code' ? m.MapTo : accName(m.MapTo), Updated: m.MapWhen }))],
     ['Imports', (DB.imports || []).map(i => ({ File: i.ImpFile, Account: accName(i.ImpAcc), Rows: i.ImpRows, From: i.ImpFrom, To: i.ImpTo, When: i.ImpWhen, Status: i.ImpStatus, Id: i.ImpId }))],
-    ['Activity log', (log || []).map(a => ({ When: a.AuWhen, Action: a.AuAction, Reference: a.AuRef, Detail: a.AuDetail }))]
+    ['Activity log', (log || []).map(a => ({ When: a.AuWhen, Action: a.AuAction, Reference: a.AuRef, Detail: a.AuDetail }))],
+    ['Lens assets', (DB.lnAssets || []).map(a => ({ Asset: a.AsName, TrackedBy: a.AsKind, PocketCategory: a.AsCat, Opening: a.AsOpen, Access: ['Ready now', 'Within days', 'Retirement'][Number(a.AsLiq) || 0], MonthlyEstimate: a.AsMonthly, Active: a.AsActive === false ? 'No' : 'Yes', Id: a.AsId }))],
+    ['Lens values', (DB.lnValues || []).map(v => ({ Asset: ((DB.lnAssets || []).find(a => a.AsId === v.VaAsset) || {}).AsName || v.VaAsset, Date: v.VaDate, Kind: v.VaKind, Amount: v.VaAmt, Note: v.VaNote, Id: v.VaId }))],
+    ['Lens goals', (DB.lnGoals || []).map(g => ({ Goal: g.GoName, Target: g.GoTarget, By: g.GoBy, AlreadySaved: g.GoHave, Priority: g.GoSeq, Id: g.GoId }))],
+    ['Lens budgets', (DB.lnBudget || []).map(b => ({ Year: b.BuYear, Item: b.BuItem, Monthly: b.BuAmt, Type: b.BuType }))],
+    ['Lens settings', (DB.lnSettings || []).map(s => ({ Setting: s.LsKey, Value: s.LsVal }))]
   ];
   const wb = X.utils.book_new();
   const counts = {};
@@ -42,7 +47,7 @@ export async function buildBackup() {
     X.utils.book_append_sheet(wb, ws, name);
   });
   const data = X.write(wb, { bookType: 'xlsx', type: 'array' });
-  const name = 'Dreamer-backup-' + fmtD(Today(), 'yyyy-mm-dd') + '.xlsx';
+  const name = 'MansWell-backup-' + fmtD(Today(), 'yyyy-mm-dd') + '.xlsx';
   return { name, blob: new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), counts };
 }
 

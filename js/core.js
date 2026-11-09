@@ -1,9 +1,9 @@
-// Pocket Dreamer — core: state, data access, Power Fx-like helpers and drawing primitives.
+// MansWell — core: state, data access, Power Fx-like helpers and drawing primitives (Pocket + Lens).
 // Every screen is drawn on a 390 x 844 canvas (the Power Apps phone layout) and scaled to the device.
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '2.0.1';
+export const VERSION = '3.0';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -14,7 +14,8 @@ export const K = {
 export const PALETTE = ['#FF6A00', '#E5484D', '#A3236F', '#E9B949', '#6B7178', '#34C77B'];
 
 /* ───────────── Data (the SharePoint lists, now Google Sheet tabs) ───────────── */
-export const DB = { settings: null, accounts: [], categories: [], payees: [], recurring: [], txns: [], audit: [], importMap: [], imports: [], sysOk: false };
+export const DB = { settings: null, accounts: [], categories: [], payees: [], recurring: [], txns: [], audit: [], importMap: [], imports: [], sysOk: false,
+  lnSettings: [], lnAssets: [], lnValues: [], lnGoals: [], lnBudget: [], lnOk: false };
 
 /* ───────────── Global variables (Set(...) in the Power App) ───────────── */
 export const G = {
@@ -251,7 +252,8 @@ export async function api(action, payload, conn = CONN.v, opts = {}) {
  * Every save is applied on the phone straight away and put in an "outbox" kept in phone storage.
  * The outbox is sent to Google one batch at a time. Each batch is safe to send twice (rows are keyed),
  * so nothing is lost if the app is closed, offline or interrupted: it is sent again next time. */
-const MAP = { SYS_ImportMap: ['importMap', 'MapKey'], SYS_Imports: ['imports', 'ImpId'], EW_Accounts: ['accounts', 'AccId'], EW_Categories: ['categories', 'CatId'], EW_Payees: ['payees', 'PyName'], EW_Recurring: ['recurring', 'RcId'], EW_Transactions: ['txns', 'TxnId'] };
+const MAP = { LN_Settings: ['lnSettings', 'LsKey'], LN_Assets: ['lnAssets', 'AsId'], LN_Values: ['lnValues', 'VaId'], LN_Goals: ['lnGoals', 'GoId'], LN_Budget: ['lnBudget', 'BuKey'],
+  SYS_ImportMap: ['importMap', 'MapKey'], SYS_Imports: ['imports', 'ImpId'], EW_Accounts: ['accounts', 'AccId'], EW_Categories: ['categories', 'CatId'], EW_Payees: ['payees', 'PyName'], EW_Recurring: ['recurring', 'RcId'], EW_Transactions: ['txns', 'TxnId'] };
 export const SYNC = { outbox: store.get('ew_outbox', []), flushing: false, failed: false, timer: null };
 function applyLocal(p) {
   for (const [t, keys] of Object.entries(p.deletes || {})) {
@@ -277,7 +279,8 @@ function syncState() {
 }
 function persistOutbox() { store.set('ew_outbox', SYNC.outbox); syncState(); }
 let cacheTimer = null;
-const writeCache = () => { cacheTimer = null; store.set('ew_data', { at: Date.now(), settings: DB.settings, accounts: DB.accounts, categories: DB.categories, payees: DB.payees, recurring: DB.recurring, txns: DB.txns, audit: DB.audit.slice(0, 30), importMap: DB.importMap, imports: DB.imports, sysOk: DB.sysOk }); };
+const writeCache = () => { cacheTimer = null; store.set('ew_data', { at: Date.now(), settings: DB.settings, accounts: DB.accounts, categories: DB.categories, payees: DB.payees, recurring: DB.recurring, txns: DB.txns, audit: DB.audit.slice(0, 30), importMap: DB.importMap, imports: DB.imports, sysOk: DB.sysOk,
+  lens: { settings: DB.lnSettings, assets: DB.lnAssets, values: DB.lnValues, goals: DB.lnGoals, budget: DB.lnBudget }, lnOk: DB.lnOk }); };
 function persistCache() { clearTimeout(cacheTimer); cacheTimer = setTimeout(writeCache, 300); }
 /** Write a pending cache save now (the app is being closed / hidden). */
 export function flushCache() { if (cacheTimer) { clearTimeout(cacheTimer); writeCache(); } }
@@ -325,6 +328,11 @@ function applyLoaded(d) {
   // Dreamer tabs exist only once the Apps Script is v2.0 or newer
   DB.sysOk = Array.isArray(d.importMap) || !!d.sysOk;
   DB.importMap = d.importMap || []; DB.imports = d.imports || [];
+  // Lens tabs exist only once the Apps Script is v3.0 or newer
+  const ln = d.lens || null;
+  DB.lnOk = !!ln || !!d.lnOk;
+  DB.lnSettings = (ln && ln.settings) || []; DB.lnAssets = (ln && ln.assets) || []; DB.lnValues = (ln && ln.values) || [];
+  DB.lnGoals = (ln && ln.goals) || []; DB.lnBudget = (ln && ln.budget) || [];
   for (const item of SYNC.outbox) applyLocal(item.p); // changes not yet on Google stay visible
   G.gblCycleDay = (DB.settings && DB.settings.StCycleDay) || 28;
   const l = PLABEL(Today());
@@ -530,7 +538,7 @@ export function Tog(x, y, w, h, on, onChange) {
   return html`<div class="abs tog ${on ? 'on' : ''}" style=${pos(x, y, w, h)} onClick=${() => onChange(!on)} role="switch" aria-checked=${on}><i></i></div>`;
 }
 /** HtmlViewer brand mark */
-export function Brand(x, y, w, h, center, big, name = 'Dreamer', onClick) {
+export function Brand(x, y, w, h, center, big, name = 'MansWell', onClick) {
   return html`<div class="abs brand ${center ? 'c' : ''} ${onClick ? 'tap' : ''}" style=${pos(x, y, w, h)} onClick=${onClick} data-t="brand">
     <div class="mark" style=${`font-size:${big ? 30 : 25}px`}>${name}<span>.</span></div>
     <div class="tag" style=${`margin-top:${big ? 7 : 5}px;letter-spacing:${big ? 1.8 : 1.7}px`}>LIVE WELL TODAY. BUILD WELL FOR TOMORROW.</div>
@@ -547,6 +555,19 @@ export const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;'
 
 /* ───────────── Icons (Power Apps icon set, drawn as SVG) ───────────── */
 const P = {
+  Coins: '<ellipse cx="9" cy="7" rx="6" ry="3"/><path d="M3 7v4c0 1.7 2.7 3 6 3s6-1.3 6-3V7"/><path d="M3 11v4c0 1.7 2.7 3 6 3 1.1 0 2.2-.2 3-.5"/><ellipse cx="16" cy="14" rx="5" ry="2.6"/><path d="M11 14v3.4c0 1.4 2.2 2.6 5 2.6s5-1.2 5-2.6V14"/>',
+  Compass: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.1 4.9-4.9 2.1 2.1-4.9z"/>',
+  Calculator: '<rect x="5" y="2.5" width="14" height="19" rx="2.5"/><path d="M8.5 6.5h7v3h-7z"/><path d="M8.5 13.5h.01M12 13.5h.01M15.5 13.5h.01M8.5 17.5h.01M12 17.5h.01M15.5 17.5h.01"/>',
+  Chart: '<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/>',
+  Aperture: '<circle cx="12" cy="12" r="9"/><path d="m14.3 3.3-4.6 8M20.6 9.5h-9.2M18 18.6l-4.6-8M9.7 20.7l4.6-8M3.4 14.5h9.2M6 5.4l4.6 8"/>',
+  Flag: '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
+  Link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',
+  Percent: '<path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
+  Signal: '<rect x="8" y="2.5" width="8" height="19" rx="4"/><circle cx="12" cy="7.5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="16.5" r="1.6"/>',
+  Heart: '<path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10C19.5 15.6 12 20 12 20z"/>',
+  Umbrella: '<path d="M3 12a9 9 0 0 1 18 0z"/><path d="M12 12v6.5a2 2 0 0 1-4 0"/><path d="M12 3v0"/>',
+  Table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 10v10"/>',
+  Expand: '<path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/>',
   Reset: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/>',
   Bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
   ChevronLeft: '<path d="M15 4 7 12l8 8"/>',

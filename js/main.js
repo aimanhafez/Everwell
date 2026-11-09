@@ -1,4 +1,4 @@
-// Pocket Dreamer — start-up: scale the 390 x 844 canvas to the device, register screens, load data (App.OnStart).
+// MansWell — start-up: scale the 390 x 844 canvas to the device, register screens, load data (App.OnStart).
 import { html, render } from './vendor/preact-htm.js';
 import { NAV, CONN, mount, rerender, loadAll, loadCached, flush, beaconOutbox, flushCache, Navigate, stStart, Notify, K } from './core.js';
 import { autoSweep } from './sweep.js';
@@ -8,8 +8,13 @@ import { scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit } from
 import { scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, connect } from './screens/more.js';
 import { scrImport } from './screens/import.js';
 import { scrDreamer } from './screens/dreamer.js';
+import { scrLensPnl } from './lens/pnl.js';
+import { scrLensAssets } from './lens/assets.js';
+import { scrLensPlan } from './lens/plan.js';
+import { scrLensBudget } from './lens/budget.js';
+import { scrLensSettings } from './lens/settings.js';
 
-Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, scrImport, scrDreamer, connect });
+Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, scrImport, scrDreamer, connect, scrLensPnl, scrLensAssets, scrLensPlan, scrLensBudget, scrLensSettings });
 
 const stage = document.getElementById('stage');
 mount(stage);
@@ -34,7 +39,7 @@ fit();
 
 function splash(msg, retry) {
   render(html`<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
-    <div class="brand c"><div class="mark" style="font-size:30px">Pocket Dreamer<span>.</span></div><div class="tag" style="margin-top:7px;letter-spacing:1.8px">LIVE WELL TODAY. BUILD WELL FOR TOMORROW.</div></div>
+    <div class="brand c"><div class="mark" style="font-size:30px">MansWell<span>.</span></div><div class="tag" style="margin-top:7px;letter-spacing:1.8px">LIVE WELL TODAY. BUILD WELL FOR TOMORROW.</div></div>
     <div style=${`color:${K.sub};font-size:12px;max-width:300px;text-align:center`}>${msg}</div>
     ${retry ? html`<button class="btn" style=${`position:relative;width:160px;height:40px;border-radius:20px;background:${K.or};color:#fff;font-weight:600`} onClick=${retry}>Try again</button>` : null}
   </div>`, stage);
@@ -52,7 +57,7 @@ async function boot() {
     await loadAll({ quiet: cached });
     if (!cached) start(); else rerender();
     flush();
-    autoSweep().then(() => rerender()).catch(e => Notify('Monthly sweep could not run: ' + e.message + ' It will retry next time you open Pocket Dreamer.', 'error'));
+    autoSweep().then(() => rerender()).catch(e => Notify('Monthly sweep could not run: ' + e.message + ' It will retry next time you open MansWell.', 'error'));
   } catch (e) {
     if (e.code === 'AUTH') { CONN.authError = e.message; NAV.stack = []; Navigate('connect'); return; }
     if (cached) { flush(); return; } // keep working with the copy on this phone
