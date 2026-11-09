@@ -1,4 +1,4 @@
-# MansWell · v3.1 (Pocket + Payslip + Lens)
+# MansWell · v3.1 (Pocket + Lens)
 
 *Live well today. Build well for tomorrow.*
 
