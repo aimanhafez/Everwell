@@ -1,4 +1,4 @@
-# MansWell · v3.0 (Pocket + Lens)
+# MansWell · v3.0.2 (Pocket + Lens)
 
 *Live well today. Build well for tomorrow.*
 
@@ -7,7 +7,10 @@ MansWell is the new name for Dreamer (and, before that, Pocket Dreamer and Everw
 - **Pocket** is where money is recorded. It's exactly as before: accounts, transactions, Balance Sweep, import and backup.
 - **Lens** is where money is understood. It has five pages: P&L, Assets, Plan, Budget and Settings.
 
-## Updating to 3.0
+## Updating to 3.0.2
+
+3.0.2 is 3.0 with the main page laid out as full-width cards: an Open Pocket button, one Rooms label, Pocket and Lens cards (logo, name and subheader only), and two blurred Soon apps, Roaming and Memories. If you're coming from 2.0.1, follow all three steps below. If you already installed 3.0 or 3.0.1, only step 2 is needed.
+
 
 Do all three parts.
 
@@ -33,6 +36,7 @@ If you skip step 1, Pocket and the Lens P&L still work, but Lens can't save its 
 ## What's new in 3.0
 
 - **MansWell:**
+  - The main page shows the rooms as full-width cards: Pocket, Lens, and two Soon apps, blurred (3.0.2).
   - The new name and your logo, traced in HD from your file (same outline, same orange) for the Home Screen, the main page and the headers.
   - The main page shows Pocket (Balance Sweep, spent this month), Lens (last month's savings rate) and "4 more on the way". The "Synced" pill refreshes your data.
 - **Lens · P&L:** built entirely from Pocket and laid out like your own sheet: Income, Savings & assets, Expenses, Leftover (swept), Total savings and Savings rate.
@@ -293,7 +297,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'manswell-3.0-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'manswell-3.0.2-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting
