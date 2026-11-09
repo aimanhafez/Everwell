@@ -1,4 +1,4 @@
-# MansWell · v3.1 (Pocket + Lens)
+# MansWell · v3.1.1 (Pocket + Payslip + Lens)
 
 *Live well today. Build well for tomorrow.*
 
@@ -6,6 +6,22 @@ MansWell is the new name for Dreamer (and, before that, Pocket Dreamer and Everw
 
 - **Pocket** is where money is recorded: accounts, transactions, Balance Sweep, import and backup, plus **Payslip** (new in 3.1).
 - **Lens** is where money is understood. It has five pages: P&L, Assets, Plan, Budget and Settings.
+
+## Updating to 3.1.1 (from 3.1)
+
+3.1.1 lets a month hold **more than one payslip**: two employers, or your old and new company in the month you change jobs.
+
+- **GitHub only:** upload everything from this folder and click **Commit changes**.
+- **No Apps Script change:** keep the 3.1 `Code.gs` you already deployed.
+- **Your saved payslips stay as they are.**
+
+What changed:
+
+- **Payslip → + Add a payslip from another employer.** Each payslip has its employer's name and links to its own Salary credit. A credit already linked to one payslip isn't offered to another.
+- **Month view:** the top card adds every payslip in the month together. Tap a company to see its own gross to net, its bank match and what that employer paid.
+- **Copy:** when last month had two or more payslips, you pick which to copy.
+- **Lens:** KWSP, the P&L gross view and retirement planning include every employer's amounts.
+- **Fixed:** the password box opened behind the panel when you removed a payslip, removed a Lens asset or changed an opening balance. It now opens on top.
 
 ## Updating to 3.1
 
@@ -318,7 +334,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'manswell-3.1-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'manswell-3.1.1-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting

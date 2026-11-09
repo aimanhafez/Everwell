@@ -2,7 +2,7 @@
 // Money is counted the way Pocket counts it (flowOf): the category decides the side, transfers and split parents
 // are left out, paybacks net off inside their category. Months are Pocket's financial months (cycle day).
 import { DB, Today, perKey, PSTART, PEND, addDays, addMonths, D, round2, flowOf, catTypeOf, stStart, MON } from '../core.js';
-import { kwspFlows, hasPayslips, payslip } from '../payslip-data.js';
+import { kwspFlows, hasPayslips, monthPay } from '../payslip-data.js';
 
 /* ───────── settings (LN_Settings: one row per key, JSON value) ───────── */
 const SINK_RX = /travel/i;
@@ -175,8 +175,8 @@ export function monthlyInto(a) {
   if (payslipFed(a) && hasPayslips()) { const f = kwspFlows().slice(-3); if (f.length) return round2(f.reduce((s, x) => s + x.amt, 0) / f.length); }
   return Number(a.AsMonthly) || 0;
 }
-/** Payroll for a P&L month (gross view): gross, deductions by kind and net salary, from the payslip. */
-export function payroll(k) { return payslip(k); }
+/** Payroll for a P&L month (gross view): gross, deductions by kind and net salary, from all that month's payslips. */
+export function payroll(k) { return monthPay(k); }
 
 /* ───────── cards: is any balance carried past its due date? ───────── */
 export function cardStatus() {

@@ -233,7 +233,7 @@ export function PasswordDialog(l) {
     if (p.val !== GUARD_PASSWORD) { p.err = 'Wrong password. Try again.'; p.val = ''; rerender(); return; }
     const run = p.run; l.pwd = null; rerender(); run();
   };
-  return html`<div class="abs" style="inset:0;z-index:40">
+  return html`<div class="abs" style="inset:0;z-index:50">
     <div class="abs dim" style="inset:0" onClick=${close}></div>
     ${Card(33, 226, 324, 250, html`
       ${C(138, 20, 48, 'rgba(255,106,0,0.12)', { b: 'rgba(255,106,0,0.35)' })}
