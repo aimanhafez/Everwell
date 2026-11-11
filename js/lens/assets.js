@@ -56,7 +56,7 @@ function psSplit(a) {
 }
 
 /* sheets */
-const TYPES = [['asset', 'An asset'], ['tabung', 'A Tabung']];
+const TYPES = [['asset', 'Savings'], ['tabung', 'Tabung']];
 const seg = (opts, cur, set, id) => html`<div style="display:flex;gap:8px">${opts.map(([k, t]) => html`<button class=${'lbtn' + (cur === k ? ' o on' : '')} style="flex:1;padding:10px 6px" onClick=${() => set(k)} data-t=${id + '-' + k}>${t}</button>`)}</div>`;
 /** Renaming a linked Pocket category, the way Pocket does it: the category, its transactions, payees and recurring. */
 function pocketRename(old, nm) {
@@ -74,20 +74,21 @@ const nextSeq = () => DB.lnAssets.reduce((m, x) => Math.max(m, Number(x.AsSeq) |
 /** Add or edit an Asset or a Tabung. "Through Pocket" items are linked to (or create) a Pocket Savings/Asset category. */
 export function editAsset(l, a, preset) {
   const tab0 = a ? E.isTabung(a) : !!(preset && preset.tabung);
-  const f = a ? { name: a.AsName, type: tab0 ? 'tabung' : 'asset', liq: tab0 ? 1 : Number(a.AsLiq) || 0, monthly: a.AsMonthly ? String(a.AsMonthly) : '', open: String(a.AsOpen || 0), how: a.AsKind === 'manual' ? 'manual' : 'pocket' }
+  const fixedType = !a && preset && (preset.tabung || preset.savings);
+  const f = a ? { name: a.AsName, type: tab0 ? 'tabung' : 'asset', liq: E.liqOf(a), monthly: a.AsMonthly ? String(a.AsMonthly) : '', open: String(a.AsOpen || 0), how: a.AsKind === 'manual' ? 'manual' : 'pocket' }
     : { name: (preset && preset.cat) || '', type: tab0 ? 'tabung' : 'asset', liq: 1, monthly: '', open: '', how: 'pocket' };
   const fromPocket = !!(preset && preset.cat);
   const isAcc = a && a.AsKind === 'account';
   openSheet(l, {
-    title: a ? a.AsName : fromPocket ? 'New in Pocket: ' + preset.cat : 'Add',
+    title: a ? a.AsName : fromPocket ? 'New in Pocket: ' + preset.cat : tab0 ? 'Add Tabung' : 'Add savings',
     body: () => html`
       ${fromPocket ? html`<div class="lnote">You made this Savings/Asset category in Pocket. Add it to Lens once and it moves with Pocket from now on.</div>` : null}
-      ${!isAcc ? html`<div class="llab">This is</div>${seg(TYPES, f.type, k => { f.type = k; if (k === 'tabung') f.how = 'pocket'; rerender(); }, 'asType')}` : null}
+      ${!isAcc && !fixedType ? html`<div class="llab">This is</div>${seg(TYPES, f.type, k => { f.type = k; if (k === 'tabung') f.how = 'pocket'; rerender(); }, 'asType')}` : null}
       ${!fromPocket ? html`<div class="llab">Name</div><input class="lin" value=${f.name} onInput=${e => { f.name = e.target.value; }} data-t="asName" disabled=${isAcc} />` : null}
       ${!a && !fromPocket ? html`<div class="llab">How does the money move?</div>
         <div style="display:flex;flex-direction:column;gap:8px">${[['pocket', 'Through Pocket', 'You record deposits and withdrawals in Pocket. Lens makes the Pocket category for you.'], ['manual', 'Value I update', 'Pocket never sees it: FD, shares, Tabung Haji.']].filter(([k]) => f.type !== 'tabung' || k === 'pocket').map(([k, t, d]) => html`<div class=${'lbtn' + (f.how === k ? ' o on' : '')} style="display:block;text-align:left;white-space:normal;padding:10px 12px" onClick=${() => { f.how = k; rerender(); }} data-t=${'asHow-' + k}><b style="display:block;font-size:13.5px">${t}</b><span style=${`font-size:11.5px;font-weight:500;color:${K.sub}`}>${d}</span></div>`)}</div>` : null}
       ${a && !isAcc ? html`<div class="lnote" style="margin-top:8px">${a.AsKind === 'category' ? (E.payslipFed(a) ? psSplit(a) : 'Moves with Pocket category “' + a.AsCat + '”. Renaming it here renames it in Pocket too.') : 'Value you update' + (a.AsMonthly ? ', plus an estimated monthly contribution.' : '.')}</div>` : isAcc ? html`<div class="lnote" style="margin-top:8px">Value comes straight from Pocket.</div>` : null}
-      ${f.type === 'asset' ? html`<div class="llab">Access</div><select class="lin" onChange=${e => { f.liq = Number(e.target.value); }} data-t="asLiq">${LIQ.map((t, i) => html`<option value=${i} selected=${f.liq === i}>${t} · ${LIQ_S[i]}</option>`)}</select>` : null}
+      ${true ? html`<div class="llab">Access</div><select class="lin" onChange=${e => { f.liq = Number(e.target.value); }} data-t="asLiq">${LIQ.map((t, i) => html`<option value=${i} selected=${f.liq === i}>${t} · ${LIQ_S[i]}</option>`)}</select>` : null}
       ${(f.how === 'manual' && !isAcc) || (a && E.payslipFed(a)) ? html`<div class="llab">${a && E.payslipFed(a) ? 'Monthly estimate · only for months without a payslip' : 'Monthly contribution · optional estimate'}</div><input class="lin r" inputmode="decimal" value=${f.monthly} placeholder="0.00" onInput=${e => { f.monthly = e.target.value; }} data-t="asMonthly" />` : null}
       ${!isAcc ? html`<div class="llab">Opening value on ${dmy(E.openDate())}</div><input class="lin r" inputmode="decimal" value=${f.open} placeholder="0.00" onInput=${e => { f.open = e.target.value; }} data-t="asOpen" />` : null}
       ${fromPocket ? html`<div style=${`margin-top:14px;text-align:center;color:${K.sub};font-size:12.5px;cursor:pointer`} onClick=${() => { lsave({ up: { LN_Settings: [E.lrow('ignoreCats', [...E.ignoredCats(), preset.cat])] } }, 'Not tracked in Lens', preset.cat); closeSheet(l); }} data-t="asIgnore">Don't track this in Lens</div>` : null}
@@ -96,7 +97,7 @@ export function editAsset(l, a, preset) {
       ${a && !isAcc ? html`<div style="margin-top:16px"><button class="lbtnd" data-t="asDelete" onClick=${() => askPassword(l, 'remove ' + a.AsName + ' from Lens', () => { lsave({ del: { LN_Assets: [a.AsId], LN_Values: E.valuesOf(a.AsId).map(v => v.VaId) }, up: a.AsKind === 'category' ? { LN_Settings: [E.lrow('ignoreCats', [...E.ignoredCats().filter(c => c !== a.AsCat), a.AsCat])] } : {} }, 'Removed from Lens', a.AsName); closeSheet(l); })}>Remove from Lens</button><div class="lnote" style="margin-top:6px;text-align:center">${a.AsKind === 'category' ? 'The Pocket category and its transactions stay.' : ''}</div></div>` : null}`,
     onSave: () => {
       const name = fromPocket ? preset.cat : String(f.name || '').trim(); if (!name) { Notify('Give it a name.', 'info'); return; }
-      const liq = f.type === 'tabung' ? 3 : f.liq, up = {}, settings = [];
+      const liq = f.liq, note = f.type === 'tabung' ? 'tabung' : '', up = {}, settings = [];
       if (!a) {
         let cat = '';
         if (f.how === 'pocket') {
@@ -105,11 +106,11 @@ export function editAsset(l, a, preset) {
           if (ex) cat = ex.CatName; else { const c = newCategory(name); up.EW_Categories = [c]; cat = name; }
           if (E.ignoredCats().includes(cat)) settings.push(E.lrow('ignoreCats', E.ignoredCats().filter(x => x !== cat)));
         } else if (E.assets().some(x => x.AsName.toLowerCase() === name.toLowerCase())) { Notify(name + ' is already in Lens.', 'error'); return; }
-        up.LN_Assets = [{ AsId: newId('AS'), AsSeq: nextSeq(), AsKind: f.how === 'pocket' ? 'category' : 'manual', AsCat: cat, AsAcc: '', AsNote: '', AsActive: true, AsName: f.how === 'pocket' ? cat : name, AsLiq: liq, AsMonthly: num(f.monthly), AsOpen: num(f.open) }];
+        up.LN_Assets = [{ AsId: newId('AS'), AsSeq: nextSeq(), AsKind: f.how === 'pocket' ? 'category' : 'manual', AsCat: cat, AsAcc: '', AsNote: note, AsActive: true, AsName: f.how === 'pocket' ? cat : name, AsLiq: liq, AsMonthly: num(f.monthly), AsOpen: num(f.open) }];
         if (settings.length) up.LN_Settings = settings;
-        lsave({ up }, f.type === 'tabung' ? 'Tabung added' : 'Asset added', name + (up.EW_Categories ? ' · Pocket category created' : '')); closeSheet(l); return;
+        lsave({ up }, f.type === 'tabung' ? 'Tabung added' : 'Savings added', name + (up.EW_Categories ? ' · Pocket category created' : '')); closeSheet(l); return;
       }
-      let row = { ...a, AsName: isAcc ? a.AsName : name, AsLiq: isAcc ? f.liq : liq, AsMonthly: num(f.monthly), AsOpen: isAcc ? 0 : num(f.open) };
+      let row = { ...a, AsName: isAcc ? a.AsName : name, AsLiq: liq, AsNote: isAcc ? a.AsNote || '' : note, AsMonthly: num(f.monthly), AsOpen: isAcc ? 0 : num(f.open) };
       if (a.AsKind === 'category' && name !== a.AsCat) {
         if (DB.categories.some(c => c.CatName.toLowerCase() === name.toLowerCase() && c.CatName !== a.AsCat)) { Notify('Pocket already has a category called ' + name + '.', 'error'); return; }
         Object.assign(up, pocketRename(a.AsCat, name)); row.AsCat = name;
@@ -150,7 +151,7 @@ const G_CSS = `.gchips{display:flex;gap:6px;overflow-x:auto;padding:0 0 12px;scr
 const niceStep = r => { const e = Math.pow(10, Math.floor(Math.log10(r))), f = r / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e; };
 const kfmt = (v, st) => (Math.abs(v) >= 1000 ? (v / 1000).toFixed(st < 1000 ? 1 : 0).replace(/\.0$/, '') + 'K' : String(Math.round(v)));
 function Growth(l, S) {
-  const opts = [{ id: 'total', name: 'Total', vals: S.total }, ...S.rows.filter(r => !E.isTabung(r.a) && r.vals.some(v => Math.abs(v) >= 0.5)).map(r => ({ id: r.a.AsId, name: r.a.AsName, vals: r.vals })), ...(S.hasTab ? [{ id: 'tabung', name: 'Tabung', vals: S.tabTotal }] : [])];
+  const opts = [{ id: 'total', name: 'Total', vals: S.total }, ...(S.hasTab ? [{ id: 'sav', name: 'Savings', vals: S.savTotal }, { id: 'tabung', name: 'Tabung', vals: S.tabTotal }] : []), ...S.rows.filter(r => r.vals.some(v => Math.abs(v) >= 0.5)).map(r => ({ id: r.a.AsId, name: r.a.AsName, vals: r.vals }))];
   const cur = opts.find(o => o.id === l.gSel) || opts[0], v = cur.vals, n = v.length;
   const gi = l.gI != null && l.gI < n ? l.gI : n - 1;
   const W = 334, H = 172, pl = 8, pr = 42, top = 10, bot = 24, ch = H - top - bot;
@@ -190,29 +191,29 @@ export const scrLensAssets = {
     const RF = E.rollForward(), S = E.assetSeries(), nc = E.newCats();
     const fresh = RF.list.filter(r => r.a.AsKind !== 'account');
     const amt = v => (Math.round(v) ? (v < 0 ? '(' + n0(-v) + ')' : n0(v)) : html`<span class="lmu">–</span>`);
-    const groups = [0, 1, 2].map(g => ({ g, rows: RF.assets.filter(r => r.liq === g) }));
-    const gTot = g => RF.assets.filter(r => r.liq === g).reduce((s2, r) => s2 + r.now, 0);
-    const COLS = html`<colgroup><col style="width:30%" /><col style="width:17%" /><col style="width:16%" /><col style="width:18%" /><col style="width:19%" /></colgroup>`;
+    const gTot = g => RF.list.filter(r => r.liq === g).reduce((s2, r) => s2 + r.now, 0);
+    const sub = (L, g) => L.filter(r => r.liq === g).reduce((s2, r) => s2 + r.now, 0);
+    const COLS = html`<colgroup><col style="width:37%" /><col style="width:16%" /><col style="width:15%" /><col style="width:15%" /><col style="width:17%" /></colgroup>`;
     const kids = html`
       ${UpdateNote()}
       ${nc.length ? html`<div class="lc" style="box-shadow:inset 0 0 0 1px rgba(255,106,0,.45);background:rgba(255,106,0,.06)" data-t="asNew"><span class="lcap" style=${`color:${K.or}`}>New in Pocket</span>
         ${nc.map(c => html`<div class="lr" style="grid-template-columns:1fr auto"><div><div class="t">${c}</div><div class="s">Savings/Asset category · not in Lens yet</div></div><button class="lbtn o" style="padding:6px 12px" onClick=${() => editAsset(l, null, { cat: c })} data-t=${'nc-' + c}>Add to Lens</button></div>`)}</div>` : null}
       <div class="lc lh" data-t="asHero">
-        <span class="lcap">Savings & assets</span>
-        <div class="lbig" data-t="asNow">${W2(RF.now)}</div>
-        <div class="lsub"><span class=${RF.now - RF.open >= 0 ? 'lup' : 'ldn'}>${RF.now - RF.open >= 0 ? '▲' : '▼'} ${W2(Math.abs(RF.now - RF.open))}</span> since opening${RF.tabung.length ? html` · plus <b style=${`color:${K.text}`} data-t="asTabTot">${W0(RF.tab.now)}</b> in Tabung` : ''}</div>
+        <span class="lcap">Total · savings + Tabung</span>
+        <div class="lbig" data-t="asNow">${W2(RF.all.now)}</div>
+        <div class="lsub"><span class=${RF.all.now - RF.all.open >= 0 ? 'lup' : 'ldn'}>${RF.all.now - RF.all.open >= 0 ? '▲' : '▼'} ${W2(Math.abs(RF.all.now - RF.all.open))}</span> since opening</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px" data-t="asGroups">${LIQ.map((t, g) => html`<div style=${`background:rgba(255,255,255,.03);border-radius:11px;padding:9px 10px;box-shadow:inset 0 0 0 1px ${K.line}`}><span class="lcap" style="font-size:8.5px">${t}</span><b style="display:block;font-size:13.5px;margin-top:3px">${W0(gTot(g))}</b></div>`)}</div>
         <div class="lhr"></div>
-        <div class="lg2"><div><span class="lcap">Put in</span><div class="lv" data-t="asIn">${W2(RF.inn)}</div><div class="lsub" style="font-size:11px">through Pocket${RF.assets.some(r => r.ps) ? ' & payslips' : ''}${RF.assets.some(r => r.est) ? ' & estimates' : ''}</div></div>
-          <div><span class="lcap">Growth</span><div class=${'lv ' + (RF.grow >= 0 ? 'lup' : 'ldn')} data-t="asGrow">${RF.grow >= 0 ? '+' : '−'}${W2(Math.abs(RF.grow))}</div><div class="lsub" style="font-size:11px">dividends & price</div></div></div>
+        <div class="lg2 r2"><div><span class="lcap">Savings</span><div class="lv" data-t="asSav">${W2(RF.now)}</div></div><div><span class="lcap">Tabung</span><div class="lv" data-t="asTabTot">${W2(RF.tab.now)}</div></div>
+          <div><span class="lcap">Put in</span><div class="lv" data-t="asIn">${W2(RF.all.inn)}</div></div><div><span class="lcap">Growth</span><div class=${'lv ' + (RF.all.grow >= 0 ? 'lup' : 'ldn')} data-t="asGrow">${RF.all.grow >= 0 ? '+' : '−'}${W2(Math.abs(RF.all.grow))}</div></div></div>
       </div>
-      ${Sect('Asset', '+ Add', () => editAsset(l, null), 'asAdd')}
+      <style>.lrf{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed;color:${K.text}}.lrf td,.lrf th{padding:9px 2px;text-align:right;border-top:1px solid ${K.sep};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lrf th{border-top:0;font-size:9px;font-weight:600;letter-spacing:.3px;color:${K.sub};text-transform:uppercase;padding-top:0;text-overflow:clip}.lrf td:first-child,.lrf th:first-child{text-align:left;padding-left:16px}.lrf td:last-child,.lrf th:last-child{padding-right:16px;font-weight:700}.lrf .nm{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lrf .tot td{font-weight:700;border-top:1px solid #2E333B;font-size:12px}.lrf tr.tap{cursor:pointer}.lrf tr.grp td{border-top:0;padding-top:13px;font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:${K.or};text-transform:uppercase}</style>
+      ${Sect('Savings', '+ Add', () => editAsset(l, null, { savings: true }), 'asAdd')}
       <div class="lc" style="padding:14px 0 12px">
-        <style>.lrf{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed;color:${K.text}}.lrf td,.lrf th{padding:9px 3px;text-align:right;border-top:1px solid ${K.sep};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lrf th{border-top:0;font-size:9px;font-weight:600;letter-spacing:.2px;color:${K.sub};text-transform:uppercase;padding-top:0;text-overflow:clip}.lrf td:first-child,.lrf th:first-child{text-align:left;padding-left:16px}.lrf td:last-child,.lrf th:last-child{padding-right:16px;font-weight:700}.lrf .nm{font-size:12.5px;font-weight:600;white-space:normal;line-height:1.25}.lrf .tot td{font-weight:700;border-top:1px solid #2E333B;font-size:12px}.lrf tr.tap{cursor:pointer}.lrf tr.grp td{border-top:0;padding-top:13px;font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:${K.or};text-transform:uppercase}</style>
         <table class="lrf" data-t="rollForward">${COLS}
-          <tr><th>Asset</th><th>Opening</th><th>+ In</th><th>+ Growth</th><th>= Now</th></tr>
-          ${groups.filter(x => x.rows.length).map(({ g, rows }) => html`<tr class="grp" data-t=${'grp-' + g}><td colspan="4">${LIQ[g]}</td><td>${n0(gTot(g))}</td></tr>
-          ${rows.map(r => html`<tr class="tap" onClick=${() => editAsset(l, r.a)} data-t=${'rf-' + r.a.AsName}><td><div class="nm">${r.a.AsName}</div></td>
+          <tr><th>Savings</th><th>Opening</th><th>In</th><th>Growth</th><th>Now</th></tr>
+          ${[0, 1, 2].filter(g => RF.assets.some(r => r.liq === g)).map(g => html`<tr class="grp" data-t=${'grp-' + g}><td colspan="4">${LIQ[g]}</td><td>${n0(sub(RF.assets, g))}</td></tr>
+          ${RF.assets.filter(r => r.liq === g).map(r => html`<tr class="tap" onClick=${() => editAsset(l, r.a)} data-t=${'rf-' + r.a.AsName}><td><div class="nm">${r.a.AsName}</div></td>
             <td>${n0(r.open)}</td><td>${amt(r.inn)}${r.est ? html`<span class="lgd" style="font-size:9px"> est</span>` : null}</td>
             <td class=${r.grow > 0.5 ? 'lup' : r.grow < -0.5 ? 'ldn' : ''}>${Math.round(r.grow) ? (r.grow > 0 ? '+' : '−') + n0(Math.abs(r.grow)) : html`<span class="lmu">–</span>`}</td><td>${n0(r.now)}</td></tr>`)}`)}
           <tr class="tot"><td>Total</td><td>${n0(RF.open)}</td><td>${n0(RF.inn)}</td><td class=${RF.grow >= 0 ? 'lup' : 'ldn'}>${RF.grow >= 0 ? '+' : '−'}${n0(Math.abs(RF.grow))}</td><td data-t="rfTotal">${n0(RF.now)}</td></tr>
@@ -221,10 +222,11 @@ export const scrLensAssets = {
       ${Sect('Tabung', '+ Add', () => editAsset(l, null, { tabung: true }), 'tbAdd')}
       <div class="lc" style=${RF.tabung.length ? 'padding:14px 0 12px' : ''} data-t="tabung">${RF.tabung.length ? html`
         <table class="lrf" data-t="tabTable">${COLS}
-          <tr><th>Tabung</th><th>Opening</th><th>+ In</th><th>− Used</th><th>= Now</th></tr>
-          ${RF.tabung.map(r => html`<tr class="tap" onClick=${() => editAsset(l, r.a)} data-t=${'tb-' + r.a.AsName}><td><div class="nm">${r.a.AsName}</div></td><td>${n0(r.open)}</td><td>${amt(r.tin)}</td><td>${Math.round(r.used) ? '(' + n0(r.used) + ')' : html`<span class="lmu">–</span>`}</td><td>${n0(r.now)}</td></tr>`)}
+          <tr><th>Tabung</th><th>Opening</th><th>In</th><th>Out</th><th>Balance</th></tr>
+          ${[0, 1, 2].filter(g => RF.tabung.some(r => r.liq === g)).map(g => html`<tr class="grp" data-t=${'tgrp-' + g}><td colspan="4">${LIQ[g]}</td><td>${n0(sub(RF.tabung, g))}</td></tr>
+          ${RF.tabung.filter(r => r.liq === g).map(r => html`<tr class="tap" onClick=${() => editAsset(l, r.a)} data-t=${'tb-' + r.a.AsName}><td><div class="nm">${r.a.AsName}</div></td><td>${n0(r.open)}</td><td>${amt(r.tin)}</td><td>${Math.round(r.used) ? '(' + n0(r.used) + ')' : html`<span class="lmu">–</span>`}</td><td>${n0(r.now)}</td></tr>`)}`)}
           <tr class="tot"><td>Total</td><td>${n0(RF.tab.open)}</td><td>${n0(RF.tab.inn)}</td><td>${Math.round(RF.tab.used) ? '(' + n0(RF.tab.used) + ')' : '–'}</td><td>${n0(RF.tab.now)}</td></tr>
-        </table>` : html`<div class="lnote">A Tabung is money set aside for a purpose, like a house, a wedding or travel. Tap <b>+ Add</b>, or switch an asset to a Tabung by tapping it. Each Tabung moves with its own Pocket category and can fund a goal in Plan.</div>`}</div>
+        </table>` : html`<div class="lnote">A Tabung is money set aside for a purpose, like an emergency fund, a house or travel. Tap <b>+ Add</b>, or switch a savings item to a Tabung by tapping it. Plan tracks every Tabung you give a target.</div>`}</div>
       ${S.dates.length >= 2 ? Growth(l, S) : null}
       ${fresh.length ? html`${Sect('Keep values fresh')}
       <div class="lc">${fresh.map(r => { const vals = E.valuesOf(r.a.AsId), lastSet = [...vals].reverse().find(v => v.VaKind === 'value'), lastAdd = [...vals].reverse().find(v => v.VaKind === 'add');

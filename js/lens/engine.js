@@ -122,8 +122,10 @@ export function essentialMonthly() {
 
 /* ───────── assets (roll-forward) ───────── */
 export const assets = () => DB.lnAssets.filter(a => a.AsActive !== false).sort((a, b) => (a.AsSeq || 0) - (b.AsSeq || 0));
-/** A Tabung is money set aside for a purpose. Stored as access group 3 on LN_Assets (no new columns). */
-export const isTabung = a => Number(a.AsLiq) === 3;
+/** Savings = what you own; Tabung = money set aside for a purpose. Both have an access group (0 Ready now,
+ *  1 Within days, 2 Retirement). Tabung is marked AsNote 'tabung' (no new columns); 3.1.3 stored it as AsLiq 3. */
+export const isTabung = a => a.AsNote === 'tabung' || Number(a.AsLiq) === 3;
+export const liqOf = a => (Number(a.AsLiq) === 3 ? 1 : Number(a.AsLiq) || 0);
 export const ignoredCats = () => { const v = lget('ignoreCats', []); return Array.isArray(v) ? v : []; };
 export const linkedCats = () => new Set(assets().filter(a => a.AsKind === 'category').map(a => a.AsCat));
 /** Offered once a category has its first transaction, so Pocket's unused default categories never nag. */
@@ -168,13 +170,14 @@ export function rollForward() {
     const pocket = a.AsKind === 'category' ? catFlow(a.AsCat, addDays(od, 1), today) : 0;
     const inn = a.AsKind === 'account' ? round2(now - open) : a.AsKind === 'category' ? round2(pocket + (mf ? mf.v : 0)) : mf.v;
     const vals = valuesOf(a.AsId), last = vals[vals.length - 1];
-    return { a, open, inn, pocket, psIn: mf && mf.ps ? mf.v : 0, grow: round2(now - open - inn), now, est: !!(mf && mf.est), ps: !!(mf && mf.ps), last, liq: Number(a.AsLiq) || 0 };
+    return { a, open, inn, pocket, psIn: mf && mf.ps ? mf.v : 0, grow: round2(now - open - inn), now, est: !!(mf && mf.est), ps: !!(mf && mf.ps), last, liq: liqOf(a) };
   });
   list.forEach(r => { if (!isTabung(r.a)) return; const sp = r.a.AsKind === 'category' ? catSplit(r.a.AsCat, addDays(od, 1), today) : { inn: 0, out: 0 }; r.used = sp.out; r.tin = round2(r.now - r.open + sp.out); });
   const A = list.filter(r => !isTabung(r.a)), B = list.filter(r => isTabung(r.a));
   const T = (L, f) => round2(L.reduce((s, r) => s + (r[f] || 0), 0));
   return { list, assets: A, tabung: B, open: T(A, 'open'), inn: T(A, 'inn'), grow: T(A, 'grow'), now: T(A, 'now'),
-    tab: { open: T(B, 'open'), inn: T(B, 'tin'), used: T(B, 'used'), now: T(B, 'now') } };
+    tab: { open: T(B, 'open'), inn: T(B, 'tin'), used: T(B, 'used'), now: T(B, 'now') },
+    all: { open: T(list, 'open'), inn: T(list, 'inn'), grow: T(list, 'grow'), now: T(list, 'now') } };
 }
 /** Values for the growth chart: the opening balance, then each month-end, then today. Per asset and in total. */
 export function assetSeries() {
@@ -182,7 +185,7 @@ export function assetSeries() {
   const dates = [openDate(), ...ks.map(k => (k === curKey() ? Today() : kEnd(k)))];
   const rows = assets().map(a => ({ a, vals: dates.map(d => valueAt(a, d)) }));
   const sum = L => dates.map((d, i) => round2(L.reduce((s, r) => s + r.vals[i], 0)));
-  return { ks: [null, ...ks], dates, rows, total: sum(rows.filter(r => !isTabung(r.a))), tabTotal: sum(rows.filter(r => isTabung(r.a))), hasTab: rows.some(r => isTabung(r.a)) };
+  return { ks: [null, ...ks], dates, rows, total: sum(rows), savTotal: sum(rows.filter(r => !isTabung(r.a))), tabTotal: sum(rows.filter(r => isTabung(r.a))), hasTab: rows.some(r => isTabung(r.a)) };
 }
 export const readyNow = () => round2(rollForward().list.filter(r => r.liq === 0).reduce((s, r) => s + r.now, 0));
 
@@ -216,16 +219,22 @@ export function cardStatus() {
 }
 
 /* ───────── plan: goals funded in priority order from saving power ───────── */
-export const goals = () => DB.lnGoals.filter(g => g.GoActive !== false && g.GoKind !== 'emergency').sort((a, b) => (a.GoSeq || 0) - (b.GoSeq || 0));
+export const goals = () => DB.lnGoals.filter(g => g.GoActive !== false).sort((a, b) => (a.GoSeq || 0) - (b.GoSeq || 0));
 export const byKey = s => { const [y, m] = String(s || '').split('-').map(Number); return y && m ? y * 100 + m : null; };
 export function goalHave(g) { const a = g.GoAsset && assets().find(x => x.AsId === g.GoAsset); return round2((a ? valueAt(a, Today()) : 0) + (Number(g.GoHave) || 0)); }
+/** Plan follows your Tabung: every Tabung with a target is a goal. The emergency-fund Tabung's target is
+ *  months × your essential spending; it always comes first. Goals still not linked to a Tabung are left out. */
+export const efTabung = () => { const g = goals().find(x => x.GoKind === 'emergency' && x.GoAsset); return g ? assets().find(a => a.AsId === g.GoAsset && isTabung(a)) || null : null; };
+export const goalOf = a => goals().find(g => g.GoAsset === a.AsId) || null;
 export function planGoals() {
-  const ess = essentialMonthly(), efT = round2(efMonths() * ess), ready = readyNow();
-  const efBy = byKey(lget('efBy', '')) || kAdd(curKey(), 8);
   const list = [];
-  if (ess > 0) list.push({ id: 'EF', n: 'Emergency fund', kind: 'emergency', target: efT, have: ready, by: efBy, src: 'Ready-now savings · ' + efMonths() + ' months of essentials' });
-  for (const g of goals()) { const a = g.GoAsset && assets().find(x => x.AsId === g.GoAsset); list.push({ id: g.GoId, g, n: g.GoName, kind: 'goal', target: Number(g.GoTarget) || 0, have: goalHave(g), by: byKey(g.GoBy) || kAdd(curKey(), 24), src: a ? ('funded by ' + a.AsName) : (Number(g.GoHave) ? 'Saved so far' : 'Not linked yet') }); }
-  return list;
+  for (const a of assets().filter(isTabung)) {
+    const g = goalOf(a); if (!g) continue;
+    const em = g.GoKind === 'emergency';
+    list.push({ id: g.GoId, g, a, n: a.AsName, kind: em ? 'emergency' : 'goal', target: em ? round2(efMonths() * essentialMonthly()) : Number(g.GoTarget) || 0,
+      have: valueAt(a, Today()), by: byKey(g.GoBy) || kAdd(curKey(), em ? 8 : 24), src: em ? efMonths() + ' months of essential spending' : '', seq: em ? -1 : Number(g.GoSeq) || 0 });
+  }
+  return list.sort((x, y) => x.seq - y.seq);
 }
 /** Month 0 = the current month. Returns finish month index per goal (null = beyond 30 years). */
 export function simulate(list, power) {

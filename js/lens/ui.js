@@ -105,7 +105,7 @@ export const acc = (v, out) => { const x = out ? -v : v; if (Math.round(x) === 0
 export const pctTxt = r => (r === null || r === undefined ? '–' : (r < 0 ? '−' : '') + Math.abs(r).toFixed(1) + '%');
 
 /* page chrome */
-const TABS = [['Chart', 'P&L', 'scrLensPnl'], ['Coins', 'Assets', 'scrLensAssets'], ['Compass', 'Plan', 'scrLensPlan'], ['Calculator', 'Budget', 'scrLensBudget'], ['Settings', 'Settings', 'scrLensSettings']];
+const TABS = [['Chart', 'P&L', 'scrLensPnl'], ['Coins', 'Savings', 'scrLensAssets'], ['Compass', 'Plan', 'scrLensPlan'], ['Calculator', 'Budget', 'scrLensBudget'], ['Settings', 'Settings', 'scrLensSettings']];
 export const goHome = () => { NAV.stack = []; Navigate('scrDreamer'); };
 export function LensHeader(onGuide) {
   return html`

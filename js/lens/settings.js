@@ -26,9 +26,9 @@ function sheetOpening(l) {
 }
 function sheetAssets(l) {
   openSheet(l, {
-    title: 'Assets, Tabung & links',
-    body: () => html`${E.assets().map(a => html`<div class="lr tap" style="grid-template-columns:1fr auto;cursor:pointer" onClick=${() => editAsset(l, a)}><div><div class="t" style="font-size:14px">${a.AsName}</div><div class="s">${a.AsKind === 'account' ? 'Pocket account · Balance Sweep' : a.AsKind === 'category' ? 'Linked to Pocket category “' + a.AsCat + '”' + (E.payslipFed(a) ? ' + payslips' : '') : 'You update' + (a.AsMonthly ? ' · ' + W0(a.AsMonthly) + '/mo estimate' : '')} · ${['Ready now', 'Within days', 'Retirement', 'Tabung'][Number(a.AsLiq) || 0]}</div></div>${iconHtml('right', K.sub, 16)}</div>`)}
-      <div style="margin-top:12px"><button class="lbtn o" style="width:100%;padding:11px" onClick=${() => editAsset(l, null)}>+ Add asset</button></div>`
+    title: 'Savings, Tabung & links',
+    body: () => html`${E.assets().map(a => html`<div class="lr tap" style="grid-template-columns:1fr auto;cursor:pointer" onClick=${() => editAsset(l, a)}><div><div class="t" style="font-size:14px">${a.AsName}</div><div class="s">${a.AsKind === 'account' ? 'Pocket account · Balance Sweep' : a.AsKind === 'category' ? 'Linked to Pocket category “' + a.AsCat + '”' + (E.payslipFed(a) ? ' + payslips' : '') : 'You update' + (a.AsMonthly ? ' · ' + W0(a.AsMonthly) + '/mo estimate' : '')} · ${E.isTabung(a) ? 'Tabung · ' : 'Savings · '}${['Ready now', 'Within days', 'Retirement'][E.liqOf(a)]}</div></div>${iconHtml('right', K.sub, 16)}</div>`)}
+      <div style="margin-top:12px"><button class="lbtn o" style="width:100%;padding:11px" onClick=${() => editAsset(l, null)}>+ Add</button></div>`
   });
 }
 function sheetRule(l) {
@@ -112,7 +112,7 @@ export const scrLensSettings = {
       ${Sect('Sources')}
       <div class="lc">
         ${sRow('flag', 'Opening balances', opened ? 'As at ' + fmtD(E.openDate(), 'dd mmm yyyy') + ' · ' + E.assets().length + ' items · confirmed' : 'Not confirmed yet · set them up in Assets', opened ? html`<span class="lchip c-grn">Locked</span>` : html`<span class="lchip c-gold">To do</span>`, opened ? () => sheetOpening(l) : null, 'setOpening')}
-        ${sRow('link', 'Assets & links', E.assets().length ? E.assets().map(x => x.AsName).slice(0, 4).join(', ') + (E.assets().length > 4 ? '…' : '') : 'None yet', undefined, () => sheetAssets(l), 'setAssets')}
+        ${sRow('link', 'Savings, Tabung & links', E.assets().length ? E.assets().map(x => x.AsName).slice(0, 4).join(', ') + (E.assets().length > 4 ? '…' : '') : 'None yet', undefined, () => sheetAssets(l), 'setAssets')}
         ${sRow('percent', 'Savings rate rule', E.savCatsUsed().filter(c => !sink.includes(c)).concat(['leftover']).join(' + ') + (sink.filter(c => E.used().has(c)).length ? ' · ' + sink.filter(c => E.used().has(c)).join(', ') + ' left out' : ''), undefined, () => sheetRule(l), 'setRule')}
       </div>
       ${Sect('Rules')}

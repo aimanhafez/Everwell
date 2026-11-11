@@ -52,30 +52,30 @@ function pnlGuide() {
 function assetsGuide() {
   const od = E.openDate();
   return html`<div class="gd" data-t="guideAssets"><style>${GD_CSS}</style>
-    <div class="intro">What you own (<b>assets</b>) and money set aside for a purpose (<b>Tabung</b>), from the opening balance you confirmed for <b>${dmy(od)}</b> to today.</div>
+    <div class="intro"><b>Savings</b> is what you own (ASB, KWSP, Gold). A <b>Tabung</b> is money set aside for a purpose (emergency fund, house, travel). Both run from the opening balance you confirmed for <b>${dmy(od)}</b> to today.</div>
     ${H(1, 'Top card')}
-    <ul><li><b>Savings & assets:</b> everything you own now, and the change since opening. Your Tabung total is shown next to it.</li>
-      <li><b>Ready now, Within days, Retirement:</b> how quickly you can reach the money. Plan counts Ready now toward your emergency fund and Retirement toward retirement.</li>
-      <li><b>Put in</b> is money that went in through Pocket, payslips (KWSP) or an estimate. <b>Growth</b> is dividends and price changes you record.</li></ul>
-    ${H(2, 'Asset')}
-    <p>Grouped by Ready now, Within days and Retirement, each with its subtotal. Every row follows one rule:</p><span class="eq">Opening + In + Growth = Now</span>
-    <ul><li><b>Balance Sweep:</b> your sweep account balance in Pocket.</li>
-      <li><b>Through Pocket</b> (ASB, Gold…): what you put in minus what you took out in its Pocket category.</li>
-      <li><b>KWSP:</b> the KWSP on your payslips (you + employer), plus any KWSP movement in Pocket. Months without a payslip use your monthly estimate, if set.</li>
-      <li><b>Value I update</b> (FD, shares…): your monthly estimate, if set. Estimated amounts are marked <b>est</b>.</li></ul>
+    <ul><li><b>Total:</b> savings + Tabung now, and the change since opening.</li>
+      <li><b>Ready now, Within days, Retirement:</b> how quickly you can reach the money, across both.</li>
+      <li><b>Savings</b> and <b>Tabung:</b> each part on its own. <b>Put in</b> is money that went in. <b>Growth</b> is dividends and price changes you record.</li></ul>
+    ${H(2, 'Savings')}
+    <p>Grouped by Ready now, Within days and Retirement, each with a subtotal.</p><span class="eq">Opening + In + Growth = Now</span>
+    <ul><li><b>Balance Sweep:</b> your sweep account in Pocket.</li>
+      <li><b>Linked to Pocket</b> (ASB, Gold…): what you put in minus what you took out in its Pocket category.</li>
+      <li><b>KWSP:</b> the KWSP on your payslips (you + employer), plus any KWSP movement in Pocket.</li>
+      <li><b>Value I update</b> (FD, shares…): your monthly estimate, if set. Estimates are marked <b>est</b>.</li></ul>
     ${H(3, 'Tabung')}
-    <p>Money set aside for a purpose, like a house or a wedding. Each Tabung has its own Pocket category.</p><span class="eq">Opening + In − Used = Now</span>
-    <p><b>Used</b> is money taken out of the Tabung in Pocket to spend. A Tabung can fund one goal in Plan.</p>
+    <p>Grouped the same way, each with its own Pocket category.</p><span class="eq">Opening + In − Out = Balance</span>
+    <p><b>Out</b> is money taken out of the Tabung in Pocket. Give a Tabung a target in Plan, and Plan tracks it.</p>
     ${H(4, 'Adding and syncing')}
-    <ul><li><b>+ Add</b> in Lens: choose Asset or Tabung. <b>Through Pocket</b> creates the Pocket category for you. <b>Value I update</b> stays in Lens only.</li>
-      <li>Make a Savings/Asset category in Pocket, and once it has its first transaction it appears here under <b>New in Pocket</b>. Add it once, as an Asset or a Tabung.</li>
-      <li>Renaming on either side renames the other. Tap an item to switch it between Asset and Tabung.</li>
+    <ul><li>Each section has its own <b>+ Add</b>. Linked to Pocket creates the Pocket category for you. <b>Value I update</b> stays in Lens only.</li>
+      <li>A Savings/Asset category you make in Pocket appears under <b>New in Pocket</b> once it has its first transaction. Add it once, as Savings or a Tabung.</li>
+      <li>Renaming on either side renames the other. Tap an item to switch it between Savings and Tabung.</li>
       <li><b>Remove from Lens</b> keeps the Pocket category and its transactions.</li></ul>
     ${H(5, 'Growth chart')}
-    <p>One line from the opening balance to today, a point at each month-end. Pick Total, one asset or Tabung. <b>Tap or drag</b> to read any month.</p>
+    <p>One line from the opening balance to today. Pick Total, Savings, Tabung or one item. <b>Tap or drag</b> to read any month.</p>
     ${H(6, 'Keep values fresh')}
-    <ul><li><b>Set current value</b> from a statement or today's price. Lens works out the growth.</li>
-      <li><b>Add dividend / bonus</b> for money added outside Pocket, like an ASB dividend.</li>
+    <ul><li><b>Set current value</b> from a statement. Lens works out the growth.</li>
+      <li><b>Add dividend / bonus</b> for money added outside Pocket.</li>
       <li>A value you update turns <b style=${`color:${K.gold}`}>gold</b> after about 4 months without an update.</li></ul>
     ${H(7, 'Opening balances')}
     <p>Change them by tapping the item or in <b>Lens → Settings</b>. Both ask for your password.</p>
@@ -85,31 +85,23 @@ function assetsGuide() {
 function planGuide() {
   const a = E.assumptions(), ef = E.efMonths(), ess = E.essentialMonthly(), W = v => 'RM ' + Math.round(v).toLocaleString('en-US');
   return html`<div class="gd" data-t="guidePlan"><style>${GD_CSS}</style>
-    <div class="intro">Plan works the way a financial planner does: measure what you really save, build the foundations, then fund your goals in order of priority.</div>
+    <div class="intro">Plan tracks your <b>Tabung</b>. Every Tabung with a target is a goal, filled from what you really save each month.</div>
     ${H(1, 'Saving power')}
-    <p>Your average <b>Total savings</b> from the P&L over your last 6 finished months. It's what you really saved, not what you hoped to. Every goal is paid from this amount.</p>
-    <ul><li><b>Emergency cover:</b> your Ready-now money ÷ one month of essential spending.</li>
-      <li><b>Goals on track:</b> how many goals finish by their date.</li></ul>
-    ${H(2, 'Foundations')}
-    <p>Planners build these before any goal.</p>
-    <ul><li><b>Emergency fund:</b> ${ef} months of essentials${ess > 0 ? html`, about <b>${W(ef * ess)}</b> (${W(ess)} a month)` : ''}, kept in assets set to <b>Ready now</b>. Tap it to choose 3, 6 or 12 months and a date to build it by. Pick the essential categories in Lens → Settings.</li>
-      <li><b>No card debt carried:</b> checked from your credit cards in Pocket. <b>Due soon</b> means last month's statement isn't paid yet but isn't late. <b>Carried</b> means it went past the due date.</li>
-      <li><b>Protection:</b> tap it once your medical card and life cover are in place.</li>
-      <li><b>Retirement:</b> your <b>Retirement</b> assets (like KWSP) and what goes in each month, from your payslips for KWSP. Tap it and enter your age, retirement age and target. Lens projects the total at retirement and shows <b>On track</b>, or how much more a month you'd need.</li></ul>
-    ${H(3, 'Goals')}
-    <p><b>+ New goal</b>: a name, a target and a date, then <b>Funded by</b>: one item from your Assets page, usually a Tabung. The goal's progress is that item's balance, and each item funds only one goal.</p>
-    <ul><li>The <b>emergency fund is always first</b>. Your goals follow in the order you set; tap a goal and use Higher or Lower to change it.</li>
-      <li>Each goal shows what you have, the target, and what it <b>needs a month</b>: the gap ÷ the months left.</li>
-      <li><b>On track</b> finishes by its date. <b>Late 3 mo</b> finishes 3 months after it. <b>Not reached</b> means it doesn't finish within 30 years at this pace.</li></ul>
-    ${H(4, 'Fix the late goal')}
-    <p>For the first goal that's late, Lens works out three exact fixes. Pick one:</p>
-    <ul><li><b>Save more:</b> the extra a month that makes it on time. Tap it to see the effect in What if.</li>
-      <li><b>Move the date:</b> the earliest date that works with your current saving.</li>
-      <li><b>Lower the target:</b> the most you can reach by the original date.</li></ul>
-    ${H(5, 'What if')}
-    <p>Slide to add up to RM 2,000 a month and see how much sooner each goal finishes. Nothing is saved.</p>
-    ${H(6, 'Assumptions')}
-    <p>Goal money grows <b>${a.growth}% a year</b>${a.growth ? '' : ' (cautious: dividends are a bonus)'}. Retirement uses the same rate. Change it in <b>Lens → Settings → Plan assumptions</b>.</p>
+    <p>Your average <b>Total savings</b> from the P&L over your last 6 months. It's what you really saved. Your Tabung goals are filled from this amount, top goal first.</p>
+    ${H(2, 'Tabung goals')}
+    <ul><li>Tap a Tabung and set its <b>target</b> and <b>date</b>. A Tabung with no target is listed under <b>No target yet</b>.</li>
+      <li>Turn on <b>Emergency fund</b> for one Tabung. Its target is ${ef} months of essential spending${ess > 0 ? html`, about <b>${W(ef * ess)}</b>` : ''}, and it always comes first.</li>
+      <li>The rest follow in your order. Tap a goal and use <b>Higher</b> or <b>Lower</b>.</li>
+      <li>Progress is the Tabung's balance. <b>Needs a month</b> = the gap ÷ the months left.</li>
+      <li><b>On track</b> finishes by its date. <b>Late 3 mo</b> finishes 3 months after. <b>Not reached</b> means not within 30 years.</li></ul>
+    ${H(3, 'Fix the late goal')}
+    <ul><li><b>Save more:</b> the extra a month that makes it on time.</li>
+      <li><b>Move the date:</b> the earliest date that works.</li>
+      <li><b>Lower the target:</b> the most you can reach on time.</li></ul>
+    ${H(4, 'What if')}
+    <p>Slide to add up to RM 2,000 a month and see how much sooner each Tabung reaches its target. Nothing is saved.</p>
+    ${H(5, 'Assumptions')}
+    <p>Tabung money grows <b>${a.growth}% a year</b>${a.growth ? '' : ' (cautious)'}. Change it in <b>Lens → Settings → Plan assumptions</b>.</p>
   </div>`;
 }
 
@@ -145,7 +137,7 @@ function budgetGuide() {
   </div>`;
 }
 
-export const GUIDES = { pnl: ['P&L guide', pnlGuide], assets: ['Assets guide', assetsGuide], plan: ['Plan guide', planGuide], budget: ['Budget guide', budgetGuide] };
+export const GUIDES = { pnl: ['P&L guide', pnlGuide], assets: ['Savings guide', assetsGuide], plan: ['Plan guide', planGuide], budget: ['Budget guide', budgetGuide] };
 export function openGuide(l, which) {
   const [title, body] = GUIDES[which];
   openSheet(l, { title, body, onSave: () => closeSheet(l), saveLabel: 'Got it' });

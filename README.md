@@ -1,4 +1,4 @@
-# MansWell · v3.1.3 (Pocket + Payslip + Lens)
+# MansWell · v3.1.4 (Pocket + Payslip + Lens)
 
 *Live well today. Build well for tomorrow.*
 
@@ -11,7 +11,25 @@ MansWell is the new name for Dreamer (and, before that, Pocket Dreamer and Everw
 
 Upload everything to GitHub. There's no Apps Script change and no data change. **Plan** and **Budget** now have a guide too: tap the book icon at the top of the page.
 
-## Updating to 3.2
+## Updating to 3.1.4
+
+- **GitHub only:** upload everything from this folder and click **Commit changes**. No Apps Script change.
+- **Your data stays.** A Tabung you made in 3.1.3 moves to Within days; tap it to pick its group.
+
+What changed:
+
+- **Savings page** (was Assets):
+  - **Total = savings + Tabung**, split into Ready now, Within days and Retirement.
+  - **Savings** table: Savings · Opening · In · Growth · Now.
+  - **Tabung** table: Tabung · Opening · In · Out · Balance.
+  - Both are grouped the same way, and each has its own **+ Add** (no type to pick). Every name stays on one line.
+  - "through Pocket & payslips" and "dividends & price" are gone.
+- **Plan** tracks your Tabung only:
+  - Every Tabung with a target is a goal. Tap one to set its target and date.
+  - Turn on **Emergency fund** for one Tabung; its target is months × essential spending, and it always comes first.
+  - Foundations are removed. Goals from before that aren't on a Tabung show under **Goals to link**.
+
+## Earlier: 3.2 / 3.1.3 (Tabung first version)
 
 - **GitHub only:** upload everything from this folder and click **Commit changes**.
 - **No Apps Script change.**
@@ -377,7 +395,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'manswell-3.1.3-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'manswell-3.1.4-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting
