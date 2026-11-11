@@ -4,6 +4,7 @@ import { html } from '../vendor/preact-htm.js';
 import { K, rerender, n0, Notify } from '../core.js';
 import { askPassword } from '../shared.js';
 import * as E from './engine.js';
+import { openGuide } from './guide.js';
 import { Page, Sect, W0, UpdateNote, lsave, num } from './ui.js';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -84,6 +85,6 @@ export const scrLensBudget = {
       <div class="lc">${[['Needs', B.needs, 50, K.or], ['Wants', B.wants, 30, K.gold], ['Savings', B.save, 20, K.grn]].map(([t, v, g, c]) => { const p = B.incT > 0 ? v / B.incT * 100 : 0; return html`<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:13px"><b>${t}</b><span><b>${p.toFixed(0)}%</b> <span class="lmu">· guide ${g}%</span></span></div><div class="lbar" style="margin-top:7px"><i style=${`width:${Math.min(100, p)}%;background:${c}`}></i></div></div>`; })}
         <div class="lnote" style="margin-top:12px">The 50/30/20 guide, as a reference only. Needs are your essential categories (set in Lens Settings).${B.buffer < -0.5 ? html` To balance, trim <b>${W0(-B.buffer)}</b> a month from wants, or save ${Math.max(0, B.rate - Math.ceil(-B.buffer / Math.max(1, B.incT) * 100))}% instead of ${B.rate}%.` : ''} During ${l.y}, the P&L shows budget vs actual each month.</div></div>
       <div style="margin:4px 12px 8px">${B.locked ? html`<button class="lbtn" style="width:100%;padding:12px" onClick=${unlock} data-t="budUnlock">Unlock budget ${l.y}</button>` : html`<button class="lbtnf" onClick=${lock} data-t="budLock">Lock budget ${l.y}</button>`}</div>`}`;
-    return Page(l, 3, kids, 'lensBudget');
+    return Page(l, 3, kids, 'lensBudget', () => openGuide(l, 'budget'));
   }
 };

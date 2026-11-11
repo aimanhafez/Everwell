@@ -141,6 +141,9 @@ export const scrCategories = {
             up.EW_Transactions = DB.txns.filter(t => t.TxCat === old).map(t => ({ ...t, TxCat: nm }));
             up.EW_Payees = DB.payees.filter(p => p.PyCat === old).map(p => ({ ...p, PyCat: nm }));
             up.EW_Recurring = DB.recurring.filter(r => r.RcCat === old).map(r => ({ ...r, RcCat: nm }));
+            // Lens: keep a linked Asset / Tabung pointing at the renamed category
+            const ln = DB.lnOk ? (DB.lnAssets || []).filter(a => a.AsKind === 'category' && a.AsCat === old) : [];
+            if (ln.length) up.LN_Assets = ln.map(a => ({ ...a, AsCat: nm, AsName: a.AsName === old ? nm : a.AsName }));
           }
           await save({ up, log: [{ AuAction: 'Edit category', AuRef: C0.CatId, AuDetail: old !== nm ? old + ' renamed to ' + nm : nm }] });
         }

@@ -3,6 +3,7 @@
 import { html } from '../vendor/preact-htm.js';
 import { K, DB, rerender, Today, n0 } from '../core.js';
 import * as E from './engine.js';
+import { openGuide } from './guide.js';
 import { Page, Sect, W0, W2, UpdateNote, openSheet, closeSheet, lsave, num, newId, pIcon, Switch, iconHtml } from './ui.js';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -19,10 +20,12 @@ function editGoal(l, g) {
       <div class="llab">Goal</div><input class="lin" value=${f.name} placeholder="e.g. House down payment" onInput=${e => { f.name = e.target.value; }} data-t="goName" />
       <div class="llab">Target (RM)</div><input class="lin r" inputmode="decimal" value=${f.target} placeholder="0" onInput=${e => { f.target = e.target.value; }} data-t="goTarget" />
       <div class="llab">By</div><input class="lin" type="month" value=${f.by} min=${ymOf(E.curKey())} onInput=${e => { f.by = e.target.value; }} data-t="goBy" />
-      <div class="llab">Money already set aside for it · optional</div>
-      <select class="lin" onChange=${e => { f.asset = e.target.value; }} data-t="goAsset"><option value="">None, start from zero</option>${E.assets().map(a => html`<option value=${a.AsId} selected=${f.asset === a.AsId}>${a.AsName} · ${W0(E.valueAt(a, Today()))}</option>`)}</select>
-      <div class="lnote" style="margin-top:6px">The asset's whole value counts toward this goal.</div>
-      <div class="llab">Plus an amount saved elsewhere · optional</div><input class="lin r" inputmode="decimal" value=${f.have} placeholder="0" onInput=${e => { f.have = e.target.value; }} data-t="goHave" />
+      <div class="llab">Funded by · from your Assets page</div>
+      ${(() => { const used = new Set(E.goals().filter(x => !g || x.GoId !== g.GoId).map(x => x.GoAsset).filter(Boolean)); const RF = E.rollForward();
+        const opt = r => html`<option value=${r.a.AsId} selected=${f.asset === r.a.AsId} disabled=${used.has(r.a.AsId)}>${r.a.AsName} · ${W0(r.now)}${used.has(r.a.AsId) ? ' · funds another goal' : ''}</option>`;
+        return html`<select class="lin" onChange=${e => { f.asset = e.target.value; }} data-t="goAsset"><option value="">Not linked yet · starts from zero</option>
+          ${RF.tabung.length ? html`<optgroup label="Tabung">${RF.tabung.map(opt)}</optgroup>` : null}<optgroup label="Savings & assets">${RF.assets.map(opt)}</optgroup></select>`; })()}
+      <div class="lnote" style="margin-top:6px">The goal's progress is that item's balance. Each item funds one goal, so nothing counts twice. Add a Tabung on the Assets page.</div>
       ${g && list.length > 1 ? html`<div class="llab">Priority · ${idx + 1} of ${list.length} (after the emergency fund)</div><div style="display:flex;gap:8px"><button class="lbtn" style="flex:1" disabled=${idx === 0} onClick=${() => move(-1)}>${iconHtml('up', K.text, 15)}Higher</button><button class="lbtn" style="flex:1" disabled=${idx === list.length - 1} onClick=${() => move(1)}>${iconHtml('down', K.text, 15)}Lower</button></div>` : null}
       ${g ? html`<div style="margin-top:16px"><button class="lbtnd" data-t="goDelete" onClick=${() => { lsave({ del: { LN_Goals: [g.GoId] } }, 'Goal removed', g.GoName); closeSheet(l); }}>Remove goal</button></div>` : null}`,
     onSave: () => {
@@ -66,21 +69,6 @@ function retirement() {
   const need = months > 0 ? Math.max(0, (target - (g ? have * Math.pow(1 + g, months) : have)) / (g ? (Math.pow(1 + g, months) - 1) / g : months)) : 0;
   return { have, monthly, set: true, fv, target, need, ok: fv >= target, retAge };
 }
-function gantt(list, sim) {
-  const W = 334, last = Math.max(12, ...sim.done.map((d, i) => (d === null ? 60 : Math.max(d, sim.due[i]))) ) + 3, months = Math.min(last, 96);
-  const X = m => 96 + m / months * (W - 104), rowH = 46, H = 28 + list.length * rowH, c0 = E.curKey();
-  let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
-  for (let m = 1; m <= months; m++) { const k = E.kAdd(c0, m); if (E.kM(k) === 1) { const x = X(m); if (x > W - 26) continue; s += `<line x1="${x}" x2="${x}" y1="14" y2="${H}" stroke="${K.sep}"/><text x="${x + 3}" y="10" font-size="9.5" fill="${K.mute}">${E.kY(k)}</text>`; } }
-  list.forEach((g, i) => {
-    const y = 22 + i * rowH, d = sim.done[i], late = d !== null && d > sim.due[i];
-    const nm = g.n.length > 15 ? g.n.slice(0, 14) + '…' : g.n;
-    s += `<text x="0" y="${y + 12}" font-size="11.5" font-weight="600" fill="${K.text}">${nm.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text><text x="0" y="${y + 27}" font-size="9.5" fill="${late ? K.red : K.sub}">${d === -1 ? 'Done' : d === null ? 'Not reached' : kl(E.kAdd(c0, d))}</text>`;
-    (sim.alloc[i] || []).slice(0, months).forEach((a, m) => { if (a > 0.5) s += `<rect x="${X(m)}" y="${y + 3}" width="${(W - 104) / months + .4}" height="16" fill="${late && m > sim.due[i] ? K.red : K.or}" opacity="${0.25 + 0.75 * Math.min(1, a / 700)}"/>`; });
-    if (sim.due[i] <= months) { const tx = X(Math.min(months, sim.due[i] + 1)); s += `<line x1="${tx}" x2="${tx}" y1="${y - 1}" y2="${y + 23}" stroke="#fff" stroke-width="1.5"/><text x="${tx}" y="${y + 34}" text-anchor="middle" font-size="8.5" fill="${K.sub}">target</text>`; }
-  });
-  return s + '</svg>';
-}
-
 export const scrLensPlan = {
   onVisible(l) { l.extra = l.extra || 0; },
   view(l) {
@@ -115,10 +103,6 @@ export const scrLensPlan = {
         ${found.map(([ic, t, s, [c, st], on]) => html`<div class=${'lr' + (on ? ' tap' : '')} onClick=${on} style=${on ? 'cursor:pointer' : ''} data-t=${'fd-' + t}><div class="lib">${pIcon(ic, K.or, 18)}</div><div><div class="t">${t}</div><div class="s">${s}</div></div><span class=${'lchip ' + c}>${st}</span></div>`)}</div>
       ${Sect('Goals', '+ New goal', () => editGoal(l, null), 'goalNew')}
       <div class="lc">${list.length ? list.map(goalRow) : html`<div class="lempty">Add a goal to see when you'll reach it.</div>`}</div>
-      ${list.length && SP.v > 0 ? html`${Sect('The plan')}
-      <div class="lc"><div class="lnote" style="margin-bottom:12px">${W0(SP.v)} a month is shared in priority order. When a goal is done, its share moves down to the next one.</div>
-        <div dangerouslySetInnerHTML=${{ __html: gantt(list, sim) }}></div>
-        <div class="lnote" style="margin-top:6px;display:flex;gap:14px"><span><span style=${`display:inline-block;width:10px;height:8px;background:${K.or};border-radius:2px;margin-right:5px`}></span>Funding (darker = more)</span><span><span style=${`display:inline-block;width:10px;height:8px;background:${K.red};border-radius:2px;margin-right:5px`}></span>After target</span></div></div>` : null}
       ${fix ? html`${Sect('Fix the late goal')}
       <div class="lc" data-t="planFix"><div class="lnote" style="margin-bottom:6px">${list[lateI].n} finishes ${sim.done[lateI] === null ? 'too far away to show' : html`in <b>${kl(E.kAdd(E.curKey(), sim.done[lateI]))}</b>`}, after its ${kl(list[lateI].by)} target. Pick one:</div>
         <div class="lr" style="grid-template-columns:1fr auto"><div><div class="t">Save more</div><div class="s">Reaches it on time, nothing else moves</div></div><button class="lbtn o" onClick=${() => { l.extra = Math.min(2000, Math.ceil(fix.extra / 50) * 50); rerender(); }} data-t="fixMore">+${W0(fix.extra)} a month</button></div>
@@ -130,6 +114,6 @@ export const scrLensPlan = {
         <input type="range" min="0" max="2000" step="50" value=${l.extra || 0} onInput=${e => { l.extra = Number(e.target.value); rerender(); }} style=${`width:100%;margin-top:12px;accent-color:${K.or}`} data-t="wiRange" />
         <div class="lsub" style="margin-top:8px" data-t="wiResult">${!l.extra ? 'Slide to see how much sooner each goal finishes.' : list.map((g, i) => { const a = sim.done[i], b = simX.done[i]; if (a === -1) return null; const diff = a === null ? null : (b === null ? null : a - b); return html`<div>${g.n}: <b style=${`color:${K.text}`}>${b === null ? 'not reached' : kl(E.kAdd(E.curKey(), b))}</b>${diff ? html` <span class="lup">(${diff} month${diff === 1 ? '' : 's'} sooner)</span>` : ''}</div>`; })}</div></div>
         <div class="lnote" style="margin-top:10px">Assumes goal money grows ${E.assumptions().growth}% a year${E.assumptions().growth ? '' : ' (cautious)'}. Dividends are a bonus on top. Change this in Lens Settings.</div></div>` : null}`;
-    return Page(l, 2, kids, 'lensPlan');
+    return Page(l, 2, kids, 'lensPlan', () => openGuide(l, 'plan'));
   }
 };

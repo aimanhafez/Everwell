@@ -122,6 +122,14 @@ export function essentialMonthly() {
 
 /* ───────── assets (roll-forward) ───────── */
 export const assets = () => DB.lnAssets.filter(a => a.AsActive !== false).sort((a, b) => (a.AsSeq || 0) - (b.AsSeq || 0));
+/** A Tabung is money set aside for a purpose. Stored as access group 3 on LN_Assets (no new columns). */
+export const isTabung = a => Number(a.AsLiq) === 3;
+export const ignoredCats = () => { const v = lget('ignoreCats', []); return Array.isArray(v) ? v : []; };
+export const linkedCats = () => new Set(assets().filter(a => a.AsKind === 'category').map(a => a.AsCat));
+/** Offered once a category has its first transaction, so Pocket's unused default categories never nag. */
+export const newCats = () => { const lk = linkedCats(), ig = ignoredCats(), u = used(); return savCats().filter(c => !lk.has(c) && !ig.includes(c) && u.has(c)); };
+/** Money into and out of a Pocket category (deposits, withdrawals) between two dates. */
+export function catSplit(cat, from, to) { let i = 0, o = 0; for (const t of DB.txns) { if (t.TxCat !== cat || (from && t.TxDate < from) || (to && t.TxDate > to)) continue; const f = flowOf(t); if (!f || f.side !== 'Out') continue; if (f.v >= 0) i += f.v; else o -= f.v; } return { inn: round2(i), out: round2(o) }; }
 function monthsBetween(d1, d2) { const [y1, m1, a] = d1.split('-').map(Number), [y2, m2, b] = d2.split('-').map(Number); return Math.max(0, (y2 * 12 + m2) - (y1 * 12 + m1) - (b < a ? 1 : 0)); }
 export function acctBal(accId, upTo) { let b = 0; for (const t of DB.txns) if (t.TxAcc === accId && !t.TxParent && (!upTo || t.TxDate <= upTo)) b += t.TxDir === 'In' ? t.TxAmt : -t.TxAmt; return round2(b); }
 export function catFlow(cat, from, to) { let s = 0; for (const t of DB.txns) { if (t.TxCat !== cat || (from && t.TxDate < from) || (to && t.TxDate > to)) continue; const f = flowOf(t); if (f && f.side === 'Out') s += f.v; } return round2(s); }
@@ -162,15 +170,19 @@ export function rollForward() {
     const vals = valuesOf(a.AsId), last = vals[vals.length - 1];
     return { a, open, inn, pocket, psIn: mf && mf.ps ? mf.v : 0, grow: round2(now - open - inn), now, est: !!(mf && mf.est), ps: !!(mf && mf.ps), last, liq: Number(a.AsLiq) || 0 };
   });
-  const T = f => round2(list.reduce((s, r) => s + r[f], 0));
-  return { list, open: T('open'), inn: T('inn'), grow: T('grow'), now: T('now') };
+  list.forEach(r => { if (!isTabung(r.a)) return; const sp = r.a.AsKind === 'category' ? catSplit(r.a.AsCat, addDays(od, 1), today) : { inn: 0, out: 0 }; r.used = sp.out; r.tin = round2(r.now - r.open + sp.out); });
+  const A = list.filter(r => !isTabung(r.a)), B = list.filter(r => isTabung(r.a));
+  const T = (L, f) => round2(L.reduce((s, r) => s + (r[f] || 0), 0));
+  return { list, assets: A, tabung: B, open: T(A, 'open'), inn: T(A, 'inn'), grow: T(A, 'grow'), now: T(A, 'now'),
+    tab: { open: T(B, 'open'), inn: T(B, 'tin'), used: T(B, 'used'), now: T(B, 'now') } };
 }
 /** Values for the growth chart: the opening balance, then each month-end, then today. Per asset and in total. */
 export function assetSeries() {
   const ks = []; for (let k = startKey(); k <= curKey() && ks.length < 36; k = kAdd(k, 1)) ks.push(k);
   const dates = [openDate(), ...ks.map(k => (k === curKey() ? Today() : kEnd(k)))];
   const rows = assets().map(a => ({ a, vals: dates.map(d => valueAt(a, d)) }));
-  return { ks: [null, ...ks], dates, rows, total: dates.map((d, i) => round2(rows.reduce((s, r) => s + r.vals[i], 0))) };
+  const sum = L => dates.map((d, i) => round2(L.reduce((s, r) => s + r.vals[i], 0)));
+  return { ks: [null, ...ks], dates, rows, total: sum(rows.filter(r => !isTabung(r.a))), tabTotal: sum(rows.filter(r => isTabung(r.a))), hasTab: rows.some(r => isTabung(r.a)) };
 }
 export const readyNow = () => round2(rollForward().list.filter(r => r.liq === 0).reduce((s, r) => s + r.now, 0));
 
@@ -212,7 +224,7 @@ export function planGoals() {
   const efBy = byKey(lget('efBy', '')) || kAdd(curKey(), 8);
   const list = [];
   if (ess > 0) list.push({ id: 'EF', n: 'Emergency fund', kind: 'emergency', target: efT, have: ready, by: efBy, src: 'Ready-now savings · ' + efMonths() + ' months of essentials' });
-  for (const g of goals()) { const a = g.GoAsset && assets().find(x => x.AsId === g.GoAsset); list.push({ id: g.GoId, g, n: g.GoName, kind: 'goal', target: Number(g.GoTarget) || 0, have: goalHave(g), by: byKey(g.GoBy) || kAdd(curKey(), 24), src: a ? (a.AsName + ' counts toward it') : (Number(g.GoHave) ? 'Saved so far' : 'New savings') }); }
+  for (const g of goals()) { const a = g.GoAsset && assets().find(x => x.AsId === g.GoAsset); list.push({ id: g.GoId, g, n: g.GoName, kind: 'goal', target: Number(g.GoTarget) || 0, have: goalHave(g), by: byKey(g.GoBy) || kAdd(curKey(), 24), src: a ? ('funded by ' + a.AsName) : (Number(g.GoHave) ? 'Saved so far' : 'Not linked yet') }); }
   return list;
 }
 /** Month 0 = the current month. Returns finish month index per goal (null = beyond 30 years). */

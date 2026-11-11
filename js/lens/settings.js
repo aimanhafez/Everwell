@@ -26,8 +26,8 @@ function sheetOpening(l) {
 }
 function sheetAssets(l) {
   openSheet(l, {
-    title: 'Assets & links',
-    body: () => html`${E.assets().map(a => html`<div class="lr tap" style="grid-template-columns:1fr auto;cursor:pointer" onClick=${() => editAsset(l, a)}><div><div class="t" style="font-size:14px">${a.AsName}</div><div class="s">${a.AsKind === 'account' ? 'Pocket account · Balance Sweep' : a.AsKind === 'category' ? 'Linked to Pocket category “' + a.AsCat + '”' + (E.payslipFed(a) ? ' + payslips' : '') : 'You update' + (a.AsMonthly ? ' · ' + W0(a.AsMonthly) + '/mo estimate' : '')} · ${['Ready now', 'Within days', 'Retirement'][Number(a.AsLiq) || 0]}</div></div>${iconHtml('right', K.sub, 16)}</div>`)}
+    title: 'Assets, Tabung & links',
+    body: () => html`${E.assets().map(a => html`<div class="lr tap" style="grid-template-columns:1fr auto;cursor:pointer" onClick=${() => editAsset(l, a)}><div><div class="t" style="font-size:14px">${a.AsName}</div><div class="s">${a.AsKind === 'account' ? 'Pocket account · Balance Sweep' : a.AsKind === 'category' ? 'Linked to Pocket category “' + a.AsCat + '”' + (E.payslipFed(a) ? ' + payslips' : '') : 'You update' + (a.AsMonthly ? ' · ' + W0(a.AsMonthly) + '/mo estimate' : '')} · ${['Ready now', 'Within days', 'Retirement', 'Tabung'][Number(a.AsLiq) || 0]}</div></div>${iconHtml('right', K.sub, 16)}</div>`)}
       <div style="margin-top:12px"><button class="lbtn o" style="width:100%;padding:11px" onClick=${() => editAsset(l, null)}>+ Add asset</button></div>`
   });
 }

@@ -1,4 +1,4 @@
-# MansWell · v3.1.2 (Pocket + Payslip + Lens)
+# MansWell · v3.1.3 (Pocket + Payslip + Lens)
 
 *Live well today. Build well for tomorrow.*
 
@@ -6,6 +6,32 @@ MansWell is the new name for Dreamer (and, before that, Pocket Dreamer and Everw
 
 - **Pocket** is where money is recorded: accounts, transactions, Balance Sweep, import and backup, plus **Payslip** (new in 3.1).
 - **Lens** is where money is understood. It has five pages: P&L, Assets, Plan, Budget and Settings.
+
+## Updating to 3.1.3
+
+Upload everything to GitHub. There's no Apps Script change and no data change. **Plan** and **Budget** now have a guide too: tap the book icon at the top of the page.
+
+## Updating to 3.2
+
+- **GitHub only:** upload everything from this folder and click **Commit changes**.
+- **No Apps Script change.**
+- **Your data stays as it is.** Everything you already have starts as an Asset.
+
+What changed:
+
+- **Assets page:**
+  - The **Asset** roll-forward is grouped into Ready now, Within days and Retirement, each with a subtotal. The top card shows the three totals.
+  - New **Tabung** roll-forward for money set aside for a purpose: Opening + In − Used = Now.
+  - The Access section and the opening-date badge are gone.
+- **Lens and Pocket stay in sync:**
+  - **+ Add** in Lens: choose Asset or Tabung. **Through Pocket** creates the Pocket Savings/Asset category for you. **Value I update** stays in Lens only.
+  - A Savings/Asset category made in Pocket shows under **New in Pocket** once it has a transaction. Add it once, as an Asset or a Tabung, or choose "Don't track this in Lens".
+  - Renaming on either side renames the other. Tap an item to switch it between Asset and Tabung.
+  - **Remove from Lens** keeps the Pocket category and its transactions.
+- **Plan:**
+  - Each goal is **Funded by** one item from the Assets page (Tabung first). Its progress is that item's balance, and an item funds one goal only.
+  - The Plan timeline section is removed.
+- **Fixed:** + Add showed an empty "Choose…" list.
 
 ## Updating to 3.1.2
 
@@ -351,7 +377,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'manswell-3.1.2-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'manswell-3.1.3-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting
