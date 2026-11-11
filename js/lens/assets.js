@@ -193,7 +193,7 @@ export const scrLensAssets = {
     const amt = v => (Math.round(v) ? (v < 0 ? '(' + n0(-v) + ')' : n0(v)) : html`<span class="lmu">–</span>`);
     const gTot = g => RF.list.filter(r => r.liq === g).reduce((s2, r) => s2 + r.now, 0);
     const sub = (L, g) => L.filter(r => r.liq === g).reduce((s2, r) => s2 + r.now, 0);
-    const COLS = html`<colgroup><col style="width:37%" /><col style="width:16%" /><col style="width:15%" /><col style="width:15%" /><col style="width:17%" /></colgroup>`;
+    const COLS = html`<colgroup><col style="width:32%" /><col style="width:16%" /><col style="width:15%" /><col style="width:16%" /><col style="width:21%" /></colgroup>`;
     const kids = html`
       ${UpdateNote()}
       ${nc.length ? html`<div class="lc" style="box-shadow:inset 0 0 0 1px rgba(255,106,0,.45);background:rgba(255,106,0,.06)" data-t="asNew"><span class="lcap" style=${`color:${K.or}`}>New in Pocket</span>
@@ -212,7 +212,7 @@ export const scrLensAssets = {
       <div class="lc" style="padding:14px 0 12px">
         <table class="lrf" data-t="rollForward">${COLS}
           <tr><th>Savings</th><th>Opening</th><th>In</th><th>Growth</th><th>Now</th></tr>
-          ${[0, 1, 2].filter(g => RF.assets.some(r => r.liq === g)).map(g => html`<tr class="grp" data-t=${'grp-' + g}><td colspan="4">${LIQ[g]}</td><td>${n0(sub(RF.assets, g))}</td></tr>
+          ${[0, 1, 2].filter(g => RF.assets.some(r => r.liq === g)).map(g => html`<tr class="grp" data-t=${'grp-' + g}><td colspan="5">${LIQ[g]}</td></tr>
           ${RF.assets.filter(r => r.liq === g).map(r => html`<tr class="tap" onClick=${() => editAsset(l, r.a)} data-t=${'rf-' + r.a.AsName}><td><div class="nm">${r.a.AsName}</div></td>
             <td>${n0(r.open)}</td><td>${amt(r.inn)}${r.est ? html`<span class="lgd" style="font-size:9px"> est</span>` : null}</td>
             <td class=${r.grow > 0.5 ? 'lup' : r.grow < -0.5 ? 'ldn' : ''}>${Math.round(r.grow) ? (r.grow > 0 ? '+' : '−') + n0(Math.abs(r.grow)) : html`<span class="lmu">–</span>`}</td><td>${n0(r.now)}</td></tr>`)}`)}
@@ -223,7 +223,7 @@ export const scrLensAssets = {
       <div class="lc" style=${RF.tabung.length ? 'padding:14px 0 12px' : ''} data-t="tabung">${RF.tabung.length ? html`
         <table class="lrf" data-t="tabTable">${COLS}
           <tr><th>Tabung</th><th>Opening</th><th>In</th><th>Out</th><th>Balance</th></tr>
-          ${[0, 1, 2].filter(g => RF.tabung.some(r => r.liq === g)).map(g => html`<tr class="grp" data-t=${'tgrp-' + g}><td colspan="4">${LIQ[g]}</td><td>${n0(sub(RF.tabung, g))}</td></tr>
+          ${[0, 1, 2].filter(g => RF.tabung.some(r => r.liq === g)).map(g => html`<tr class="grp" data-t=${'tgrp-' + g}><td colspan="5">${LIQ[g]}</td></tr>
           ${RF.tabung.filter(r => r.liq === g).map(r => html`<tr class="tap" onClick=${() => editAsset(l, r.a)} data-t=${'tb-' + r.a.AsName}><td><div class="nm">${r.a.AsName}</div></td><td>${n0(r.open)}</td><td>${amt(r.tin)}</td><td>${Math.round(r.used) ? '(' + n0(r.used) + ')' : html`<span class="lmu">–</span>`}</td><td>${n0(r.now)}</td></tr>`)}`)}
           <tr class="tot"><td>Total</td><td>${n0(RF.tab.open)}</td><td>${n0(RF.tab.inn)}</td><td>${Math.round(RF.tab.used) ? '(' + n0(RF.tab.used) + ')' : '–'}</td><td>${n0(RF.tab.now)}</td></tr>
         </table>` : html`<div class="lnote">A Tabung is money set aside for a purpose, like an emergency fund, a house or travel. Tap <b>+ Add</b>, or switch a savings item to a Tabung by tapping it. Plan tracks every Tabung you give a target.</div>`}</div>

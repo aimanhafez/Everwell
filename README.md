@@ -1,4 +1,4 @@
-# MansWell · v3.1.4 (Pocket + Payslip + Lens)
+# MansWell · v3.1.5 (Pocket + Payslip + Lens)
 
 *Live well today. Build well for tomorrow.*
 
@@ -11,7 +11,13 @@ MansWell is the new name for Dreamer (and, before that, Pocket Dreamer and Everw
 
 Upload everything to GitHub. There's no Apps Script change and no data change. **Plan** and **Budget** now have a guide too: tap the book icon at the top of the page.
 
-## Updating to 3.1.4
+## Updating to 3.1.5
+
+- **GitHub only:** upload everything and commit. No Apps Script change.
+- **Fixed:** the Savings and Tabung tables cut off the Total ("62,1…"). The Now and Balance column is wider now.
+- **Removed:** the amount on the Ready now, Within days and Retirement rows inside the tables. The top card still shows those totals.
+
+## 3.1.4
 
 - **GitHub only:** upload everything from this folder and click **Commit changes**. No Apps Script change.
 - **Your data stays.** A Tabung you made in 3.1.3 moves to Within days; tap it to pick its group.
@@ -395,7 +401,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'manswell-3.1.4-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'manswell-3.1.5-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting
