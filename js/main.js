@@ -2,6 +2,7 @@
 import { html, render } from './vendor/preact-htm.js';
 import { NAV, CONN, mount, rerender, loadAll, loadCached, flush, beaconOutbox, flushCache, Navigate, stStart, Notify, K } from './core.js';
 import { autoSweep } from './sweep.js';
+import './theme.js';
 import { scrHome } from './screens/home.js';
 import { scrAccounts, scrAccountDetail, scrAccountEdit } from './screens/accounts.js';
 import { scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit } from './screens/transactions.js';
@@ -9,13 +10,14 @@ import { scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivit
 import { scrImport } from './screens/import.js';
 import { scrDreamer } from './screens/dreamer.js';
 import { scrPayslip } from './screens/payslip.js';
+import { scrYearClose } from './screens/yearclose.js';
 import { scrLensPnl } from './lens/pnl.js';
 import { scrLensAssets } from './lens/assets.js';
 import { scrLensPlan } from './lens/plan.js';
 import { scrLensBudget } from './lens/budget.js';
 import { scrLensSettings } from './lens/settings.js';
 
-Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, scrImport, scrDreamer, connect, scrPayslip, scrLensPnl, scrLensAssets, scrLensPlan, scrLensBudget, scrLensSettings });
+Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, scrImport, scrDreamer, connect, scrPayslip, scrYearClose, scrLensPnl, scrLensAssets, scrLensPlan, scrLensBudget, scrLensSettings });
 
 const stage = document.getElementById('stage');
 mount(stage);

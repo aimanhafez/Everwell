@@ -14,14 +14,21 @@
  *   5. Deploy > New deployment > Web app.  Execute as: Me.  Who has access: Anyone.
  *      Copy the Web app URL (it ends with /exec).
  *
- * Helpers you can run from the editor: showApiKey(), resetApiKey()
+ * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup()
+ *
+ * 3.1.6 · YEAR LOCK + WEEKLY BACKUP
+ *   - A closed year is locked here too: commit refuses any transaction or payslip on or before
+ *     EW_Settings.StYears.closedThrough. Edit the Sheet by hand if you ever need to change it.
+ *   - Weekly backup: a full copy of this Google Sheet goes to Drive › "MansWell Backups" every Sunday
+ *     around 3 am, newest 12 kept. Turn it on from the app (Pocket › Settings) or run turnOnWeeklyBackup().
+ *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.1.0';
+var EW_VERSION = '3.1.6';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
-  EW_Settings: { key: 'Title', cols: { Title: 's', StStart: 'd', StCycleDay: 'n', StLowBal: 'n', StCurrency: 's', StSweepAuto: 'b', StSweepFrom: 'n', StSweepLog: 's' } },
+  EW_Settings: { key: 'Title', cols: { Title: 's', StStart: 'd', StCycleDay: 'n', StLowBal: 'n', StCurrency: 's', StSweepAuto: 'b', StSweepFrom: 'n', StSweepLog: 's', StYears: 's' } },
   EW_Accounts: { key: 'AccId', cols: { AccId: 's', AccSeq: 'n', AccName: 's', AccShort: 's', AccColor: 's', AccType: 's', AccClass: 's', AccOpenDate: 'd', AccOB: 'n', AccLimit: 'n', AccDueDay: 'n', AccStatus: 's', AccRemarks: 's', AccSweep: 's' } },
   EW_Categories: { key: 'CatId', cols: { CatId: 's', CatSeq: 'n', CatName: 's', CatType: 's', CatPL: 's', CatFixed: 's', CatEss: 's', CatBudget: 'b', CatColor: 's', CatActive: 'b' } },
   EW_Payees: { key: 'PyName', cols: { PyName: 's', PyCat: 's' } },
@@ -161,6 +168,8 @@ var ACTIONS = {
    */
   commit: function (ss, p) {
     var del = p.deletes || {}, ups = p.upserts || {};
+    var lockMsg = closedYearBlock_(ss, ups, del);
+    if (lockMsg) throw new Error(lockMsg);
     var touched = Object.keys(del).concat(Object.keys(ups));
     if (touched.some(function (t) { return !ss.getSheetByName(t); })) ensureTables_(ss);
     Object.keys(del).forEach(function (t) { checkTable_(t); deleteRows_(ss, t, del[t]); });
@@ -171,6 +180,12 @@ var ACTIONS = {
     if (logged.length) upsertRows_(ss, 'EW_ActivityLog', logged);
     return { logged: logged };
   },
+
+  /** Weekly backup: status, turn on/off, back up now. */
+  backupStatus: function () { return backupInfo_(); },
+  backupOn: function () { turnOnWeeklyBackup(); return backupInfo_(); },
+  backupOff: function () { turnOffWeeklyBackup_(); return backupInfo_(); },
+  backupNow: function (ss, p) { backupNow((p && p.label) || ''); return backupInfo_(); },
 
   /** Settings → Start fresh: removes accounts, transactions, recurring and the log. Keeps categories and payees. */
   startFresh: function (ss) {
@@ -215,6 +230,68 @@ function ensureTables_(ss) {
 
 function headers_(sh) {
   return sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+}
+
+/* ───────── 3.1.6 · closed-year lock ───────── */
+function closedYearBlock_(ss, ups, del) {
+  if (!ss.getSheetByName('EW_Settings')) return '';
+  var st = readTable_(ss, 'EW_Settings')[0] || {}, rules = {};
+  try { rules = JSON.parse(st.StYears || '{}') || {}; } catch (e) { rules = {}; }
+  var ct = String(rules.closedThrough || ''); if (!ct) return '';
+  var msg = 'This year is closed (everything up to ' + ct + ' is locked). Change it in the Google Sheet if you really need to.';
+  var tx = ups.EW_Transactions || [], txDel = del.EW_Transactions || [];
+  if (tx.length || txDel.length) {
+    var old = {}; readTable_(ss, 'EW_Transactions').forEach(function (t) { old[t.TxnId] = t.TxDate; });
+    for (var i = 0; i < tx.length; i++) { var d = String(tx[i].TxDate || '').slice(0, 10), o = old[tx[i].TxnId]; if ((d && d <= ct) || (o && o <= ct)) return msg; }
+    for (var j = 0; j < txDel.length; j++) { var od = old[txDel[j]]; if (od && od <= ct) return msg; }
+  }
+  var lastMonth = ct.slice(0, 7), cd = Number(ct.slice(8, 10));
+  // the closed period's last financial month: ct is its last day (e.g. 2026-12-27 → 2026-12)
+  var ps = ups.EW_Payslips || [], psDel = del.EW_Payslips || [];
+  for (var k = 0; k < ps.length; k++) if (String(ps[k].PsMonth || '') <= lastMonth) return msg;
+  for (var m = 0; m < psDel.length; m++) if (String(psDel[m]).slice(0, 7) <= lastMonth) return msg;
+  return '';
+}
+
+/* ───────── 3.1.6 · weekly backup to Google Drive ───────── */
+var BACKUP_FOLDER = 'MansWell Backups', BACKUP_KEEP = 12;
+function backupFolder_() {
+  var it = DriveApp.getFoldersByName(BACKUP_FOLDER);
+  return it.hasNext() ? it.next() : DriveApp.createFolder(BACKUP_FOLDER);
+}
+/** Saves a full copy of this Google Sheet into Drive › MansWell Backups. Weekly copies keep the newest 12; labelled ones are kept forever. */
+function backupNow(label) {
+  var ss = getSs_();
+  var tz = Session.getScriptTimeZone(), stamp = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd HHmm');
+  var name = 'MansWell-backup-' + stamp + (label ? ' · ' + label : '');
+  var folder = backupFolder_();
+  var copy = DriveApp.getFileById(ss.getId()).makeCopy(name, folder);
+  if (!label) {
+    var files = [], fi = folder.getFiles();
+    while (fi.hasNext()) { var f = fi.next(); if (/^MansWell-backup-/.test(f.getName()) && f.getName().indexOf(' · ') < 0) files.push(f); }
+    files.sort(function (a, b) { return b.getDateCreated() - a.getDateCreated(); });
+    files.slice(BACKUP_KEEP).forEach(function (f) { f.setTrashed(true); });
+  }
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty('BACKUP_LAST', new Date().toISOString()); props.setProperty('BACKUP_LAST_NAME', name); props.setProperty('BACKUP_LAST_URL', copy.getUrl());
+  props.deleteProperty('BACKUP_ERROR');
+  return name;
+}
+function weeklyBackup_() { try { backupNow(''); } catch (e) { PropertiesService.getScriptProperties().setProperty('BACKUP_ERROR', String(e && e.message || e)); } }
+function turnOnWeeklyBackup() {
+  var ss = getSs_(); if (ss) PropertiesService.getScriptProperties().setProperty('SHEET_ID', ss.getId());
+  turnOffWeeklyBackup_();
+  ScriptApp.newTrigger('weeklyBackup_').timeBased().onWeekDay(ScriptApp.WeekDay.SUNDAY).atHour(3).create();
+  PropertiesService.getScriptProperties().setProperty('BACKUP_ON', '1');
+}
+function turnOffWeeklyBackup_() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'weeklyBackup_') ScriptApp.deleteTrigger(t); });
+  PropertiesService.getScriptProperties().deleteProperty('BACKUP_ON');
+}
+function backupInfo_() {
+  var p = PropertiesService.getScriptProperties();
+  var on = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'weeklyBackup_'; });
+  return { on: on, last: p.getProperty('BACKUP_LAST') || '', name: p.getProperty('BACKUP_LAST_NAME') || '', url: p.getProperty('BACKUP_LAST_URL') || '', error: p.getProperty('BACKUP_ERROR') || '', folder: BACKUP_FOLDER, keep: BACKUP_KEEP };
 }
 
 function readTable_(ss, name) {

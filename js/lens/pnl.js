@@ -6,7 +6,7 @@ import { loadXlsx, shareOrDownload } from '../backup.js';
 import * as E from './engine.js';
 import * as PS from '../payslip-data.js';
 import { openGuide } from './guide.js';
-import { Page, Sect, STC, chipCls, iconHtml, W0, W2, acc, pctTxt, UpdateNote, CSS } from './ui.js';
+import { Page, Sect, STC, chipCls, iconHtml, W0, W2, acc, pctTxt, UpdateNote, css, oa, ta } from './ui.js';
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -60,10 +60,10 @@ let fullEl = null;
 function fullView(l, P) {
   if (!fullEl) { fullEl = document.createElement('div'); fullEl.id = 'lensFull'; document.body.appendChild(fullEl); }
   if (!l.full) { render(null, fullEl); fullEl.style.display = 'none'; return; }
-  fullEl.style.cssText = 'position:fixed;inset:0;z-index:60;background:#0D0F12;color:#F4F2EE;font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,"SF Pro Text",Roboto,"Helvetica Neue",Arial,sans-serif;display:block;font-variant-numeric:tabular-nums;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+  fullEl.style.cssText = `position:fixed;inset:0;z-index:60;background:${K.bg};color:${K.text};font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,"SF Pro Text",Roboto,"Helvetica Neue",Arial,sans-serif;display:block;font-variant-numeric:tabular-nums;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)`;
   const close = () => { l.full = false; rerender(); };
   render(html`<div style="height:100%;display:flex;flex-direction:column">
-    <style>${CSS} .ltbl{font-size:11px}.ltbl td,.ltbl th{padding:5px 6px}.ltbl td:first-child,.ltbl th:first-child{max-width:170px;min-width:150px}</style>
+    <style>${css()} .ltbl{font-size:11px}.ltbl td,.ltbl th{padding:5px 6px}.ltbl td:first-child,.ltbl th:first-child{max-width:170px;min-width:150px}</style>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px 8px;gap:10px">
       <div style="display:flex;align-items:baseline;gap:10px;min-width:0"><span style="font:25px Georgia,serif">Lens<i style="color:#FF6A00;font-style:normal">.</i></span><span class="lcap">P&L statement · ${P.y} · RM</span></div>
       <div style="display:flex;gap:8px"><button class="lbtn" onClick=${() => exportPnl(P, l.gross)} data-t="fullExport">${iconHtml('excel', K.grn, 15)}Export</button><button class="lbtn" onClick=${close} data-t="fullClose">Close</button></div>
@@ -113,13 +113,13 @@ export async function exportPnl(P, gross) {
 
 const tile = (l, m, i) => {
   const s = E.status(m), on = m.k === l.sel;
-  if (!m.closed && m.k === E.curKey()) return html`<div class=${'lmt' + (on ? ' on' : '')} onClick=${() => { l.sel = m.k; rerender(); }} data-t=${'mt-' + MON[i]}><span>${MON[i]}</span><b class="lmu">Running</b><em class="lmu">${m.rate !== null ? pctTxt(m.rate) + ' so far' : 'Closes ' + E.kEnd(m.k).slice(8) + ' ' + MON[E.kM(E.kAdd(m.k, 0)) - 1]}</em><div class="lbar"><i style="width:30%;background:#626872"></i></div></div>`;
+  if (!m.closed && m.k === E.curKey()) return html`<div class=${'lmt' + (on ? ' on' : '')} onClick=${() => { l.sel = m.k; rerender(); }} data-t=${'mt-' + MON[i]}><span>${MON[i]}</span><b class="lmu">Running</b><em class="lmu">${m.rate !== null ? pctTxt(m.rate) + ' so far' : 'Closes ' + E.kEnd(m.k).slice(8) + ' ' + MON[E.kM(E.kAdd(m.k, 0)) - 1]}</em><div class="lbar"><i style="width:30%;background:${K.mute}"></i></div></div>`;
   if (!m.active) return html`<div class="lmt off"><span>${MON[i]}</span><b class="lmu">—</b><em class="lmu">${m.k > E.curKey() ? 'Not started' : 'No activity'}</em><div class="lbar"></div></div>`;
   const c = s ? STC[s[1]] : K.sub;
   return html`<div class=${'lmt' + (on ? ' on' : '')} onClick=${() => { l.sel = m.k; rerender(); }} data-t=${'mt-' + MON[i]}><span>${MON[i]}</span><b style=${`color:${c}`}>${pctTxt(m.rate)}</b><em style=${`color:${c}`}>${s ? s[0] : ''}</em><div class="lbar"><i style=${`width:${Math.max(4, Math.min(100, Math.abs(m.rate || 0) / 50 * 100))}%;background:${c};opacity:${s && s[1] === 'grn2' ? 0.55 : 1}`}></i></div></div>`;
 };
-const TILE_CSS = `.lmts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.lmt{background:#1A1E24;box-shadow:inset 0 0 0 1px ${K.line};border-radius:12px;padding:10px 10px 11px;cursor:pointer}
-.lmt.on{box-shadow:inset 0 0 0 1.5px rgba(255,106,0,.75)}.lmt span{font-size:10px;font-weight:600;letter-spacing:1.2px;color:${K.sub};text-transform:uppercase}
+const tileCss = () => `.lmts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.lmt{background:${K.card2};box-shadow:inset 0 0 0 1px ${K.line};border-radius:12px;padding:10px 10px 11px;cursor:pointer}
+.lmt.on{box-shadow:inset 0 0 0 1.5px ${oa(.75)}}.lmt span{font-size:10px;font-weight:600;letter-spacing:1.2px;color:${K.sub};text-transform:uppercase}
 .lmt b{display:block;margin-top:6px;font-size:15px;font-weight:700}.lmt em{display:block;font-style:normal;font-size:10.5px;font-weight:600;margin:2px 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lmt .lbar{height:3px}.lmt.off{opacity:.65;cursor:default}`;
 
 export const scrLensPnl = {
@@ -137,7 +137,7 @@ export const scrLensPnl = {
     requestAnimationFrame(() => { const w = document.querySelector('#lensPnl .ltw'); if (w && !l.scrolled) { const th2 = w.querySelector('th.cur'); w.scrollLeft = th2 ? Math.max(0, th2.offsetLeft - w.clientWidth + th2.offsetWidth * 1.6) : w.scrollWidth; l.scrolled = true; } });
     const anyData = P.months.some(m => m.active);
     const kids = html`
-      <style>${TILE_CSS}</style>
+      <style>${tileCss()}</style>
       ${UpdateNote()}
       <div class="lc lsel" data-t="pnlYear"><span class="lcb" onClick=${() => go(-1)} aria-label="Previous year" dangerouslySetInnerHTML=${{ __html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 4 7 12l8 8"/></svg>' }}></span>
         <div class="t"><b>${l.y}</b><span>Jan – Dec ${l.y} · ${P.done.length} month${P.done.length === 1 ? '' : 's'} closed</span></div>
@@ -166,7 +166,7 @@ export const scrLensPnl = {
           <span class=${'lsw' + (l.gross ? ' on' : '')} onClick=${() => { l.gross = !l.gross; store.set('lens_gross', l.gross); rerender(); }} data-t="pnlGross" role="switch" aria-checked=${l.gross}><i></i></span></div>` : null}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="lcap">RM · swipe for other months</span><button class="lbtn" style="padding:6px 10px" onClick=${() => exportPnl(P, l.gross)} data-t="pnlExport">${iconHtml('excel', K.grn, 15)}Export</button></div>
         <div class="ltw">${Statement(P, { sel: l.sel, all: l.allExp, gross: l.gross, onMore: () => { l.allExp = true; rerender(); } })}</div>
-        <div class="lnote" style="margin-top:10px;display:flex;align-items:center;gap:8px"><span style="width:14px;height:10px;border-radius:3px;background:rgba(255,106,0,.3);display:inline-block;flex:none"></span>Unusually high: more than double that category's usual month.</div>
+        <div class="lnote" style="margin-top:10px;display:flex;align-items:center;gap:8px"><span style="width:14px;height:10px;border-radius:3px;background:${oa(.3)};display:inline-block;flex:none"></span>Unusually high: more than double that category's usual month.</div>
       </div>
       ${sel.active ? html`
       ${Sect(E.kLabel(sel.k, true).split(' ')[0] + ', explained')}

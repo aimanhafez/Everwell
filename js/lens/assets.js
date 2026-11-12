@@ -6,7 +6,7 @@ import { askPassword } from '../shared.js';
 import { SWEEP_ID, sweepAccount } from '../sweep.js';
 import * as E from './engine.js';
 import { openGuide } from './guide.js';
-import { Page, Sect, iconHtml, W0, W2, UpdateNote, openSheet, closeSheet, lsave, canWrite, num, newId, Check } from './ui.js';
+import { Page, Sect, iconHtml, W0, W2, UpdateNote, openSheet, closeSheet, lsave, canWrite, num, newId, Check, oa, ta } from './ui.js';
 
 const PAL = ['#FF6A00', '#FF9A4D', '#E9B949', '#6B7178', '#A3236F', '#FFB27A', '#8A6FD1', '#C4C9CE'];
 const LIQ = ['Ready now', 'Within days', 'Retirement'];
@@ -144,9 +144,9 @@ export function updateValue(l, a, kind) {
 /* growth chart: stacked month-end values */
 /* growth: one line from the opening balance to today, a point per month-end. Total, or one asset. Tap or drag to read a month. */
 const MONL = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const G_CSS = `.gchips{display:flex;gap:6px;overflow-x:auto;padding:0 0 12px;scrollbar-width:none}.gchips::-webkit-scrollbar{display:none}
-.gchip{flex:none;font-size:12px;font-weight:600;padding:6px 11px;border-radius:99px;box-shadow:inset 0 0 0 1px #2C3038;color:${K.sub};cursor:pointer;white-space:nowrap}
-.gchip.on{color:${K.or};box-shadow:inset 0 0 0 1px rgba(255,106,0,.55);background:rgba(255,106,0,.1)}
+const gCss = () => `.gchips{display:flex;gap:6px;overflow-x:auto;padding:0 0 12px;scrollbar-width:none}.gchips::-webkit-scrollbar{display:none}
+.gchip{flex:none;font-size:12px;font-weight:600;padding:6px 11px;border-radius:99px;box-shadow:inset 0 0 0 1px ${K.line2};color:${K.sub};cursor:pointer;white-space:nowrap}
+.gchip.on{color:${K.or};box-shadow:inset 0 0 0 1px ${oa(.55)};background:${oa(.1)}}
 .gread{margin-bottom:6px}.gread .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:3px}.gread b{font-size:20px;font-weight:700}.gread small{font-size:11.5px;font-weight:600;white-space:nowrap}`;
 const niceStep = r => { const e = Math.pow(10, Math.floor(Math.log10(r))), f = r / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e; };
 const kfmt = (v, st) => (Math.abs(v) >= 1000 ? (v / 1000).toFixed(st < 1000 ? 1 : 0).replace(/\.0$/, '') + 'K' : String(Math.round(v)));
@@ -167,15 +167,15 @@ function Growth(l, S) {
   const d = v[gi] - v[0], steps = n - 1;
   let best = null; for (let i = 1; i < n; i++) { const x = v[i] - v[i - 1]; if (!best || x > best.d) best = { i, d: x }; }
   return html`${Sect('Growth')}
-    <div class="lc" data-t="asGrowth"><style>${G_CSS}</style>
+    <div class="lc" data-t="asGrowth"><style>${gCss()}</style>
       ${opts.length > 2 ? html`<div class="gchips">${opts.map(o => html`<span class=${'gchip' + (o === cur ? ' on' : '')} onClick=${() => { l.gSel = o.id; l.gI = null; rerender(); }} data-t=${'gc-' + o.name}>${o.name}</span>`)}</div>` : null}
       <div class="gread" data-t="gRead"><span class="lcap">${when}</span><div class="row"><b>${W0(v[gi])}</b>${gi > 0 ? html`<small class=${d >= 0 ? 'lup' : 'ldn'}>${d >= 0 ? '▲' : '▼'} ${W0(Math.abs(d))} since opening</small>` : html`<small class="lmu">Starting balance</small>`}</div></div>
       <svg width="100%" viewBox=${`0 0 ${W} ${H}`} style="display:block;touch-action:pan-y;cursor:crosshair" onPointerDown=${pick} onPointerMove=${pick} data-t="gSvg" role="img" aria-label=${cur.name + ' from ' + W0(v[0]) + ' to ' + W0(v[n - 1])}>
         ${ticks.map(t => html`<line x1="0" x2=${W - pr + 6} y1=${Y(t)} y2=${Y(t)} stroke=${K.sep} stroke-width="1" /><text x=${W} y=${Y(t) + 3} text-anchor="end" font-size="9" fill=${K.mute}>${kfmt(t, st)}</text>`)}
         <line x1=${X(gi)} x2=${X(gi)} y1=${top} y2=${top + ch} stroke=${K.sub} stroke-width="1" stroke-dasharray="2 3" opacity=".7" />
         <polyline points=${v.map((x, i) => X(i) + ',' + Y(x)).join(' ')} fill="none" stroke=${K.or} stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
-        ${gi !== 0 ? html`<circle cx=${X(0)} cy=${Y(v[0])} r="3.5" fill="#171A1F" stroke=${K.or} stroke-width="2" />` : null}
-        <circle cx=${X(gi)} cy=${Y(v[gi])} r="4.5" fill=${K.or} stroke="#171A1F" stroke-width="2" />
+        ${gi !== 0 ? html`<circle cx=${X(0)} cy=${Y(v[0])} r="3.5" fill="${K.card}" stroke=${K.or} stroke-width="2" />` : null}
+        <circle cx=${X(gi)} cy=${Y(v[gi])} r="4.5" fill=${K.or} stroke="${K.card}" stroke-width="2" />
         ${[...shown].map(i => html`<text x=${X(i)} y=${H - 6} text-anchor=${i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'} font-size="9.5" fill=${i === gi ? K.text : K.mute} font-weight=${i === gi ? 600 : 400}>${lab(i)}</text>`)}
         <rect x="0" y="0" width=${W} height=${H} fill="transparent" />
       </svg>
@@ -196,18 +196,18 @@ export const scrLensAssets = {
     const COLS = html`<colgroup><col style="width:32%" /><col style="width:16%" /><col style="width:15%" /><col style="width:16%" /><col style="width:21%" /></colgroup>`;
     const kids = html`
       ${UpdateNote()}
-      ${nc.length ? html`<div class="lc" style="box-shadow:inset 0 0 0 1px rgba(255,106,0,.45);background:rgba(255,106,0,.06)" data-t="asNew"><span class="lcap" style=${`color:${K.or}`}>New in Pocket</span>
+      ${nc.length ? html`<div class="lc" style="box-shadow:inset 0 0 0 1px ${oa(.45)};background:${oa(.06)}" data-t="asNew"><span class="lcap" style=${`color:${K.or}`}>New in Pocket</span>
         ${nc.map(c => html`<div class="lr" style="grid-template-columns:1fr auto"><div><div class="t">${c}</div><div class="s">Savings/Asset category · not in Lens yet</div></div><button class="lbtn o" style="padding:6px 12px" onClick=${() => editAsset(l, null, { cat: c })} data-t=${'nc-' + c}>Add to Lens</button></div>`)}</div>` : null}
       <div class="lc lh" data-t="asHero">
         <span class="lcap">Total · savings + Tabung</span>
         <div class="lbig" data-t="asNow">${W2(RF.all.now)}</div>
         <div class="lsub"><span class=${RF.all.now - RF.all.open >= 0 ? 'lup' : 'ldn'}>${RF.all.now - RF.all.open >= 0 ? '▲' : '▼'} ${W2(Math.abs(RF.all.now - RF.all.open))}</span> since opening</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px" data-t="asGroups">${LIQ.map((t, g) => html`<div style=${`background:rgba(255,255,255,.03);border-radius:11px;padding:9px 10px;box-shadow:inset 0 0 0 1px ${K.line}`}><span class="lcap" style="font-size:8.5px">${t}</span><b style="display:block;font-size:13.5px;margin-top:3px">${W0(gTot(g))}</b></div>`)}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px" data-t="asGroups">${LIQ.map((t, g) => html`<div style=${`background:${ta(.03)};border-radius:11px;padding:9px 10px;box-shadow:inset 0 0 0 1px ${K.line}`}><span class="lcap" style="font-size:8.5px">${t}</span><b style="display:block;font-size:13.5px;margin-top:3px">${W0(gTot(g))}</b></div>`)}</div>
         <div class="lhr"></div>
         <div class="lg2 r2"><div><span class="lcap">Savings</span><div class="lv" data-t="asSav">${W2(RF.now)}</div></div><div><span class="lcap">Tabung</span><div class="lv" data-t="asTabTot">${W2(RF.tab.now)}</div></div>
           <div><span class="lcap">Put in</span><div class="lv" data-t="asIn">${W2(RF.all.inn)}</div></div><div><span class="lcap">Growth</span><div class=${'lv ' + (RF.all.grow >= 0 ? 'lup' : 'ldn')} data-t="asGrow">${RF.all.grow >= 0 ? '+' : '−'}${W2(Math.abs(RF.all.grow))}</div></div></div>
       </div>
-      <style>.lrf{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed;color:${K.text}}.lrf td,.lrf th{padding:9px 2px;text-align:right;border-top:1px solid ${K.sep};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lrf th{border-top:0;font-size:9px;font-weight:600;letter-spacing:.3px;color:${K.sub};text-transform:uppercase;padding-top:0;text-overflow:clip}.lrf td:first-child,.lrf th:first-child{text-align:left;padding-left:16px}.lrf td:last-child,.lrf th:last-child{padding-right:16px;font-weight:700}.lrf .nm{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lrf .tot td{font-weight:700;border-top:1px solid #2E333B;font-size:12px}.lrf tr.tap{cursor:pointer}.lrf tr.grp td{border-top:0;padding-top:13px;font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:${K.or};text-transform:uppercase}</style>
+      <style>.lrf{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed;color:${K.text}}.lrf td,.lrf th{padding:9px 2px;text-align:right;border-top:1px solid ${K.sep};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lrf th{border-top:0;font-size:9px;font-weight:600;letter-spacing:.3px;color:${K.sub};text-transform:uppercase;padding-top:0;text-overflow:clip}.lrf td:first-child,.lrf th:first-child{text-align:left;padding-left:16px}.lrf td:last-child,.lrf th:last-child{padding-right:16px;font-weight:700}.lrf .nm{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lrf .tot td{font-weight:700;border-top:1px solid ${K.line2};font-size:12px}.lrf tr.tap{cursor:pointer}.lrf tr.grp td{border-top:0;padding-top:13px;font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:${K.or};text-transform:uppercase}</style>
       ${Sect('Savings', '+ Add', () => editAsset(l, null, { savings: true }), 'asAdd')}
       <div class="lc" style="padding:14px 0 12px">
         <table class="lrf" data-t="rollForward">${COLS}

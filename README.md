@@ -1,4 +1,4 @@
-# MansWell · v3.1.5 (Pocket + Payslip + Lens)
+# MansWell · v3.1.6 (Pocket + Payslip + Lens)
 
 *Live well today. Build well for tomorrow.*
 
@@ -10,6 +10,27 @@ MansWell is the new name for Dreamer (and, before that, Pocket Dreamer and Everw
 ## Updating to 3.1.3
 
 Upload everything to GitHub. There's no Apps Script change and no data change. **Plan** and **Budget** now have a guide too: tap the book icon at the top of the page.
+
+## Updating to 3.1.6
+
+This version needs **both** steps.
+
+1. **Google Sheet:**
+   - Open Apps Script, replace everything in `Code.gs` with `apps-script/Code.gs`, and save.
+   - Go to **Deploy → Manage deployments → ✏️ → New version → Deploy**.
+   - Google asks for permission to use **Drive** and **triggers** (for the weekly backup). Approve it.
+   - A new column, `StYears`, appears in `EW_Settings`. Nothing else changes.
+2. **GitHub:** upload everything in this folder, including the new `js/theme.js` and `js/screens/yearclose.js`, and commit.
+
+What's new:
+
+- **Close the year:** once December is swept, Pocket → Accounts → Balance Sweep shows **Close 2026**.
+  1. A quick check: categories, payslips, cards and values.
+  2. **Allocate** all of the Balance Sweep into Savings or Tabung (never a bank account). The P&L doesn't change.
+  3. **Pick the day 2027's months start**, from the 24th to the 2nd. 2026 stays as it is (it ends on 27 Dec), and January 2027 stretches or shrinks once to meet the new day.
+  4. **Lock** with your password. 2026 can no longer change in the app, its months can't be reopened, and the Apps Script refuses changes too. Only editing the Google Sheet by hand can change it. A copy of the Sheet is saved to Drive.
+- **Weekly backup:** turn it on in Pocket → Settings → Backup. Every Sunday at about 3 am, a full copy of your Google Sheet goes to Drive › **MansWell Backups**. The newest 12 are kept, and year-end copies are kept forever.
+- **Themes for Lens:** Lens → Settings → Appearance → Theme. Choose Ember Noir, Ivory Ledger, Midnight Sapphire, Rosé or Graphite. Pocket stays Ember Noir.
 
 ## Updating to 3.1.5
 
@@ -401,7 +422,7 @@ You don't need **EW_Summary**. The web app works out monthly totals straight fro
 ## Updating the app later
 
 1. Upload the changed files to GitHub.
-2. In `sw.js`, change `CACHE = 'manswell-3.1.5-1'` to a new value, for example `-2`.
+2. In `sw.js`, change `CACHE = 'manswell-3.1.6-1'` to a new value, for example `-2`.
 3. On your iPhone, close the app fully and open it again.
 
 ## Troubleshooting

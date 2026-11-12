@@ -2,6 +2,7 @@
 import { html } from '../vendor/preact-htm.js';
 import { K, DB, rerender, fmtD, Today, Notify, guard, save } from '../core.js';
 import { askPassword } from '../shared.js';
+import { THEMES, THEME_ORDER, lensTheme, setLensTheme } from '../theme.js';
 import { loadXlsx, shareOrDownload } from '../backup.js';
 import * as E from './engine.js';
 import { Page, Sect, W0, W2, UpdateNote, openSheet, closeSheet, lsave, num, Check, Switch, pIcon, iconHtml, canWrite } from './ui.js';
@@ -101,6 +102,22 @@ function resetLens(l) {
   }));
 }
 
+/* Theme: five looks for Lens. Only colours change; layout and numbers stay the same. */
+function sheetTheme(l) {
+  openSheet(l, {
+    title: 'Theme',
+    body: () => html`<div class="lnote">Lens only. Pocket and the main page stay Ember Noir. Status colours keep their meaning in every theme.</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">${THEME_ORDER.map(k => { const t = THEMES[k], c = { ...THEMES.ember.K, ...t.K }, on = lensTheme() === k;
+        const bg = c.bg || '#0D0F12', card = c.card || '#16191E', text = c.text || '#F4F2EE', sub = c.sub || '#9AA0A8', acc = c.or || '#FF6A00', line = c.line || '#262A31';
+        return html`<div style=${`display:grid;grid-template-columns:86px 1fr auto;gap:12px;align-items:center;padding:10px;border-radius:14px;cursor:pointer;box-shadow:inset 0 0 0 ${on ? 1.5 : 1}px ${on ? K.or : K.line}`} onClick=${() => { setLensTheme(k); rerender(); }} data-t=${'th-' + k}>
+          <div style=${`height:58px;border-radius:10px;background:${bg};box-shadow:inset 0 0 0 1px ${line};padding:8px;position:relative;overflow:hidden`}>
+            <div style=${`font:600 13px Georgia,serif;color:${text}`}>Lens<span style=${`color:${acc}`}>.</span></div>
+            <div style=${`margin-top:6px;height:18px;border-radius:5px;background:${card};box-shadow:inset 0 0 0 1px ${line};display:flex;align-items:center;padding:0 5px;gap:4px`}><i style=${`width:22px;height:4px;border-radius:2px;background:${sub}`}></i><i style=${`width:14px;height:4px;border-radius:2px;background:${acc}`}></i></div></div>
+          <div><div style="font-size:14px;font-weight:600">${t.name}</div><div style=${`font-size:11.5px;color:${K.sub};margin-top:2px;line-height:1.35`}>${t.note}</div></div>
+          ${Check(on)}</div>`; })}</div>`
+  });
+}
+
 export const scrLensSettings = {
   onVisible(l) { l.reset = { assets: false, goals: false, budget: false }; },
   view(l) {
@@ -115,6 +132,8 @@ export const scrLensSettings = {
         ${sRow('link', 'Savings, Tabung & links', E.assets().length ? E.assets().map(x => x.AsName).slice(0, 4).join(', ') + (E.assets().length > 4 ? '…' : '') : 'None yet', undefined, () => sheetAssets(l), 'setAssets')}
         ${sRow('percent', 'Savings rate rule', E.savCatsUsed().filter(c => !sink.includes(c)).concat(['leftover']).join(' + ') + (sink.filter(c => E.used().has(c)).length ? ' · ' + sink.filter(c => E.used().has(c)).join(', ') + ' left out' : ''), undefined, () => sheetRule(l), 'setRule')}
       </div>
+      ${Sect('Appearance')}
+      <div class="lc">${sRow('aperture', 'Theme', THEMES[lensTheme()].name + ' · for Lens. Pocket stays Ember Noir.', undefined, () => sheetTheme(l), 'setTheme')}</div>
       ${Sect('Rules')}
       <div class="lc">
         ${sRow('signal', 'Month status', `Strong ${t.strong}% · Healthy ${t.healthy}% · Watch 0% · Deficit below 0`, undefined, () => sheetStatus(l), 'setStatus')}

@@ -3,21 +3,21 @@
 import { html } from '../vendor/preact-htm.js';
 import { K, fmtD, addDays } from '../core.js';
 import * as E from './engine.js';
-import { openSheet, closeSheet } from './ui.js';
+import { openSheet, closeSheet, oa, ta } from './ui.js';
 
-const GD_CSS = `.gd{padding-bottom:6px}.gd .intro{font-size:13.5px;line-height:1.5;color:${K.sub};margin:2px 0 4px}
+const gdCss = () => `.gd{padding-bottom:6px}.gd .intro{font-size:13.5px;line-height:1.5;color:${K.sub};margin:2px 0 4px}
 .gd h3{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:${K.or};margin:18px 0 6px}
-.gd h3 i{font-style:normal;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:rgba(255,106,0,.12);font-size:10px;letter-spacing:0}
+.gd h3 i{font-style:normal;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:${oa(.12)};font-size:10px;letter-spacing:0}
 .gd p{font-size:13.5px;line-height:1.5;margin:0 0 6px;color:${K.text}}
 .gd ul{margin:0 0 6px;padding:0;list-style:none}.gd li{position:relative;font-size:13.5px;line-height:1.5;padding:7px 0 7px 14px;border-top:1px solid ${K.sep}}
 .gd li:before{content:'';position:absolute;left:0;top:15px;width:5px;height:5px;border-radius:2px;background:${K.or}}
-.gd li b,.gd p b{font-weight:600}.gd .eq{display:block;margin:4px 0 8px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px ${K.line};font-size:13px;font-weight:600}`;
+.gd li b,.gd p b{font-weight:600}.gd .eq{display:block;margin:4px 0 8px;padding:9px 12px;border-radius:10px;background:${ta(.03)};box-shadow:inset 0 0 0 1px ${K.line};font-size:13px;font-weight:600}`;
 const dm = d => fmtD(d, 'dd mmm'), dmy = d => fmtD(d, 'dd mmm yyyy');
 const H = (n, t) => html`<h3><i>${n}</i>${t}</h3>`;
 
 function pnlGuide() {
   const c = E.curKey(), from = addDays(E.kEnd(E.kAdd(c, -1)), 1), to = E.kEnd(c), th = E.thresholds(), sink = E.sinking();
-  return html`<div class="gd" data-t="guidePnl"><style>${GD_CSS}</style>
+  return html`<div class="gd" data-t="guidePnl"><style>${gdCss()}</style>
     <div class="intro">Lens reads this page from Pocket. Nothing is typed here, so it always agrees with your bank book. To fix a number, fix the transaction in Pocket.</div>
     ${H(1, 'Months')}
     <p>Each month is your Pocket financial month. This one runs <b>${dm(from)} – ${dm(to)}</b>. A month is <b>closed</b> once it ends. The current month shows as <b>Running</b> and isn't counted in YTD until it closes.</p>
@@ -51,7 +51,7 @@ function pnlGuide() {
 
 function assetsGuide() {
   const od = E.openDate();
-  return html`<div class="gd" data-t="guideAssets"><style>${GD_CSS}</style>
+  return html`<div class="gd" data-t="guideAssets"><style>${gdCss()}</style>
     <div class="intro"><b>Savings</b> is what you own (ASB, KWSP, Gold). A <b>Tabung</b> is money set aside for a purpose (emergency fund, house, travel). Both run from the opening balance you confirmed for <b>${dmy(od)}</b> to today.</div>
     ${H(1, 'Top card')}
     <ul><li><b>Total:</b> savings + Tabung now, and the change since opening.</li>
@@ -84,7 +84,7 @@ function assetsGuide() {
 
 function planGuide() {
   const a = E.assumptions(), ef = E.efMonths(), ess = E.essentialMonthly(), W = v => 'RM ' + Math.round(v).toLocaleString('en-US');
-  return html`<div class="gd" data-t="guidePlan"><style>${GD_CSS}</style>
+  return html`<div class="gd" data-t="guidePlan"><style>${gdCss()}</style>
     <div class="intro">Plan tracks your <b>Tabung</b>. Every Tabung with a target is a goal, filled from what you really save each month.</div>
     ${H(1, 'Saving power')}
     <p>Your average <b>Total savings</b> from the P&L over your last 6 months. It's what you really saved. Your Tabung goals are filled from this amount, top goal first.</p>
@@ -107,7 +107,7 @@ function planGuide() {
 
 function budgetGuide() {
   const a = E.assumptions(), y = E.defaultYear();
-  return html`<div class="gd" data-t="guideBudget"><style>${GD_CSS}</style>
+  return html`<div class="gd" data-t="guideBudget"><style>${gdCss()}</style>
     <div class="intro">Budget plans a whole year (January to December) from what you actually spent. From October, it opens on next year, so ${y} is ready before it starts.</div>
     ${H(1, 'Built from your history')}
     <p>Lens uses the closed months of the year before. If there are fewer than 3, it uses your last 12 months. The steps at the top show where you are: Review, Income, Save first, Categories, Lock.</p>

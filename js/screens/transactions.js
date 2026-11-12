@@ -53,7 +53,7 @@ export const scrTransactions = {
     };
     const typeBtn = (t, x) => B(x, 4, 89.5, 30, t, { fill: l.locTxType === t ? K.or : 'transparent', c: l.locTxType === t ? '#FFFFFF' : K.sub, r: 15, s: 8.5, flat: true, onClick: () => { l.locTxType = t; rerender(); }, id: 'tt-' + t });
     const clear = () => {
-      G.gblTxAll = false; G.gblTxFrom = curMonthStart(); G.gblTxTo = addDays(addMonths(G.gblTxFrom, 1), -1); G.gblTxLbl = fmtD(G.gblTxTo, 'mmm yyyy');
+      G.gblTxAll = false; G.gblTxFrom = curMonthStart(); G.gblTxTo = (() => { const l = PLABEL(Today()); return PEND(Year(l), Month(l)); })(); G.gblTxLbl = fmtD(G.gblTxTo, 'mmm yyyy');
       l.locTxAcc = ''; l.locTxCat = 'All'; l.locTxType = 'All'; l.q = ''; rerender();
     };
 
@@ -103,7 +103,7 @@ function Sheet(l) {
       ${B(200, 64, 170, 36, String(yr), { fill: wholeOn ? K.or : K.field, c: wholeOn ? '#FFFFFF' : K.sub, b: wholeOn ? K.or : K.line, r: 18, s: 9.5, onClick: () => { G.gblTxAll = false; G.gblTxFrom = ys; G.gblTxTo = ye; G.gblTxLbl = String(yr); close(); }, id: 'wholeYear' })}
       ${MonthGrid(yr, v => { l.locTxYear = v; rerender(); },
         no => !G.gblTxAll && PSTART(yr, no) === G.gblTxFrom && diffDays(G.gblTxFrom, G.gblTxTo) < 32,
-        no => { const st = PSTART(yr, no); G.gblTxAll = false; G.gblTxFrom = st; G.gblTxTo = addDays(addMonths(st, 1), -1); G.gblTxLbl = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][no - 1] + ' ' + yr; close(); },
+        no => { const st = PSTART(yr, no); G.gblTxAll = false; G.gblTxFrom = st; G.gblTxTo = PEND(yr, no); G.gblTxLbl = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][no - 1] + ' ' + yr; close(); },
         { x: 12, y: 112 })}`;
   } else if (l.locSheet === 'acc') {
     const allOn = !l.locTxAcc;

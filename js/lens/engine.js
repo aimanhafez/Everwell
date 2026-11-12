@@ -131,10 +131,12 @@ export const linkedCats = () => new Set(assets().filter(a => a.AsKind === 'categ
 /** Offered once a category has its first transaction, so Pocket's unused default categories never nag. */
 export const newCats = () => { const lk = linkedCats(), ig = ignoredCats(), u = used(); return savCats().filter(c => !lk.has(c) && !ig.includes(c) && u.has(c)); };
 /** Money into and out of a Pocket category (deposits, withdrawals) between two dates. */
-export function catSplit(cat, from, to) { let i = 0, o = 0; for (const t of DB.txns) { if (t.TxCat !== cat || (from && t.TxDate < from) || (to && t.TxDate > to)) continue; const f = flowOf(t); if (!f || f.side !== 'Out') continue; if (f.v >= 0) i += f.v; else o -= f.v; } return { inn: round2(i), out: round2(o) }; }
+export function catSplit(cat, from, to) { let i = 0, o = 0; for (const t of DB.txns) { if (t.TxCat !== cat || (from && t.TxDate < from) || (to && t.TxDate > to)) continue; if (isAlloc(t)) { i += t.TxAmt; continue; } const f = flowOf(t); if (!f || f.side !== 'Out') continue; if (f.v >= 0) i += f.v; else o -= f.v; } return { inn: round2(i), out: round2(o) }; }
 function monthsBetween(d1, d2) { const [y1, m1, a] = d1.split('-').map(Number), [y2, m2, b] = d2.split('-').map(Number); return Math.max(0, (y2 * 12 + m2) - (y1 * 12 + m1) - (b < a ? 1 : 0)); }
 export function acctBal(accId, upTo) { let b = 0; for (const t of DB.txns) if (t.TxAcc === accId && !t.TxParent && (!upTo || t.TxDate <= upTo)) b += t.TxDir === 'In' ? t.TxAmt : -t.TxAmt; return round2(b); }
-export function catFlow(cat, from, to) { let s = 0; for (const t of DB.txns) { if (t.TxCat !== cat || (from && t.TxDate < from) || (to && t.TxDate > to)) continue; const f = flowOf(t); if (f && f.side === 'Out') s += f.v; } return round2(s); }
+/** Year-end allocation from Balance Sweep (TxRef ALLOC-yyyy): a move between pots, so not in the P&L, but it fills the savings item. */
+export const isAlloc = t => /^ALLOC-/.test(t.TxRef || '');
+export function catFlow(cat, from, to) { let s = 0; for (const t of DB.txns) { if (t.TxCat !== cat || (from && t.TxDate < from) || (to && t.TxDate > to)) continue; if (isAlloc(t)) { s += t.TxAmt; continue; } const f = flowOf(t); if (f && f.side === 'Out') s += f.v; } return round2(s); }
 export const valuesOf = id => DB.lnValues.filter(v => v.VaAsset === id).sort((a, b) => (a.VaDate < b.VaDate ? -1 : a.VaDate > b.VaDate ? 1 : 0));
 export function openingOf(a) { return a.AsKind === 'account' ? acctBal(a.AsAcc, openDate()) : Number(a.AsOpen) || 0; }
 /** KWSP-type assets grow from Pocket payslips (you + employer). Months without a payslip use the monthly estimate.

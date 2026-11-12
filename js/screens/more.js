@@ -330,9 +330,14 @@ export const scrMore = {
         ${B(16, 70, 162, 40, l.dlNote || 'Download CSV', { fill: K.or, c: '#FFFFFF', r: 20, s: 10, onClick: download, id: 'csvDownload' })}
         ${B(188, 70, 162, 40, l.copied || 'Copy as text', { fill: K.field, b: HAIR, r: 20, s: 10, onClick: copy, id: 'csvCopy' })}`, { id: 'exportCard' })}
       ${SubHead('Backup')}
-      ${Card(null, 0, 366, 128, html`
+      ${(() => { if (l.bkS === undefined) { l.bkS = null; api('backupStatus', {}, undefined, { quiet: true }).then(r => { l.bkS = r || {}; rerender(); }).catch(e => { l.bkS = { old: true, err: e.message }; rerender(); }); } return null; })()}
+      ${Card(null, 0, 366, 196, html`
         ${C(16, 14, 36, K.field)}${I(25, 23, 18, 18, 'Download', K.or, { pad: 0 })}
         ${L(64, 13, 280, 20, 'Back up everything', { s: 10.5, w: 6 })}
+        ${R(16, 124, 334, 1, K.sep)}
+        ${L(16, 136, 230, 18, 'Weekly to Google Drive', { s: 9.5, w: 6 })}
+        ${L(16, 154, 262, 30, !l.bkS ? 'Checking…' : l.bkS.old ? 'Needs the 3.1.6 Apps Script (see README)' : l.bkS.on ? 'Every Sunday · ' + (l.bkS.last ? 'last ' + fmtTime(l.bkS.last, 'dd/mm/yyyy hh:mm') : 'first one this Sunday') + ' · keeps 12' : 'Off · a copy of your Sheet in Drive › MansWell Backups', { s: 7.5, c: l.bkS && (l.bkS.error || l.bkS.old) ? K.gold : K.sub, wrap: true, id: 'autoBkInfo' })}
+        ${l.bkS && !l.bkS.old ? Tog(294, 140, 56, 28, !!l.bkS.on, on => guard(async () => { l.bkS = await api(on ? 'backupOn' : 'backupOff', {}); Notify(on ? 'Weekly backup is on. Every Sunday at about 3 am.' : 'Weekly backup is off.', 'success'); })) : null}
         ${L(64, 33, 284, 16, l.bkInfo || 'Every tab of your Google Sheet in one Excel file', { s: 8, c: K.sub, id: 'bkInfo' })}
         ${B(16, 70, 334, 42, l.bkNote || 'Download backup (Excel)', { fill: K.or, c: '#FFFFFF', r: 21, s: 10, onClick: backup, id: 'backup' })}`, { id: 'backupCard' })}
       ${SubHead('Data')}

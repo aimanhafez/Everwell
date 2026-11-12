@@ -5,7 +5,7 @@ import { html } from '../vendor/preact-htm.js';
 import { K, DB, L, Notify, rerender, save, guard, fmtD, Today, perKey, acc as accOf } from '../core.js';
 import { TabHeader, NavBar, PasswordDialog, askPassword } from '../shared.js';
 import { loadXlsx, shareOrDownload } from '../backup.js';
-import { CSS, Sect, Sheet, openSheet, closeSheet, num, iconHtml, W2, Check } from '../lens/ui.js';
+import { css, Sect, Sheet, openSheet, closeSheet, num, iconHtml, W2, Check } from '../lens/ui.js';
 import * as P from '../payslip-data.js';
 
 const MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -189,7 +189,7 @@ export const scrPayslip = {
         <div class="lnote" style="margin-top:12px">Ready for e-Filing: check these against your <b>EA form</b> next year. Zakat paid through salary also reduces the tax you owe.</div>
       </div>` : null;
     return html`<div>
-      <style>${CSS}${PS_CSS}</style>
+      <style>${css()}${PS_CSS}</style>
       ${TabHeader()}
       ${L(18, 68, 240, 32, 'Payslip', { s: 17 })}
       <div class="lz" style="top:104px" id="pocketPayslip" data-t="pocketPayslip">${note}${sel}${kids}${year}<div style="height:6px"></div></div>

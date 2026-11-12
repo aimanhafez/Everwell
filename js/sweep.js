@@ -2,7 +2,7 @@
 // using real internal transfers dated on the last day of the month. Nothing is overwritten: history stays intact.
 import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Tog, Notify, rerender, guard, save, Today, PSTART, PEND, perKey, fmtD, fmtTime,
-  RM, round2, mkTxn, nextTxSeq, settingsRow, stStart, HAIR, SURFACE, acc
+  RM, round2, mkTxn, nextTxSeq, settingsRow, stStart, HAIR, SURFACE, acc, yearClosedThrough, closedYears, Navigate
 } from './core.js';
 import { askPassword } from './shared.js';
 
@@ -89,8 +89,15 @@ export function planThrough(k) {
   return { k, months, total: round2(months.reduce((t, m) => t + m.total, 0)), flagged: months.reduce((t, m) => t + m.flagged.length, 0) };
 }
 /** Reopen the latest closed month: removes its sweep transfers and its log entry. */
+/** The earliest year whose December is swept but which isn't closed yet (0 if none). */
+export function yearToClose() {
+  const done = closedYears(), st = stStart() ? Number(stStart().slice(0, 4)) : 0, now = Number(Today().slice(0, 4));
+  for (let y = Math.max(st, 2000); y <= now; y++) if (!done.includes(y) && isSwept(y * 100 + 12)) return y;
+  return 0;
+}
 export async function reopenMonth(k) {
   if (k !== lastSwept()) throw new Error('Only the latest closed month can be reopened.');
+  if (yearClosedThrough() && keyEnd(k) <= yearClosedThrough()) { const e = new Error(keyY(k) + ' is closed. Its months can no longer be reopened.'); e.code = 'LOCKED'; throw e; }
   const ids = DB.txns.filter(t => t.TxRef === refOf(k)).map(t => t.TxnId);
   const log = sweepLog(); delete log[k];
   await save({ del: { EW_Transactions: ids }, up: { EW_Settings: [settingsRow({ StSweepLog: JSON.stringify(log) })] },
@@ -214,7 +221,8 @@ export function SweepSection(l) {
     ${!last.legs.length && !last.flagged.length ? L(16, 28, 334, 20, 'No balances to move that month.', { s: 9, c: K.mute }) : null}` : null;
   const lastH = last ? 40 + Math.max(1, last.legs.length + last.flagged.length) * 24 : 0;
 
-  const noteH = skipped.length ? 58 : 0;
+  const ytc = yearToClose(), yH = ytc ? 66 : 0;
+  const noteH = (skipped.length ? 58 : 0) + yH;
   const card = Card(null, 0, 366, 214 + noteH + (l.sweepOpen && last ? lastH + 8 : 0), html`
     ${L(16, 18, 240, 24, 'Balance Sweep', { s: 11.5, w: 6 })}
     ${statusPill(272, 19, status, 78)}
@@ -239,7 +247,12 @@ export function SweepSection(l) {
     ${skipped.length ? Box(12, 214 + (l.sweepOpen && last ? lastH + 8 : 0), 342, 48, html`
       ${I(12, 15, 16, 16, 'Clock', K.gold, { pad: 0 })}
       ${L(38, 6, 296, 36, keyLabel(skipped[0]) + (skipped.length > 1 ? ' – ' + keyLabel(skipped[skipped.length - 1]) : '') + ' were never swept. Reopen ' + keyLabel(lastSwept(), true) + ' in the history below to close them in order.', { s: 7.5, c: K.gold, wrap: true })}`,
-      { fill: 'rgba(233,185,73,0.06)', r: 12, b: 'rgba(233,185,73,0.25)', id: 'skippedNote' }) : null}`, { id: 'sweepCard' });
+      { fill: 'rgba(233,185,73,0.06)', r: 12, b: 'rgba(233,185,73,0.25)', id: 'skippedNote' }) : null}
+    ${ytc ? Box(12, 214 + (l.sweepOpen && last ? lastH + 8 : 0) + (skipped.length ? 58 : 0), 342, 56, html`
+      ${L(14, 9, 210, 18, 'December ' + ytc + ' is swept', { s: 9.5, w: 6 })}
+      ${L(14, 27, 210, 22, 'Close ' + ytc + ' to lock it and move your Balance Sweep into savings.', { s: 7.5, c: K.sub, wrap: true })}
+      ${B(234, 11, 96, 34, 'Close ' + ytc, { fill: K.or, c: '#FFFFFF', r: 17, s: 8.5, onClick: () => Navigate('scrYearClose'), id: 'yearClose' })}`,
+      { fill: 'rgba(255,106,0,0.07)', r: 12, b: 'rgba(255,106,0,0.4)', id: 'yearCloseNote' }) : null}`, { id: 'sweepCard' });
 
   const showAll = l.histAll;
   const rows = showAll ? hist : hist.slice(0, 4);

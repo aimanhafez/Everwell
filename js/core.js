@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '3.1.5';
+export const VERSION = '3.1.6';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -91,20 +91,54 @@ export function parseDMY(text) {
 
 /* ───────────── Financial months (cycle day, default 28) ───────────── */
 export function CD() { return G.gblCycleDay || 28; }
-/** The month a date belongs to (first day of that calendar month). */
-export function PLABEL(ds, cd = CD()) {
-  const [y, m, d] = parts(ds);
-  return cd > 1 && d >= cd ? addMonths(D(y, m, 1), 1) : D(y, m, 1);
+/* Year rules (3.1.6): each year can start its months on its own day (24th–2nd), set when the previous year is closed.
+ * Stored in EW_Settings.StYears as JSON: { cycle: { "2027": 25 }, closedThrough: "2026-12-27", closed: [2026] }.
+ * A closed year never changes: the first month of the next year stretches or shrinks to meet the new day.
+ * With no rules, every function below behaves exactly as before. */
+let yrMemo = { src: undefined, v: {} }, pkMemo = new Map();
+export function yearRules() {
+  const src = DB.settings && DB.settings.StYears;
+  if (yrMemo.src !== src) { let v = {}; try { v = JSON.parse(src || '{}') || {}; } catch (e) { v = {}; } yrMemo = { src, v }; pkMemo = new Map(); }
+  return yrMemo.v;
 }
-export function PSTART(y, m, cd = CD()) { return cd === 1 ? D(y, m, 1) : addMonths(D(y, m, cd), -1); }
-export function PEND(y, m, cd = CD()) { return addDays(addMonths(PSTART(y, m, cd), 1), -1); }
-export function perKey(ds) { const l = PLABEL(ds); return Year(l) * 100 + Month(l); }
+function ruleOf(y) { const c = yearRules().cycle || {}; let best = null; for (const k of Object.keys(c)) if (+k <= y && (best === null || +k > best)) best = +k; return best === null ? null : Number(c[best]); }
+/** The month-start day used by year y. */
+export function cdOf(y) { const r = ruleOf(y); return r === null ? CD() : r; }
+// day 1–2 from a rule: the month is named by the month it starts in (Jan = 2 Jan – 1 Feb); 24–31: by the month it ends in.
+function rawStart(y, m, cd, rule) { return cd === 1 ? D(y, m, 1) : (rule && cd <= 2) ? D(y, m, cd) : addMonths(D(y, m, cd), -1); }
+const sameRule = (a, b) => cdOf(a) === cdOf(b) && (ruleOf(a) === null) === (ruleOf(b) === null);
+export function PSTART(y, m, cd) {
+  if (cd !== undefined) return rawStart(y, m, cd, false);
+  if (m === 1 && !sameRule(y, y - 1)) return addDays(PEND(y - 1, 12), 1);
+  return rawStart(y, m, cdOf(y), ruleOf(y) !== null);
+}
+export function PEND(y, m, cd) {
+  if (cd !== undefined) return addDays(addMonths(rawStart(y, m, cd, false), 1), -1);
+  return addDays(rawStart(m === 12 ? y + 1 : y, m === 12 ? 1 : m + 1, cdOf(y), ruleOf(y) !== null), -1);
+}
+/** The financial month (yyyymm) a date belongs to. */
+export function perKey(ds) {
+  yearRules(); const hit = pkMemo.get(ds); if (hit) return hit;
+  const [y, m] = parts(ds), k0 = y * 100 + m, add = (k, n) => { const i = Math.floor(k / 100) * 12 + (k % 100) - 1 + n; return Math.floor(i / 12) * 100 + (i % 12) + 1; };
+  let out = k0;
+  for (const k of [add(k0, 1), k0, add(k0, -1)]) { const yy = Math.floor(k / 100), mm = k % 100; if (PSTART(yy, mm) <= ds && ds <= PEND(yy, mm)) { out = k; break; } }
+  pkMemo.set(ds, out); return out;
+}
+/** The month a date belongs to (first day of that calendar month). With an explicit cycle day: the old single-rule answer. */
+export function PLABEL(ds, cd) {
+  if (cd !== undefined) { const [y, m, d] = parts(ds); return cd > 1 && d >= cd ? addMonths(D(y, m, 1), 1) : D(y, m, 1); }
+  const k = perKey(ds); return D(Math.floor(k / 100), k % 100, 1);
+}
+/** The last day of the latest closed year ('' when none). Nothing on or before it can change in Pocket. */
+export const yearClosedThrough = () => String(yearRules().closedThrough || '');
+/** Years closed so far, e.g. [2026]. */
+export const closedYears = () => (Array.isArray(yearRules().closed) ? yearRules().closed.map(Number) : []);
 export function ordinal(o) { const k = o >= 11 && o <= 13 ? 0 : o % 10; return o + (k === 1 ? 'st' : k === 2 ? 'nd' : k === 3 ? 'rd' : 'th'); }
 
 export function setMonth(y, m) {
   G.gblYear = y; G.gblMonth = m;
   G.gblFrom = PSTART(y, m);
-  G.gblTo = addDays(addMonths(G.gblFrom, 1), -1);
+  G.gblTo = PEND(y, m);
 }
 export function monthLabel(f) { return fmtD(D(G.gblYear, G.gblMonth, 1), f); }
 export function resetTxPeriodToMonth() {
@@ -361,7 +395,18 @@ export async function loadAll(opts = {}) {
  * Saves a set of changes. ch = { up: {Table:[rows]}, del: {Table:[keys]}, log: [{AuAction, AuRef, AuDetail}] }
  * The app updates immediately; the Google Sheet is updated in the background (see flush).
  */
+/** A closed year can't change from the app: transactions and payslips on or before its last day are refused. */
+function closedBlock(ch) {
+  const ct = yearClosedThrough(); if (!ct) return '';
+  const up = ch.up || {}, del = ch.del || {}, old = id => (DB.txns.find(t => t.TxnId === id) || {}).TxDate;
+  const bad = (up.EW_Transactions || []).some(t => (t.TxDate && t.TxDate <= ct) || (old(t.TxnId) && old(t.TxnId) <= ct))
+    || (del.EW_Transactions || []).some(id => old(id) && old(id) <= ct)
+    || (up.EW_Payslips || []).some(r => String(r.PsMonth || '') <= ct.slice(0, 7)) || (del.EW_Payslips || []).some(k => String(k).slice(0, 7) <= ct.slice(0, 7));
+  return bad ? 'That falls in a closed year (locked up to ' + fmtD(ct, 'dd mmm yyyy') + '). Change it in the Google Sheet if you really need to.' : '';
+}
 export async function save(ch) {
+  const blocked = closedBlock(ch);
+  if (blocked) { const e = new Error(blocked); e.code = 'LOCKED'; throw e; }
   const now = new Date().toISOString();
   const log = (ch.log || []).map(l => ({ AuId: 'AU-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), AuWhen: now, AuAction: String(l.AuAction || ''), AuRef: String(l.AuRef || ''), AuDetail: String(l.AuDetail || '') }));
   const p = { upserts: ch.up || {}, deletes: ch.del || {}, log };
@@ -375,7 +420,7 @@ export async function save(ch) {
 export function settingsRow(over = {}) {
   const s = DB.settings || { Title: 'Settings', StStart: '', StCycleDay: 28, StLowBal: 200, StCurrency: 'MYR' };
   return { Title: 'Settings', StStart: s.StStart || '', StCycleDay: s.StCycleDay || 28, StLowBal: s.StLowBal ?? 200, StCurrency: s.StCurrency || 'MYR',
-    StSweepAuto: !!s.StSweepAuto, StSweepFrom: Number(s.StSweepFrom) || 0, StSweepLog: s.StSweepLog || '', ...over };
+    StSweepAuto: !!s.StSweepAuto, StSweepFrom: Number(s.StSweepFrom) || 0, StSweepLog: s.StSweepLog || '', StYears: s.StYears || '', ...over };
 }
 export const stStart = () => (DB.settings && DB.settings.StStart) || '';
 export const lowBal = () => (DB.settings ? Number(DB.settings.StLowBal) : 200);
@@ -419,6 +464,7 @@ export function Notify(msg, kind = 'info') {
 export async function guard(fn) {
   try { await fn(); } catch (e) {
     if (e.code === 'AUTH') { CONN.authError = e.message; NAV.stack = ['connect']; rerender(); return; }
+    if (e.code === 'LOCKED') { Notify(e.message, 'error'); rerender(); return; }
     Notify("Couldn't save to Google Sheets: " + e.message, 'error');
   }
   rerender();
@@ -428,6 +474,9 @@ export async function guard(fn) {
 let root;
 export function mount(el) { root = el; }
 let pending = false;
+/** Lets the theme module recolour K just before a screen renders (Lens only). */
+let themeHook = null;
+export const setThemeHook = fn => { themeHook = fn; };
 export function rerender() {
   if (pending) return;
   pending = true;
@@ -436,6 +485,7 @@ export function rerender() {
     pending = false;
     const name = current();
     const s = NAV.screens[name];
+    if (themeHook) themeHook(name);
     render(s ? s.view(loc(name)) : html``, root);
   }, 0);
 }
@@ -490,8 +540,8 @@ export function Box(x, y, w, h, kids, o = {}) {
 export const SURFACE = 'linear-gradient(180deg, #191C22 0%, #15181D 100%)';
 export const HAIR = 'rgba(255,255,255,0.065)';
 export function Card(x, y, w, h, kids, o = {}) {
-  const b = o.b || HAIR;
-  return Box(x, y, w, h, kids, { ...o, fill: o.fill || SURFACE, r: o.r ?? 16, b: undefined, st: `box-shadow:inset 0 0 0 1px ${b}, inset 0 1px 0 rgba(255,255,255,0.035);` + (o.st || '') });
+  const b = o.b || K.hair || HAIR;
+  return Box(x, y, w, h, kids, { ...o, fill: o.fill || K.surface || SURFACE, r: o.r ?? 16, b: undefined, st: `box-shadow:inset 0 0 0 1px ${b}, inset 0 1px 0 rgba(255,255,255,0.035);` + (o.st || '') });
 }
 /** Vertical auto-layout scroll container (LayoutMode.Auto). Top stays at y, bottom stays (844 - y - h) from the canvas bottom. */
 export function Flow(x, y, w, h, kids, o = {}) {
