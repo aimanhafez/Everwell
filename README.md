@@ -1,4 +1,9 @@
-# MansWell · v3.1.6 (Pocket + Payslip + Lens)
+# MansWell · v3.1.7 (Pocket + Payslip + Lens)
+
+## 3.1.7 · fix
+- Lens P&L now updates straight away when you change a transaction's category, date or type, or rename a category (it used to keep the old name until the app was reopened).
+- Only the GitHub files changed. The Apps Script stays at 3.1.6, no need to redeploy it.
+
 
 *Live well today. Build well for tomorrow.*
 

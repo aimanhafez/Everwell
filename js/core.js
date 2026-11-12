@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '3.1.6';
+export const VERSION = '3.1.7';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -171,9 +171,9 @@ export function accMoveUpTo(accId, key) {
 }
 /** The category decides which side a transaction counts on (Income category → money in, any other → money out);
  *  the type decides the sign. So Income booked to Sports lowers Sports spending, and Expense booked to Salary lowers income. */
-let catMapSrc = null, catMap = null;
+let catMapSrc = null, catMapRev = -1, catMap = null;
 export function catTypeOf(name) {
-  if (catMapSrc !== DB.categories) { catMapSrc = DB.categories; catMap = new Map((DB.categories || []).map(c => [c.CatName, c.CatType])); }
+  if (catMapSrc !== DB.categories || catMapRev !== DBREV) { catMapSrc = DB.categories; catMapRev = DBREV; catMap = new Map((DB.categories || []).map(c => [c.CatName, c.CatType])); }
   return catMap.get(name);
 }
 export function flowOf(t) {
@@ -289,7 +289,10 @@ export async function api(action, payload, conn = CONN.v, opts = {}) {
 const MAP = { EW_Payslips: ['payslips', 'PsKey'], LN_Settings: ['lnSettings', 'LsKey'], LN_Assets: ['lnAssets', 'AsId'], LN_Values: ['lnValues', 'VaId'], LN_Goals: ['lnGoals', 'GoId'], LN_Budget: ['lnBudget', 'BuKey'],
   SYS_ImportMap: ['importMap', 'MapKey'], SYS_Imports: ['imports', 'ImpId'], EW_Accounts: ['accounts', 'AccId'], EW_Categories: ['categories', 'CatId'], EW_Payees: ['payees', 'PyName'], EW_Recurring: ['recurring', 'RcId'], EW_Transactions: ['txns', 'TxnId'] };
 export const SYNC = { outbox: store.get('ew_outbox', []), flushing: false, failed: false, timer: null };
+/** Bumped whenever the data changes, so cached totals (Lens P&L) never show an old category, date or type. */
+export let DBREV = 0;
 function applyLocal(p) {
+  DBREV++;
   for (const [t, keys] of Object.entries(p.deletes || {})) {
     if (!MAP[t]) continue;
     const [list, k] = MAP[t];
@@ -352,6 +355,7 @@ export function beaconOutbox() {
 }
 
 function applyLoaded(d) {
+  DBREV++;
   DB.settings = d.settings ? { ...d.settings } : null;
   DB.accounts = d.accounts;
   DB.categories = d.categories;

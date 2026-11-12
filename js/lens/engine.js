@@ -1,7 +1,7 @@
 // MansWell · Lens engine. Pure calculations: reads Pocket's data (never writes it) and Lens's own LN_ tabs.
 // Money is counted the way Pocket counts it (flowOf): the category decides the side, transfers and split parents
 // are left out, paybacks net off inside their category. Months are Pocket's financial months (cycle day).
-import { DB, Today, perKey, PSTART, PEND, addDays, addMonths, D, round2, flowOf, catTypeOf, stStart, MON } from '../core.js';
+import { DB, Today, perKey, PSTART, PEND, addDays, addMonths, D, round2, flowOf, catTypeOf, stStart, MON, DBREV } from '../core.js';
 import { kwspFlows, hasPayslips, monthPay } from '../payslip-data.js';
 
 /* ───────── settings (LN_Settings: one row per key, JSON value) ───────── */
@@ -17,7 +17,7 @@ export const savCats = () => DB.categories.filter(c => c.CatType === 'Savings/As
 export const expCats = () => DB.categories.filter(c => c.CatType === 'Expense' && c.CatActive !== false).map(c => c.CatName);
 export const incCats = () => DB.categories.filter(c => c.CatType === 'Income' && c.CatActive !== false).map(c => c.CatName);
 let usedMemo = { n: -1, set: null };
-export const used = () => { if (usedMemo.n !== DB.txns.length) usedMemo = { n: DB.txns.length, set: new Set(DB.txns.map(t => t.TxCat)) }; return usedMemo.set; };
+export const used = () => { if (usedMemo.n !== DBREV + '|' + DB.txns.length) usedMemo = { n: DBREV + '|' + DB.txns.length, set: new Set(DB.txns.map(t => t.TxCat)) }; return usedMemo.set; };
 export const savCatsUsed = () => savCats().filter(c => used().has(c));
 export const expCatsUsed = () => expCats().filter(c => used().has(c));
 export const sinking = () => lget('sinking', savCats().filter(n => SINK_RX.test(n)));
@@ -40,7 +40,7 @@ export const openDate = () => (stStart() ? addDays(stStart(), -1) : addDays(kSta
 
 /* ───────── P&L ───────── */
 let pnlMemo = { sig: '', by: null };
-function sigOf() { return DB.txns.length + '|' + DB.categories.length + '|' + (DB.txns[DB.txns.length - 1] || {}).TxnId + '|' + DB.txns.reduce((s, t) => s + (t.TxAmt || 0), 0).toFixed(2) + '|' + JSON.stringify(sinking()) + '|' + (DB.settings && DB.settings.StCycleDay); }
+function sigOf() { return DBREV + '|' + DB.txns.length + '|' + DB.categories.length + '|' + (DB.txns[DB.txns.length - 1] || {}).TxnId + '|' + DB.txns.reduce((s, t) => s + (t.TxAmt || 0), 0).toFixed(2) + '|' + JSON.stringify(sinking()) + '|' + (DB.settings && DB.settings.StCycleDay); }
 /** month key → { inc:{cat:v}, sav:{cat:v}, exp:{cat:v} } */
 function byMonth() {
   const sig = sigOf();
