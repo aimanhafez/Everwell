@@ -1,4 +1,21 @@
-# MansWell · v3.1.7 (Pocket + Payslip + Lens)
+# MansWell · v3.2.0 (Pocket + Payslip + Lens + Passport)
+
+## 3.2.0 · Passport (travel)
+A third room on the main page. Travel only: it never reads or changes Pocket or Lens.
+- **Overview**: countries visited, % of the world's 195, continents, trips, days away, wishlist; your map; latest trips, recently visited, next dreams, newly wished, your flag collection, milestones.
+- **World**: an interactive map (pinch, drag, + / −, tap a country) and all 195 countries plus 7 places people count (Taiwan, Hong Kong, Macau, Kosovo, Greenland, Puerto Rico, Antarctica). Search, filter by status and continent, list or grid. Each country: flag, ISO codes, capital, continent, currency, status, your trips there.
+- **Journeys**: trips with one or many countries (days per country optional), dates (length worked out for you), who with, route, story, moments, notes, photos. Filter by year, country, who with. Delete needs the password.
+- **Wishlist**: priority, year, why, places to see, notes, inspiration photo; ▲ ▼ to order; "I went" opens a trip with the country filled in.
+- **Memories**: every photo, a passport stamp per country (first-visit order) and milestones.
+- **One status rule**: Visited = a trip includes it (or you marked "visited before"). Wishlist = wished and not visited. A country is never both. Home country (Malaysia by default, change it in Passport settings) shows on the map but isn't counted.
+- **Photos**: resized on the phone, saved privately to Google Drive › *MansWell Passport* › one folder per trip. A small preview of each is kept in `PP_Thumbs`. Adding photos needs the internet.
+
+### Updating to 3.2.0
+1. GitHub: upload everything in this zip. New: the `js/passport/` folder and the `flags/` folder.
+2. Apps Script: replace Code.gs with this one, Save, then **Deploy › Manage deployments › Edit › Version: New version › Deploy** (the URL stays the same).
+3. Open MansWell. New tabs `PP_Settings, PP_Places, PP_Trips, PP_Stops, PP_Photos, PP_Thumbs` are added to your Sheet by themselves. Nothing else in the Sheet changes.
+
+Flags: flag-icons (MIT). Countries: world-countries (ODbL). Map: Natural Earth via world-atlas (public domain).
 
 ## 3.1.7 · fix
 - Lens P&L now updates straight away when you change a transaction's category, date or type, or rename a category (it used to keep the old name until the app was reopened).

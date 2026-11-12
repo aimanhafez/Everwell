@@ -16,6 +16,12 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup()
  *
+ * 3.2.0 · PASSPORT (travel)
+ *   - New tabs PP_Settings, PP_Places, PP_Trips, PP_Stops, PP_Photos, PP_Thumbs. Travel only: nothing here
+ *     reads or changes Pocket or Lens tabs.
+ *   - Photos: the full photo is saved in Drive › "MansWell Passport" (one folder per trip), private to you.
+ *     PP_Thumbs keeps a small preview of each photo so lists open fast.
+ *
  * 3.1.6 · YEAR LOCK + WEEKLY BACKUP
  *   - A closed year is locked here too: commit refuses any transaction or payslip on or before
  *     EW_Settings.StYears.closedThrough. Edit the Sheet by hand if you ever need to change it.
@@ -24,7 +30,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.1.6';
+var EW_VERSION = '3.2.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -45,9 +51,16 @@ var TABLES = {
   LN_Assets: { key: 'AsId', cols: { AsId: 's', AsSeq: 'n', AsName: 's', AsKind: 's', AsCat: 's', AsAcc: 's', AsOpen: 'n', AsLiq: 'n', AsMonthly: 'n', AsNote: 's', AsActive: 'b' } },
   LN_Values: { key: 'VaId', cols: { VaId: 's', VaAsset: 's', VaDate: 'd', VaKind: 's', VaAmt: 'n', VaNote: 's' } },
   LN_Goals: { key: 'GoId', cols: { GoId: 's', GoSeq: 'n', GoName: 's', GoKind: 's', GoTarget: 'n', GoBy: 's', GoAsset: 's', GoHave: 'n', GoActive: 'b' } },
-  LN_Budget: { key: 'BuKey', cols: { BuKey: 's', BuYear: 'n', BuItem: 's', BuAmt: 'n', BuType: 's' } }
+  LN_Budget: { key: 'BuKey', cols: { BuKey: 's', BuYear: 'n', BuItem: 's', BuAmt: 'n', BuType: 's' } },
+  // MansWell Passport (travel): its own tabs, never linked to money.
+  PP_Settings: { key: 'PsetKey', cols: { PsetKey: 's', PsetVal: 's' } },
+  PP_Places: { key: 'PlIso', cols: { PlIso: 's', PlStatus: 's', PlPri: 's', PlYear: 'n', PlWhy: 's', PlSee: 's', PlNote: 's', PlSeq: 'n', PlPhoto: 's', PlAdded: 'd', PlFirst: 's' } },
+  PP_Trips: { key: 'TrId', cols: { TrId: 's', TrName: 's', TrStart: 'd', TrEnd: 'd', TrWith: 's', TrDesc: 's', TrMoments: 's', TrNotes: 's', TrRoute: 's', TrCover: 's', TrAdded: 't' } },
+  PP_Stops: { key: 'StKey', cols: { StKey: 's', StTrip: 's', StIso: 's', StDays: 'n', StSeq: 'n' } },
+  PP_Photos: { key: 'PhId', cols: { PhId: 's', PhTrip: 's', PhFile: 's', PhW: 'n', PhH: 'n', PhTaken: 'd', PhCap: 's', PhSeq: 'n' } },
+  PP_Thumbs: { key: 'ThId', cols: { ThId: 's', ThData: 's' } }
 };
-var WRITE_ACTIONS = ['commit', 'startFresh'];
+var WRITE_ACTIONS = ['commit', 'startFresh', 'ppPhotoUp', 'ppPhotoDel'];
 
 // Starter categories (the same idea as your SharePoint EW_Categories list). Edit them in the app.
 var SEED_CATEGORIES = [
@@ -146,6 +159,7 @@ var ACTIONS = {
       imports: readTable_(ss, 'SYS_Imports'),
       payslips: readTable_(ss, 'EW_Payslips'),
       lens: { settings: readTable_(ss, 'LN_Settings'), assets: readTable_(ss, 'LN_Assets'), values: readTable_(ss, 'LN_Values'), goals: readTable_(ss, 'LN_Goals'), budget: readTable_(ss, 'LN_Budget') },
+      passport: { settings: readTable_(ss, 'PP_Settings'), places: readTable_(ss, 'PP_Places'), trips: readTable_(ss, 'PP_Trips'), stops: readTable_(ss, 'PP_Stops'), photos: readTable_(ss, 'PP_Photos') },
       serverTime: new Date().toISOString()
     };
   },
@@ -179,6 +193,39 @@ var ACTIONS = {
     });
     if (logged.length) upsertRows_(ss, 'EW_ActivityLog', logged);
     return { logged: logged };
+  },
+
+  /** Passport · save one photo: the full photo goes to Drive, a small preview to PP_Thumbs, its row to PP_Photos. */
+  ppPhotoUp: function (ss, p) {
+    if (!p.id || !p.data) throw new Error('No photo to save.');
+    ensureTables_(ss);
+    var blob = Utilities.newBlob(Utilities.base64Decode(String(p.data)), 'image/jpeg', String(p.id) + '.jpg');
+    var file = ppFolder_(String(p.folder || 'Photos')).createFile(blob);
+    var row = { PhId: String(p.id), PhTrip: String(p.trip || ''), PhFile: file.getId(), PhW: Number(p.w) || 0, PhH: Number(p.h) || 0, PhTaken: String(p.taken || ''), PhCap: String(p.cap || ''), PhSeq: Number(p.seq) || 0 };
+    upsertRows_(ss, 'PP_Photos', [row]);
+    if (p.thumb) upsertRows_(ss, 'PP_Thumbs', [{ ThId: row.PhId, ThData: String(p.thumb) }]);
+    return row;
+  },
+  /** Passport · small previews for a list of photos. */
+  ppThumbs: function (ss, p) {
+    var want = {}, out = {}; (p.ids || []).forEach(function (i) { want[String(i)] = true; });
+    if (!ss.getSheetByName('PP_Thumbs')) return out;
+    readTable_(ss, 'PP_Thumbs').forEach(function (r) { if (want[r.ThId]) out[r.ThId] = r.ThData; });
+    return out;
+  },
+  /** Passport · one full photo from Drive. */
+  ppPhoto: function (ss, p) {
+    var row = readTable_(ss, 'PP_Photos').filter(function (r) { return r.PhId === String(p.id); })[0];
+    if (!row || !row.PhFile) throw new Error('Photo not found.');
+    var bytes = DriveApp.getFileById(row.PhFile).getBlob().getBytes();
+    return { id: row.PhId, data: 'data:image/jpeg;base64,' + Utilities.base64Encode(bytes) };
+  },
+  /** Passport · delete photos: their Drive files go to the bin, their rows are removed. */
+  ppPhotoDel: function (ss, p) {
+    var ids = (p.ids || []).map(String), want = {}; ids.forEach(function (i) { want[i] = true; });
+    readTable_(ss, 'PP_Photos').forEach(function (r) { if (want[r.PhId] && r.PhFile) { try { DriveApp.getFileById(r.PhFile).setTrashed(true); } catch (e) { /* already gone */ } } });
+    deleteRows_(ss, 'PP_Photos', ids); deleteRows_(ss, 'PP_Thumbs', ids);
+    return { deleted: ids.length };
   },
 
   /** Weekly backup: status, turn on/off, back up now. */
@@ -251,6 +298,15 @@ function closedYearBlock_(ss, ups, del) {
   for (var k = 0; k < ps.length; k++) if (String(ps[k].PsMonth || '') <= lastMonth) return msg;
   for (var m = 0; m < psDel.length; m++) if (String(psDel[m]).slice(0, 7) <= lastMonth) return msg;
   return '';
+}
+
+/* ───────── 3.2.0 · Passport photos in Google Drive ───────── */
+var PP_FOLDER = 'MansWell Passport';
+function ppFolder_(name) {
+  var it = DriveApp.getFoldersByName(PP_FOLDER), root = it.hasNext() ? it.next() : DriveApp.createFolder(PP_FOLDER);
+  var clean = String(name || 'Photos').replace(/[\\/:*?"<>|]/g, ' ').slice(0, 80);
+  var sub = root.getFoldersByName(clean);
+  return sub.hasNext() ? sub.next() : root.createFolder(clean);
 }
 
 /* ───────── 3.1.6 · weekly backup to Google Drive ───────── */

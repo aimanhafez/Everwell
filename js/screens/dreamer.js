@@ -5,6 +5,7 @@ import { syncNow } from '../shared.js';
 import { SWEEP_ID } from '../sweep.js';
 import { logoTile } from '../logo.js';
 import { THEMES, THEME_ORDER, appTheme, setAppTheme } from '../theme.js';
+import { G } from '../core.js';
 import * as E from '../lens/engine.js';
 
 const ICON = {
@@ -14,12 +15,13 @@ const ICON = {
   aperture: '<circle cx="12" cy="12" r="9"/><path d="m14.3 3.3-4.6 8M20.6 9.5h-9.2M18 18.6l-4.6-8M9.7 20.7l4.6-8M3.4 14.5h9.2M6 5.4l4.6 8"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
   plane: '<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
   images: '<rect x="3" y="5" width="14" height="12" rx="2"/><path d="M7 21h12a2 2 0 0 0 2-2V9"/><circle cx="8" cy="9.5" r="1.5"/><path d="m3 15 4-4 4 4 2-2 4 4"/>',
   signin: '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5M15 12H3"/>'
 };
 const ic = (n, c, s) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="${c}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`;
-const SOON = [['Roaming', 'Trips, past and future', '#5AA8FF', 'plane'], ['Memories', 'Places and moments kept', '#FF6FAE', 'images']];
+const SOON = [['Keep', 'Renewals, servicing and warranties', '#E9B949', 'bell']];
 const RMx = v => (v < 0 ? '−' : '') + 'RM ' + n2(Math.abs(v));
 
 const css = () => `
@@ -73,6 +75,7 @@ function Settings() {
           <div class="tt"><b>${t.name}</b><span>${t.note}</span></div><span class="ck">${on ? '✓' : ''}</span></div>`; })}</div>
       <div class="row2" onClick=${() => { panel = false; Navigate('scrMore'); }} data-t="mainPocketSettings"><div><b>Pocket settings</b><span>Accounts, categories, tracking period, backup</span></div><em>›</em></div>
       <div class="row2" onClick=${() => { panel = false; NAV.stack = []; Navigate('scrLensSettings'); }} data-t="mainLensSettings"><div><b>Lens settings</b><span>Opening balances, savings rule, status levels</span></div><em>›</em></div>
+      <div class="row2" onClick=${() => { panel = false; G.ppOpenSettings = true; NAV.stack = []; Navigate('scrPpOverview'); }} data-t="mainPassportSettings"><div><b>Passport settings</b><span>Home country, where your photos are kept</span></div><em>›</em></div>
     </div></div>`;
 }
 const setCss = () => `.mset{position:fixed;inset:0;z-index:70}.mset .dimx{position:absolute;inset:0;background:rgba(0,0,0,.55)}
@@ -92,6 +95,7 @@ export const scrDreamer = {
   view() {
     const openPocket = () => { NAV.stack = []; Navigate('scrHome'); };
     const openLens = () => { NAV.stack = []; Navigate('scrLensPnl'); };
+    const openPassport = () => { NAV.stack = []; Navigate('scrPpOverview'); };
     const soon = () => Notify('More rooms are on the way.', 'info');
     const lb = PLABEL(Today()), sp = flowSplit(PSTART(Year(lb), Month(lb)), PEND(Year(lb), Month(lb)));
     const sweep = DB.accounts.find(a => a.AccId === SWEEP_ID);
@@ -106,11 +110,11 @@ export const scrDreamer = {
           <div class="gear" data-t="mainSettings" role="button" aria-label="Settings" onClick=${() => { panel = true; rerender(); }} dangerouslySetInnerHTML=${{ __html: ic('gear', K.sub, 19) }}></div></div>
         <div class="pill" data-t="mainSync" onClick=${() => syncNow()}><b></b><span>${syncedText()}</span><span dangerouslySetInnerHTML=${{ __html: ic('sync', K.sub, 12) }}></span></div>
         <h1>All your dreams,<br/><span>one door.</span></h1>
-        <div class="lead">Pocket records your money. Lens helps you understand it.</div>
+        <div class="lead">Pocket records your money. Lens helps you understand it. Passport keeps your travels.</div>
         <div class="cta" data-t="openPocket" role="button" onClick=${openPocket}><span style="line-height:0" dangerouslySetInnerHTML=${{ __html: ic('signin', K.ctaText || K.onAcc, 18) }}></span>Open Pocket</div>
       </div>
       <div class="list">
-        <div class="cap">ROOMS · 2 OF 4 OPEN</div>
+        <div class="cap">ROOMS · 3 OF 4 OPEN</div>
         <div class="card" data-t="mod-pocket" role="button" aria-label="Pocket" onClick=${openPocket}>
           <div class="tile" style="--c:#FF8A3D" dangerouslySetInnerHTML=${{ __html: ic('wallet', '#FF8A3D', 26) }}></div><span class="lk" dangerouslySetInnerHTML=${{ __html: ic('arrow', K.or, 24) }}></span>
           <h4>Pocket</h4><p>Accounts, transactions and balance sweep</p>
@@ -118,6 +122,10 @@ export const scrDreamer = {
         <div class="card" data-t="mod-lens" role="button" aria-label="Lens" onClick=${openLens}>
           <div class="tile" style="--c:#3DDC84" dangerouslySetInnerHTML=${{ __html: ic('aperture', '#3DDC84', 26) }}></div><span class="lk" dangerouslySetInnerHTML=${{ __html: ic('arrow', K.or, 24) }}></span>
           <h4>Lens</h4><p>P&L, savings & assets, plan and budget</p>
+        </div>
+        <div class="card" data-t="mod-passport" role="button" aria-label="Passport" onClick=${openPassport}>
+          <div class="tile" style="--c:#E2367A" dangerouslySetInnerHTML=${{ __html: ic('plane', '#E2367A', 26) }}></div><span class="lk" dangerouslySetInnerHTML=${{ __html: ic('arrow', K.or, 24) }}></span>
+          <h4>Passport</h4><p>Countries, journeys, wishlist and memories</p>
         </div>
         ${SOON.map(([n, sub, c, g], i) => html`<div class="card soon" data-t=${'mod-soon-' + (i + 1)} role="button" aria-label="Coming soon" onClick=${soon}>
           <div class="blur"><div class="tile" style=${'--c:' + c} dangerouslySetInnerHTML=${{ __html: ic(g, c, 26) }}></div><h4>${n}</h4><p>${sub}</p></div>

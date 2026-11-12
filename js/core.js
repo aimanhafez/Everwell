@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '3.1.7';
+export const VERSION = '3.2.0';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -15,7 +15,8 @@ export const PALETTE = ['#FF6A00', '#E5484D', '#A3236F', '#E9B949', '#6B7178', '
 
 /* ───────────── Data (the SharePoint lists, now Google Sheet tabs) ───────────── */
 export const DB = { settings: null, accounts: [], categories: [], payees: [], recurring: [], txns: [], audit: [], importMap: [], imports: [], sysOk: false,
-  lnSettings: [], lnAssets: [], lnValues: [], lnGoals: [], lnBudget: [], lnOk: false, payslips: [], psOk: false };
+  lnSettings: [], lnAssets: [], lnValues: [], lnGoals: [], lnBudget: [], lnOk: false, payslips: [], psOk: false,
+  ppSettings: [], ppPlaces: [], ppTrips: [], ppStops: [], ppPhotos: [], ppOk: false };
 
 /* ───────────── Global variables (Set(...) in the Power App) ───────────── */
 export const G = {
@@ -286,7 +287,7 @@ export async function api(action, payload, conn = CONN.v, opts = {}) {
  * Every save is applied on the phone straight away and put in an "outbox" kept in phone storage.
  * The outbox is sent to Google one batch at a time. Each batch is safe to send twice (rows are keyed),
  * so nothing is lost if the app is closed, offline or interrupted: it is sent again next time. */
-const MAP = { EW_Payslips: ['payslips', 'PsKey'], LN_Settings: ['lnSettings', 'LsKey'], LN_Assets: ['lnAssets', 'AsId'], LN_Values: ['lnValues', 'VaId'], LN_Goals: ['lnGoals', 'GoId'], LN_Budget: ['lnBudget', 'BuKey'],
+const MAP = { PP_Settings: ['ppSettings', 'PsetKey'], PP_Places: ['ppPlaces', 'PlIso'], PP_Trips: ['ppTrips', 'TrId'], PP_Stops: ['ppStops', 'StKey'], PP_Photos: ['ppPhotos', 'PhId'], EW_Payslips: ['payslips', 'PsKey'], LN_Settings: ['lnSettings', 'LsKey'], LN_Assets: ['lnAssets', 'AsId'], LN_Values: ['lnValues', 'VaId'], LN_Goals: ['lnGoals', 'GoId'], LN_Budget: ['lnBudget', 'BuKey'],
   SYS_ImportMap: ['importMap', 'MapKey'], SYS_Imports: ['imports', 'ImpId'], EW_Accounts: ['accounts', 'AccId'], EW_Categories: ['categories', 'CatId'], EW_Payees: ['payees', 'PyName'], EW_Recurring: ['recurring', 'RcId'], EW_Transactions: ['txns', 'TxnId'] };
 export const SYNC = { outbox: store.get('ew_outbox', []), flushing: false, failed: false, timer: null };
 /** Bumped whenever the data changes, so cached totals (Lens P&L) never show an old category, date or type. */
@@ -317,7 +318,8 @@ function syncState() {
 function persistOutbox() { store.set('ew_outbox', SYNC.outbox); syncState(); }
 let cacheTimer = null;
 const writeCache = () => { cacheTimer = null; store.set('ew_data', { at: Date.now(), settings: DB.settings, accounts: DB.accounts, categories: DB.categories, payees: DB.payees, recurring: DB.recurring, txns: DB.txns, audit: DB.audit.slice(0, 30), importMap: DB.importMap, imports: DB.imports, sysOk: DB.sysOk,
-  lens: { settings: DB.lnSettings, assets: DB.lnAssets, values: DB.lnValues, goals: DB.lnGoals, budget: DB.lnBudget }, lnOk: DB.lnOk, payslips: DB.payslips, psOk: DB.psOk }); };
+  lens: { settings: DB.lnSettings, assets: DB.lnAssets, values: DB.lnValues, goals: DB.lnGoals, budget: DB.lnBudget }, lnOk: DB.lnOk, payslips: DB.payslips, psOk: DB.psOk,
+  passport: { settings: DB.ppSettings, places: DB.ppPlaces, trips: DB.ppTrips, stops: DB.ppStops, photos: DB.ppPhotos }, ppOk: DB.ppOk }); };
 function persistCache() { clearTimeout(cacheTimer); cacheTimer = setTimeout(writeCache, 300); }
 /** Write a pending cache save now (the app is being closed / hidden). */
 export function flushCache() { if (cacheTimer) { clearTimeout(cacheTimer); writeCache(); } }
@@ -373,6 +375,10 @@ function applyLoaded(d) {
   DB.lnOk = !!ln || !!d.lnOk;
   DB.lnSettings = (ln && ln.settings) || []; DB.lnAssets = (ln && ln.assets) || []; DB.lnValues = (ln && ln.values) || [];
   DB.lnGoals = (ln && ln.goals) || []; DB.lnBudget = (ln && ln.budget) || [];
+  // Passport tabs exist only once the Apps Script is v3.2 or newer
+  const pp = d.passport || null;
+  DB.ppOk = !!pp || !!d.ppOk;
+  DB.ppSettings = (pp && pp.settings) || []; DB.ppPlaces = (pp && pp.places) || []; DB.ppTrips = (pp && pp.trips) || []; DB.ppStops = (pp && pp.stops) || []; DB.ppPhotos = (pp && pp.photos) || [];
   for (const item of SYNC.outbox) applyLocal(item.p); // changes not yet on Google stay visible
   G.gblCycleDay = (DB.settings && DB.settings.StCycleDay) || 28;
   const l = PLABEL(Today());
@@ -408,6 +414,8 @@ function closedBlock(ch) {
     || (up.EW_Payslips || []).some(r => String(r.PsMonth || '') <= ct.slice(0, 7)) || (del.EW_Payslips || []).some(k => String(k).slice(0, 7) <= ct.slice(0, 7));
   return bad ? 'That falls in a closed year (locked up to ' + fmtD(ct, 'dd mmm yyyy') + '). Change it in the Google Sheet if you really need to.' : '';
 }
+/** Rows the Apps Script already saved (a photo upload): show them now, nothing to send. */
+export function applySaved(up) { applyLocal({ upserts: up || {}, deletes: {} }); persistCache(); }
 export async function save(ch) {
   const blocked = closedBlock(ch);
   if (blocked) { const e = new Error(blocked); e.code = 'LOCKED'; throw e; }
@@ -664,7 +672,11 @@ const P = {
   Bars: '<path d="M5 19v-4"/><path d="M10 19v-7"/><path d="M15 19v-10"/><path d="M20 19V5"/>',
   Globe: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.6 2.4 3.8 5.2 3.8 8.5s-1.2 6.1-3.8 8.5c-2.6-2.4-3.8-5.2-3.8-8.5S9.4 5.9 12 3.5z"/>',
   History: '<path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4.5v3.6h3.6"/><path d="M12 8v4.2l2.8 1.8"/>',
-  Trash: '<path d="M4 6h16M9 6V4h6v2M6 6l1 15h10l1-15"/><path d="M10 10v7M14 10v7"/>'
+  Trash: '<path d="M4 6h16M9 6V4h6v2M6 6l1 15h10l1-15"/><path d="M10 10v7M14 10v7"/>',
+  Passport: '<rect x="5" y="2.5" width="14" height="19" rx="2"/><circle cx="12" cy="10" r="3.2"/><path d="M8.8 10h6.4M12 6.8c-1.2 1.6-1.2 4.8 0 6.4M12 6.8c1.2 1.6 1.2 4.8 0 6.4M9 17h6"/>',
+  Plane: '<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
+  Star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+  Images: '<rect x="3" y="5" width="14" height="12" rx="2"/><path d="M7 21h12a2 2 0 0 0 2-2V9"/><circle cx="8" cy="9.5" r="1.5"/><path d="m3 15 4-4 4 4 2-2 4 4"/>'
 };
 export function icon(name) {
   return html`<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" dangerouslySetInnerHTML=${{ __html: P[name] || '' }}></svg>`;
