@@ -56,7 +56,7 @@ select.lin{padding-right:30px;background-image:linear-gradient(45deg,transparent
 .llab{font-size:10px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:${K.sub};margin:14px 0 6px}
 .lchk{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;box-shadow:inset 0 0 0 1.5px ${K.line2}}.lchk.on{background:${K.or};box-shadow:none}.lchk.red.on{background:${K.red}}
 .lchk svg{width:14px;height:14px;color:${K.onAcc}}
-.lsw{width:46px;height:28px;border-radius:99px;background:${K.mute};position:relative;flex:none;cursor:pointer}.lsw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .15s}.lsw.on{background:${K.or}}.lsw.on i{transform:translateX(18px)}
+.lsw{width:46px;height:28px;border-radius:99px;background:${K.mute};position:relative;flex:none;cursor:pointer}.lsw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:${K.onAcc};transition:transform .15s}.lsw.on{background:${K.or}}.lsw.on i{transform:translateX(18px)}
 .lempty{text-align:center;padding:26px 10px;color:${K.sub};font-size:13px;line-height:1.5}
 .lwarn{margin:0 12px 12px;padding:12px 14px;border-radius:12px;background:rgba(233,185,73,.08);box-shadow:inset 0 0 0 1px rgba(233,185,73,.3);font-size:12px;line-height:1.45;color:${K.gold}}
 /* sheet */
@@ -82,7 +82,7 @@ select.lin{padding-right:30px;background-image:linear-gradient(45deg,transparent
 .ltbl .more td{color:${K.or};font-weight:600;cursor:pointer}
 .ldot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:4px;vertical-align:1px}
 `;
-export const STC = { grn: K.grn, grn2: K.grn, gold: K.gold, red: K.red };
+export const STC = { get grn() { return K.grn; }, get grn2() { return K.grn; }, get gold() { return K.gold; }, get red() { return K.red; } };
 export const chipCls = c => ({ grn: 'c-grn', grn2: 'c-grn', gold: 'c-gold', red: 'c-red' })[c] || 'c-mu';
 export const svgI = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="100%" height="100%">${ICONS[name] || ''}</svg>`;
 const ICONS = {

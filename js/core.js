@@ -528,7 +528,7 @@ export function I(x, y, w, h, name, color, o = {}) {
 export function B(x, y, w, h, text, o = {}) {
   const st = pos(x, y, w, h) + `background:${o.fill || K.field};color:${o.c || K.text};border-radius:${o.r ?? Math.round(h / 2)}px;` +
     `font-size:${fs(o.s || 10)};font-weight:${W[o.w || 6]};letter-spacing:.2px;` +
-    (o.b ? `box-shadow:inset 0 0 0 ${o.bt || 1}px ${o.b};` : o.fill === K.or && !o.flat ? 'box-shadow:0 6px 18px rgba(255,106,0,0.22), inset 0 1px 0 rgba(255,255,255,0.18);' : '') + (o.st || '');
+    (o.b ? `box-shadow:inset 0 0 0 ${o.bt || 1}px ${o.b};` : o.fill === K.or && !o.flat ? `box-shadow:0 6px 18px ${oa(0.22)}, inset 0 1px 0 ${ta(0.18)};` : '') + (o.st || '');
   return html`<button class="btn" style=${st} disabled=${!!o.disabled} onClick=${o.onClick} data-t=${o.id}>${text}</button>`;
 }
 /** Card / container (manual layout). In a flow, pass x=null to stack. */
@@ -537,11 +537,17 @@ export function Box(x, y, w, h, kids, o = {}) {
     `background:${o.fill || 'transparent'};border-radius:${o.r || 0}px;` + (o.b ? `box-shadow:inset 0 0 0 ${o.bt || 1}px ${o.b};` : '') + (o.st || '');
   return html`<div class="box" style=${st} data-t=${o.id}>${kids}</div>`;
 }
-export const SURFACE = 'linear-gradient(180deg, #191C22 0%, #15181D 100%)';
-export const HAIR = 'rgba(255,255,255,0.065)';
+export let SURFACE = 'linear-gradient(180deg, #191C22 0%, #15181D 100%)';
+export let HAIR = 'rgba(255,255,255,0.065)';
+const SURFACE0 = SURFACE, HAIR0 = HAIR;
+/** Theme hook: card surface and hairline for the active theme. */
+export function setSurface(sf, hr) { SURFACE = sf || SURFACE0; HAIR = hr || HAIR0; }
+/** Colour helpers: the theme's accent, and its tint (white on dark themes), at an alpha. */
+export const oa = a => `rgba(${K.accRGB || '255,106,0'},${a})`;
+export const ta = a => `rgba(${K.tintRGB || '255,255,255'},${a})`;
 export function Card(x, y, w, h, kids, o = {}) {
   const b = o.b || K.hair || HAIR;
-  return Box(x, y, w, h, kids, { ...o, fill: o.fill || K.surface || SURFACE, r: o.r ?? 16, b: undefined, st: `box-shadow:inset 0 0 0 1px ${b}, inset 0 1px 0 rgba(255,255,255,0.035);` + (o.st || '') });
+  return Box(x, y, w, h, kids, { ...o, fill: o.fill || K.surface || SURFACE, r: o.r ?? 16, b: undefined, st: `box-shadow:inset 0 0 0 1px ${b}, inset 0 1px 0 ${ta(0.035)};` + (o.st || '') });
 }
 /** Vertical auto-layout scroll container (LayoutMode.Auto). Top stays at y, bottom stays (844 - y - h) from the canvas bottom. */
 export function Flow(x, y, w, h, kids, o = {}) {
@@ -565,7 +571,7 @@ export function Gal(x, y, w, h, items, size, tpl, o = {}) {
 /** Text input */
 export function TI(x, y, w, h, value, onInput, o = {}) {
   const st = pos(x, y, w, h) + `background:${o.fill || K.field};color:${o.c || K.text};font-size:${fs(o.s || 12)};font-weight:${W[o.w] || 400};border-radius:${o.r ?? 10}px;` +
-    `padding:0 ${o.padR ?? o.pad ?? 12}px 0 ${o.pad ?? 12}px;text-align:${o.a === 'c' ? 'center' : 'left'};` + (o.bt === 0 ? 'box-shadow:none;' : `box-shadow:inset 0 0 0 1px ${o.b || 'rgba(255,255,255,0.07)'};`) + (o.st || '');
+    `padding:0 ${o.padR ?? o.pad ?? 12}px 0 ${o.pad ?? 12}px;text-align:${o.a === 'c' ? 'center' : 'left'};` + (o.bt === 0 ? 'box-shadow:none;' : `box-shadow:inset 0 0 0 1px ${o.b || ta(0.07)};`) + (o.st || '');
   if (o.multiline) {
     return html`<textarea class="inp" style=${st + 'padding-top:10px;padding-bottom:10px;resize:none;'} placeholder=${o.hint || ''} value=${value ?? ''} maxlength=${o.max} onInput=${e => onInput(e.target.value)} data-t=${o.id}></textarea>`;
   }
@@ -576,7 +582,7 @@ export function TI(x, y, w, h, value, onInput, o = {}) {
 }
 /** Dropdown (classic) */
 export function DD(x, y, w, h, items, value, onChange, o = {}) {
-  const st = pos(x, y, w, h) + `background:${o.fill || K.field};border-radius:${o.r ?? 10}px;overflow:hidden;` + (o.bt === 0 ? '' : `box-shadow:inset 0 0 0 1px ${o.b || 'rgba(255,255,255,0.07)'};`);
+  const st = pos(x, y, w, h) + `background:${o.fill || K.field};border-radius:${o.r ?? 10}px;overflow:hidden;` + (o.bt === 0 ? '' : `box-shadow:inset 0 0 0 1px ${o.b || ta(0.07)};`);
   return html`<div class="abs dd" style=${st}>
     <select style=${`color:${K.text};font-size:${fs(o.s || 12)};padding:0 ${h}px 0 ${o.pad ?? 12}px;`} value=${value ?? ''} onChange=${e => onChange(e.target.value)} data-t=${o.id}>
       ${o.allowEmpty || !items.includes(value) ? html`<option value="">${''}</option>` : null}
@@ -601,7 +607,7 @@ export function Svg(x, y, w, h, svg, o = {}) {
   return html`<div class="abs svgimg ${o.stretch ? 'stretch' : ''}" style=${pos(x, y, w, h)} dangerouslySetInnerHTML=${{ __html: svg }}></div>`;
 }
 export function heroBg(h) {
-  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 366 ${h}' preserveAspectRatio='none'><defs><linearGradient id='g${h}' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#23272E'/><stop offset='1' stop-color='#121418'/></linearGradient><radialGradient id='r${h}' cx='1' cy='0' r='0.75'><stop offset='0' stop-color='#FF6A00' stop-opacity='0.30'/><stop offset='1' stop-color='#FF6A00' stop-opacity='0'/></radialGradient></defs><rect width='366' height='${h}' rx='16' fill='url(#g${h})'/><rect width='366' height='${h}' rx='16' fill='url(#r${h})'/><rect x='0.5' y='0.5' width='365' height='${h - 1}' rx='15.5' fill='none' stroke='#2C3038'/></svg>`;
+  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 366 ${h}' preserveAspectRatio='none'><defs><linearGradient id='g${h}' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${K.card2}'/><stop offset='1' stop-color='${K.card2}'/></linearGradient><radialGradient id='r${h}' cx='1' cy='0' r='0.75'><stop offset='0' stop-color='${K.or}' stop-opacity='0.30'/><stop offset='1' stop-color='${K.or}' stop-opacity='0'/></radialGradient></defs><rect width='366' height='${h}' rx='16' fill='url(#g${h})'/><rect width='366' height='${h}' rx='16' fill='url(#r${h})'/><rect x='0.5' y='0.5' width='365' height='${h - 1}' rx='15.5' fill='none' stroke='${K.line2}'/></svg>`;
 }
 export const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
 

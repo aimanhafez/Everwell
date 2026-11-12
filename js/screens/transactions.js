@@ -3,8 +3,7 @@ import { isLocked, lockMsg } from '../sweep.js';
 import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, TI, DD, heroBg, Navigate, Back, Replace, Notify, rerender, guard, save, api, SURFACE, HAIR,
   bal, acc, accByName, txn, byTxDesc, stStart, fmtD, fmtTime, Today, PLABEL, PSTART, PEND, Year, Month, addDays, addMonths, addYears, diffDays,
-  RM, sRM, Value, round2, mkTxn, txnId, nextTxSeq, CD, flowOf, catTypeOf
-} from '../core.js';
+  RM, sRM, Value, round2, mkTxn, txnId, nextTxSeq, CD, flowOf, catTypeOf, oa, ta } from '../core.js';
 import { TabHeader, NavBar, DetailHeader, SaveBar, DateBox, Calendar, Fab, FlowCard, MonthGrid, AuditRows } from '../shared.js';
 import { txnRow, openTxn } from './home.js';
 
@@ -46,12 +45,12 @@ export const scrTransactions = {
     const chip = (x, w, on, cap, val, sheet, id) => {
       const go = () => open(sheet);
       return html`
-        ${B(x, 0, w, 50, '', { fill: on ? 'rgba(255,106,0,0.07)' : SURFACE, b: on ? 'rgba(255,106,0,0.45)' : HAIR, r: 14, onClick: go, id })}
+        ${B(x, 0, w, 50, '', { fill: on ? oa(0.07) : SURFACE, b: on ? oa(0.45) : HAIR, r: 14, onClick: go, id })}
         ${L(x + 14, 9, w - 36, 13, cap, { s: 6, w: 6, c: on ? K.or : K.mute, ls: 1.4, onClick: go })}
         ${L(x + 14, 22, w - 34, 20, val, { s: 9.5, w: 6, onClick: go, st: 'overflow:hidden;' })}
         ${I(x + w - 24, 25, 11, 11, 'ChevronDown', on ? K.or : K.sub, { pad: 0, onClick: go })}`;
     };
-    const typeBtn = (t, x) => B(x, 4, 89.5, 30, t, { fill: l.locTxType === t ? K.or : 'transparent', c: l.locTxType === t ? '#FFFFFF' : K.sub, r: 15, s: 8.5, flat: true, onClick: () => { l.locTxType = t; rerender(); }, id: 'tt-' + t });
+    const typeBtn = (t, x) => B(x, 4, 89.5, 30, t, { fill: l.locTxType === t ? K.or : 'transparent', c: l.locTxType === t ? K.onAcc : K.sub, r: 15, s: 8.5, flat: true, onClick: () => { l.locTxType = t; rerender(); }, id: 'tt-' + t });
     const clear = () => {
       G.gblTxAll = false; G.gblTxFrom = curMonthStart(); G.gblTxTo = (() => { const l = PLABEL(Today()); return PEND(Year(l), Month(l)); })(); G.gblTxLbl = fmtD(G.gblTxTo, 'mmm yyyy');
       l.locTxAcc = ''; l.locTxCat = 'All'; l.locTxType = 'All'; l.q = ''; rerender();
@@ -78,7 +77,7 @@ export const scrTransactions = {
     return html`<div>
       ${TabHeader()}
       ${L(18, 68, 240, 32, 'Transactions', { s: 17 })}
-      ${anyOn ? B(268, 72, 110, 28, 'Clear filters', { fill: 'rgba(255,106,0,0.1)', b: 'rgba(255,106,0,0.35)', c: K.or, r: 14, s: 8, onClick: clear, id: 'clearFilters' }) : null}
+      ${anyOn ? B(268, 72, 110, 28, 'Clear filters', { fill: oa(0.1), b: oa(0.35), c: K.or, r: 14, s: 8, onClick: clear, id: 'clearFilters' }) : null}
       ${Flow(0, 104, 390, 662, kids, { gap: 10 })}
       ${Fab(() => { G.gblEditMode = 'new'; G.gblTxnId = ''; Navigate('scrTxnEdit'); })}
       ${NavBar(2)}
@@ -99,8 +98,8 @@ function Sheet(l) {
   let body;
   if (l.locSheet === 'per') {
     body = html`
-      ${B(20, 64, 170, 36, 'All time', { fill: G.gblTxAll ? K.or : K.field, c: G.gblTxAll ? '#FFFFFF' : K.sub, b: G.gblTxAll ? K.or : K.line, r: 18, s: 9.5, onClick: () => { G.gblTxAll = true; G.gblTxLbl = 'All time'; close(); }, id: 'allTime' })}
-      ${B(200, 64, 170, 36, String(yr), { fill: wholeOn ? K.or : K.field, c: wholeOn ? '#FFFFFF' : K.sub, b: wholeOn ? K.or : K.line, r: 18, s: 9.5, onClick: () => { G.gblTxAll = false; G.gblTxFrom = ys; G.gblTxTo = ye; G.gblTxLbl = String(yr); close(); }, id: 'wholeYear' })}
+      ${B(20, 64, 170, 36, 'All time', { fill: G.gblTxAll ? K.or : K.field, c: G.gblTxAll ? K.onAcc : K.sub, b: G.gblTxAll ? K.or : K.line, r: 18, s: 9.5, onClick: () => { G.gblTxAll = true; G.gblTxLbl = 'All time'; close(); }, id: 'allTime' })}
+      ${B(200, 64, 170, 36, String(yr), { fill: wholeOn ? K.or : K.field, c: wholeOn ? K.onAcc : K.sub, b: wholeOn ? K.or : K.line, r: 18, s: 9.5, onClick: () => { G.gblTxAll = false; G.gblTxFrom = ys; G.gblTxTo = ye; G.gblTxLbl = String(yr); close(); }, id: 'wholeYear' })}
       ${MonthGrid(yr, v => { l.locTxYear = v; rerender(); },
         no => !G.gblTxAll && PSTART(yr, no) === G.gblTxFrom && diffDays(G.gblTxFrom, G.gblTxTo) < 32,
         no => { const st = PSTART(yr, no); G.gblTxAll = false; G.gblTxFrom = st; G.gblTxTo = PEND(yr, no); G.gblTxLbl = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][no - 1] + ' ' + yr; close(); },
@@ -112,7 +111,7 @@ function Sheet(l) {
       ${L(24, 62, 270, 44, 'All accounts', { s: 10.5, w: 6, c: allOn ? K.or : K.text, onClick: () => { l.locTxAcc = ''; close(); } })}
       ${allOn ? I(342, 73, 22, 22, 'Check', K.or, { pad: 2 }) : null}
       ${Gal(12, 110, 366, Math.min(accs.length, 7) * 50, accs, 50, a => html`
-        ${C(8, 11, 28, a.AccColor)}${L(8, 11, 28, 28, a.AccShort, { s: 7, w: 7, a: 'c', c: '#FFFFFF' })}
+        ${C(8, 11, 28, a.AccColor)}${L(8, 11, 28, 28, a.AccShort, { s: 7, w: 7, a: 'c', c: K.onAcc })}
         ${L(48, 6, 266, 20, a.AccName, { s: 10.5, w: 6, c: l.locTxAcc === a.AccId ? K.or : K.text })}
         ${L(48, 26, 266, 16, a.AccType + (a.AccStatus === 'Closed' ? '  ·  Closed' : ''), { s: 8, c: K.sub })}
         ${l.locTxAcc === a.AccId ? I(324, 14, 22, 22, 'Check', K.or, { pad: 2 }) : null}
@@ -216,7 +215,7 @@ export const scrTxnDetail = {
         ${L(16, 14, 246, 22, 'Actions', { s: 11.5, w: 6 })}
         ${canPayback ? B(16, 142, 334, 40, paidBack ? 'Add another payback' : 'Payback received', { fill: K.field, b: K.grn, c: K.grn, r: 20, s: 10, id: 'tdPayback',
           onClick: () => { G.gblPrefill = { PfType: 'Income', PfAmt: '', PfCat: T.TxCat, PfAcc: T.TxAcc, PfPayee: '', PfDesc: 'Payback · ' + (T.TxPayee || T.TxDesc || T.TxCat), PfRule: '', PfRef: T.TxnId, PfDate: Today() }; G.gblEditMode = 'prefill'; Navigate('scrTxnEdit'); } }) : null}
-        ${B(16, 46, 162, 40, 'Edit', { fill: K.or, c: '#FFFFFF', r: 20, s: 10, disabled: !canEdit, onClick: () => { G.gblEditMode = 'edit'; Navigate('scrTxnEdit'); }, id: 'tdEdit' })}
+        ${B(16, 46, 162, 40, 'Edit', { fill: K.or, c: K.onAcc, r: 20, s: 10, disabled: !canEdit, onClick: () => { G.gblEditMode = 'edit'; Navigate('scrTxnEdit'); }, id: 'tdEdit' })}
         ${B(188, 46, 162, 40, 'Duplicate', { fill: K.field, b: HAIR, r: 20, s: 10, disabled: !canDup, onClick: () => { G.gblEditMode = 'dup'; Navigate('scrTxnEdit'); }, id: 'tdDup' })}
         ${B(16, 94, 162, 40, T.TxIsSplit ? 'Edit split' : 'Split', { fill: K.field, b: HAIR, r: 20, s: 10, disabled: !canSplit, onClick: () => Navigate('scrSplit'), id: 'tdSplit' })}
         ${B(188, 94, 162, 40, l.locConfirmDel ? 'Tap to confirm' : 'Delete', { fill: K.field, b: K.red, c: K.red, r: 20, s: 10, disabled: !canDel, onClick: del, id: 'tdDel' })}`)}
@@ -286,7 +285,7 @@ export const scrTxnEdit = {
     const crossTxt = !cross ? '' : income ? 'Lowers your ' + l.locCat + ' spending  ·  not counted as income' : 'Reduces your ' + l.locCat + ' income  ·  not counted as spending';
     const accs = DB.accounts.filter(a => a.AccStatus !== 'Closed' && a.AccType !== 'System').map(a => a.AccName).sort();
     const accVal = l.acc || accs[0] || '';
-    const seg = (t, x) => B(x, 3, 100, 32, t, { fill: l.locType === t ? K.or : 'transparent', c: l.locType === t ? '#FFFFFF' : K.sub, r: 16, s: 9.5, id: 'seg-' + t,
+    const seg = (t, x) => B(x, 3, 100, 32, t, { fill: l.locType === t ? K.or : 'transparent', c: l.locType === t ? K.onAcc : K.sub, r: 16, s: 9.5, id: 'seg-' + t,
       onClick: () => {
         if (t === 'Transfer') { if (mode === 'edit') Notify('To make this a transfer, delete it and record a transfer.', 'warning'); else Replace('scrTransfer'); return; }
         l.locType = t; rerender();

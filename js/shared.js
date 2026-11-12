@@ -1,8 +1,7 @@
 // Pieces used on many screens: headers, bottom bar, save bar, month picker, cash-flow card, date box + calendar.
 import {
   html, K, G, DB, NAV, L, R, C, I, B, Box, Card, Gal, TI, Brand, fs, Navigate, Back, Notify, loadAll, rerender, dueCount, HAIR, SURFACE,
-  fmtD, parseDMY, D, Year, Month, Day, addDays, addMonths, weekday, Today, setMonth, PSTART, RM, sRM, pct, round2, monthLabel, guard, fromBottom
-} from './core.js';
+  fmtD, parseDMY, D, Year, Month, Day, addDays, addMonths, weekday, Today, setMonth, PSTART, RM, sRM, pct, round2, monthLabel, guard, fromBottom, oa, ta } from './core.js';
 
 /* Top of the five main tabs: brand, refresh and bell. */
 /** Header inside a module: tap the name or the grid to go back to the MansWell main page */
@@ -24,7 +23,7 @@ const TABS = [['Home', 'Home', 'scrHome'], ['Money', 'Accounts', 'scrAccounts'],
 export function NavBar(active) {
   return html`
     <div class="navbar-glass"></div>
-    ${R(28 + active * 78, { b: 75 }, 22, 3, K.or, { r: 2, st: 'box-shadow:0 0 12px rgba(255,106,0,0.55);' })}
+    ${R(28 + active * 78, { b: 75 }, 22, 3, K.or, { r: 2, st: `box-shadow:0 0 12px ${oa(0.55)};` })}
     ${TABS.map(([ic, lb, scr], i) => html`
       ${I(26 + i * 78, { b: 41 }, 26, 26, ic, i === active ? K.or : K.mute, { pad: 4, onClick: () => Navigate(scr), label: lb })}
       ${L(i * 78, { b: 25 }, 78, 14, lb, { s: 7.5, c: i === active ? K.or : K.mute, w: i === active ? 6 : 4, a: 'c', ls: 0.3, onClick: () => Navigate(scr) })}`)}`;
@@ -44,14 +43,14 @@ export function SaveBar(text, onClick, id) {
   return html`
     ${R(0, { b: 0 }, 390, 78, K.bg)}
     ${R(0, { b: 77 }, 390, 1, K.sep)}
-    ${B(12, { b: 22 }, 366, 46, text, { fill: K.or, c: '#FFFFFF', r: 23, s: 11, w: 6, onClick, id })}`;
+    ${B(12, { b: 22 }, 366, 46, text, { fill: K.or, c: K.onAcc, r: 23, s: 11, w: 6, onClick, id })}`;
 }
 
 /* Orange round + button */
 export function Fab(onClick, y = 698) {
   return html`
     ${C(320, fromBottom(y, 52), 52, K.or, { onClick })}
-    ${I(333, fromBottom(y + 13, 26), 26, 26, 'Add', '#FFFFFF', { pad: 3, onClick, label: 'Add' })}`;
+    ${I(333, fromBottom(y + 13, 26), 26, 26, 'Add', K.onAcc, { pad: 3, onClick, label: 'Add' })}`;
 }
 
 /* Month switcher card (Home + Analysis) and its month picker. */
@@ -86,7 +85,7 @@ export function MonthGrid(year, setYear, isOn, pick, o = {}) {
     ${Gal(16, 48, 334, 208, items, 52, it => {
       const on = isOn(it.No);
       return html`${B(3, 3, 105, 46, '', { fill: on ? K.or : K.field, b: on ? K.or : K.line, r: 12 })}
-        ${L(3, 3, 105, 46, it.Nm, { s: 10, w: 6, a: 'c', c: on ? '#FFFFFF' : K.text })}`;
+        ${L(3, 3, 105, 46, it.Nm, { s: 10, w: 6, a: 'c', c: on ? K.onAcc : K.text })}`;
     }, { wrap: 3, onSelect: it => pick(it.No) })}`;
   if (o.x !== undefined) return Box(o.x, o.y, 366, 268, body, { fill: o.fill || 'transparent', r: 14 });
   return Card(null, 0, 366, 268, body);
@@ -96,8 +95,8 @@ export function MonthGrid(year, setYear, isOn, pick, o = {}) {
 export function FlowCard(inV, outV, label, o = {}) {
   const net = round2(inV - outV);
   // one quiet badge instead of bars: how much of the income was kept (or overspent)
-  const badge = inV === 0 && outV === 0 ? ['NO ACTIVITY', K.mute, 'rgba(255,255,255,0.04)', 'rgba(255,255,255,0.08)']
-    : inV === 0 ? ['NO INCOME YET', K.sub, 'rgba(255,255,255,0.04)', 'rgba(255,255,255,0.08)']
+  const badge = inV === 0 && outV === 0 ? ['NO ACTIVITY', K.mute, ta(0.04), ta(0.08)]
+    : inV === 0 ? ['NO INCOME YET', K.sub, ta(0.04), ta(0.08)]
       : net >= 0 ? ['KEPT ' + pct(net / inV), K.grn, 'rgba(52,199,123,0.08)', 'rgba(52,199,123,0.28)']
         : ['SPENT ' + pct(outV / inV), K.red, 'rgba(229,72,77,0.08)', 'rgba(229,72,77,0.3)'];
   const empty = inV === 0 && outV === 0;
@@ -121,12 +120,12 @@ export function FlowCard(inV, outV, label, o = {}) {
     ${L(16, label ? 70 : 64, sp && o.side ? 184 : 334, 34, empty ? RM(0) : sRM(net), { s: 19, w: 6, c: netC, st: 'letter-spacing:-0.3px' })}
     ${sp ? html`
       ${(o.side || []).length ? html`
-        ${R(206, 18, 1, 100, 'rgba(255,255,255,0.07)')}
+        ${R(206, 18, 1, 100, ta(0.07))}
         ${o.side.map((x, i) => html`
           ${L(214, 16 + i * 58, 136, 13, x.cap, { s: 6.5, w: 6, c: K.mute, a: 'r', ls: 1.3 })}
           ${L(190, 30 + i * 58, 160, 20, x.val, { s: x.big === false ? 8.5 : 10, w: 6, a: 'r', c: x.c || K.text, id: x.id })}`)}` : null}
       ${empty ? L(16, 98, 180, 14, 'No transactions in this month yet', { s: 7.5, c: K.mute, id: 'flowEmpty' }) : null}
-      ${R(16, 132, 334, 3, 'rgba(255,255,255,0.06)', { r: 2 })}
+      ${R(16, 132, 334, 3, ta(0.06), { r: 2 })}
       ${empty ? null : (() => {
         // the whole line is your income: green = savings, light green = still in the bank, red = expenses (right)
         const ex = Math.min(sp.Exp / base, 1), sv = Math.min(sp.Sav / base, 1 - ex), kp = inV > 0 ? Math.max(0, 1 - ex - sv) : 0;
@@ -142,14 +141,14 @@ export function FlowCard(inV, outV, label, o = {}) {
       })()}
       ${Box(16, 166, 334, 66, html`
         ${cell3(14, K.grn, 'INCOME', inV, inV <= 0 ? '—' : net >= 0 ? 'kept ' + pct(net / inV) : 'over by ' + pct(-net / inV), 'flowInc')}
-        ${R(117, 12, 1, 42, 'rgba(255,255,255,0.07)')}
+        ${R(117, 12, 1, 42, ta(0.07))}
         ${cell3(126, K.red, 'EXPENSES', sp.Exp, share(sp.Exp), 'flowExp')}
-        ${R(228, 12, 1, 42, 'rgba(255,255,255,0.07)')}
-        ${cell3(236, K.grn, 'SAVINGS', sp.Sav, share(sp.Sav), 'flowSav')}`, { fill: 'rgba(255,255,255,0.025)', r: 12, b: 'rgba(255,255,255,0.05)' })}` : html`
+        ${R(228, 12, 1, 42, ta(0.07))}
+        ${cell3(236, K.grn, 'SAVINGS', sp.Sav, share(sp.Sav), 'flowSav')}`, { fill: ta(0.025), r: 12, b: ta(0.05) })}` : html`
     ${Box(16, label ? 112 : 106, 334, 56, html`
       ${cell(16, 'MONEY IN', inV)}
-      ${R(167, 12, 1, 32, 'rgba(255,255,255,0.07)')}
-      ${cell(184, 'MONEY OUT', outV)}`, { fill: 'rgba(255,255,255,0.025)', r: 12, b: 'rgba(255,255,255,0.05)' })}`}`;
+      ${R(167, 12, 1, 32, ta(0.07))}
+      ${cell(184, 'MONEY OUT', outV)}`, { fill: ta(0.025), r: 12, b: ta(0.05) })}`}`;
   return Card(o.x ?? null, o.y ?? 0, 366, sp ? 248 : label ? 184 : 178, body, { id: o.id });
 }
 
@@ -191,11 +190,11 @@ export function Calendar(l, key, onPick) {
       ${L(56, 14, 188, 32, fmtD(m, 'mmmm yyyy'), { s: 14, a: 'c' })}
       ${C(252, 14, 32, K.field, { b: HAIR, onClick: () => move(1) })}
       ${I(252, 14, 32, 32, 'ChevronRight', K.text, { pad: 8, onClick: () => move(1), label: 'Next month' })}
-      ${R(20, 54, 260, 1, 'rgba(255,106,0,0.35)')}
+      ${R(20, 54, 260, 1, oa(0.35))}
       ${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => L(17 + i * 38, 60, 38, 18, d, { s: 7.5, w: 6, a: 'c', c: i >= 5 ? K.or : K.mute }))}
       ${Gal(17, 84, 266, 216, days, 36, d => {
         const isSel = d === sel, isToday = d === Today();
-        return B(4, 3, 30, 30, String(Day(d)), { fill: isSel ? K.or : 'transparent', c: isSel ? '#FFFFFF' : Month(d) !== Month(m) ? K.mute : K.text, b: !isSel && isToday ? K.or : undefined, r: 15, s: 9.5, w: isSel ? 7 : 4, onClick: () => choose(d) });
+        return B(4, 3, 30, 30, String(Day(d)), { fill: isSel ? K.or : 'transparent', c: isSel ? K.onAcc : Month(d) !== Month(m) ? K.mute : K.text, b: !isSel && isToday ? K.or : undefined, r: 15, s: 9.5, w: isSel ? 7 : 4, onClick: () => choose(d) });
       }, { wrap: 7 })}
       ${R(20, 302, 260, 1, K.sep)}
       ${B(12, 306, 100, 32, 'Today', { fill: 'transparent', c: K.or, r: 10, s: 9.5, onClick: () => choose(Today()) })}
@@ -217,8 +216,8 @@ export function AuditRows(list, whenFmt, whenX = 230, whenW = 120) {
 /* Section title used on Home: serif title with an orange full stop and a fading hairline. */
 export function SectionHead(title, id) {
   return html`<div class="box" data-t=${id} style="position:relative;flex:none;width:366px;height:44px;display:flex;align-items:flex-end;gap:14px;padding:0 2px 6px">
-    <div style="font-family:Georgia,'Times New Roman',serif;font-size:21px;line-height:1;color:#F4F2EE;letter-spacing:.3px;white-space:nowrap">${title}<span style="color:#FF6A00">.</span></div>
-    <div style="flex:1;height:1px;margin-bottom:5px;background:linear-gradient(90deg, rgba(255,106,0,0.55), rgba(255,255,255,0.08) 35%, rgba(255,255,255,0))"></div>
+    <div style="font-family:Georgia,'Times New Roman',serif;font-size:21px;line-height:1;color:${K.text};letter-spacing:.3px;white-space:nowrap">${title}<span style="color:${K.or}">.</span></div>
+    <div style="flex:1;height:1px;margin-bottom:5px;background:linear-gradient(90deg, ${oa(0.55)}, ${ta(0.08)} 35%, ${ta(0)})"></div>
   </div>`;
 }
 
@@ -236,15 +235,15 @@ export function PasswordDialog(l) {
   return html`<div class="abs" style="inset:0;z-index:50">
     <div class="abs dim" style="inset:0" onClick=${close}></div>
     ${Card(33, 226, 324, 250, html`
-      ${C(138, 20, 48, 'rgba(255,106,0,0.12)', { b: 'rgba(255,106,0,0.35)' })}
+      ${C(138, 20, 48, oa(0.12), { b: oa(0.35) })}
       ${I(150, 32, 24, 24, 'Lock', K.or, { pad: 1 })}
       ${L(16, 80, 292, 24, 'Enter password', { s: 13, w: 6, a: 'c' })}
       ${L(24, 104, 276, 18, 'Required to ' + p.label + '.', { s: 8.5, c: K.sub, a: 'c' })}
       <input class="inp" type="password" data-t="pwd" placeholder="Password" value=${p.val} autocomplete="off"
-        style=${'left:20px;top:130px;width:284px;height:44px;border-radius:10px;padding:0 14px;background:#1E2228;color:#F4F2EE;font-size:16px;box-shadow:inset 0 0 0 1px ' + (p.err ? K.red : 'rgba(255,255,255,0.07)')}
+        style=${`left:20px;top:130px;width:284px;height:44px;border-radius:10px;padding:0 14px;background:${K.field};color:${K.text};font-size:16px;box-shadow:inset 0 0 0 1px ` + (p.err ? K.red : ta(0.07))}
         onInput=${e => { p.val = e.target.value; p.err = ''; }} onKeyDown=${e => { if (e.key === 'Enter') ok(); }} />
       ${p.err ? L(20, 178, 284, 14, p.err, { s: 7.5, c: K.red, a: 'c' }) : null}
       ${B(20, 200, 136, 36, 'Cancel', { fill: K.field, b: HAIR, s: 9.5, onClick: close, id: 'pwdCancel' })}
-      ${B(168, 200, 136, 36, 'Unlock', { fill: K.or, c: '#FFFFFF', s: 9.5, onClick: ok, id: 'pwdOk' })}`, { b: 'rgba(255,106,0,0.35)' })}
+      ${B(168, 200, 136, 36, 'Unlock', { fill: K.or, c: K.onAcc, s: 9.5, onClick: ok, id: 'pwdOk' })}`, { b: oa(0.35) })}
   </div>`;
 }

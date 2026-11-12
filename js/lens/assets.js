@@ -8,7 +8,7 @@ import * as E from './engine.js';
 import { openGuide } from './guide.js';
 import { Page, Sect, iconHtml, W0, W2, UpdateNote, openSheet, closeSheet, lsave, canWrite, num, newId, Check, oa, ta } from './ui.js';
 
-const PAL = ['#FF6A00', '#FF9A4D', '#E9B949', '#6B7178', '#A3236F', '#FFB27A', '#8A6FD1', '#C4C9CE'];
+const PAL = [K.or, '#FF9A4D', K.gold, K.mute, '#A3236F', K.or2, '#8A6FD1', K.sub];
 const LIQ = ['Ready now', 'Within days', 'Retirement'];
 const LIQ_S = ['Cash you can use today', 'A few days to withdraw or sell', 'Mostly locked until retirement'];
 const dmy = d => fmtD(d, 'dd mmm yyyy');
@@ -67,7 +67,7 @@ function pocketRename(old, nm) {
 const renameInList = (key, old, nm) => { const v = E.lget(key, null); return Array.isArray(v) && v.includes(old) ? [E.lrow(key, v.map(x => (x === old ? nm : x)))] : []; };
 function newCategory(name) {
   const sq = DB.categories.reduce((m, c) => Math.max(m, Number(c.CatSeq) || 0), 0) + 1;
-  return { CatId: 'CAT-' + String(sq).padStart(3, '0'), CatSeq: sq, CatName: name, CatType: 'Savings/Asset', CatPL: '', CatFixed: '', CatEss: '', CatBudget: false, CatColor: '#FF6A00', CatActive: true };
+  return { CatId: 'CAT-' + String(sq).padStart(3, '0'), CatSeq: sq, CatName: name, CatType: 'Savings/Asset', CatPL: '', CatFixed: '', CatEss: '', CatBudget: false, CatColor: K.or, CatActive: true };
 }
 const nextSeq = () => DB.lnAssets.reduce((m, x) => Math.max(m, Number(x.AsSeq) || 0), 0) + 1;
 

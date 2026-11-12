@@ -2,7 +2,7 @@
 // gross → deductions (KWSP, PCB, zakat, PERKESO, SIP…) → net, plus what the employer pays. Net pay is linked to the
 // Salary credit already in Pocket, so nothing is counted twice. KWSP flows on into Lens.
 import { html } from '../vendor/preact-htm.js';
-import { K, DB, L, Notify, rerender, save, guard, fmtD, Today, perKey, acc as accOf } from '../core.js';
+import { K, DB, L, Notify, rerender, save, guard, fmtD, Today, perKey, acc as accOf, oa, ta } from '../core.js';
 import { TabHeader, NavBar, PasswordDialog, askPassword } from '../shared.js';
 import { loadXlsx, shareOrDownload } from '../backup.js';
 import { css, Sect, Sheet, openSheet, closeSheet, num, iconHtml, W2, Check } from '../lens/ui.js';
@@ -12,21 +12,21 @@ const MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', '
 const MON = MONTH.map(m => m.slice(0, 3));
 const kLong = k => MONTH[P.kM(k) - 1] + ' ' + P.kY(k);
 const n2 = v => Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const PS_CSS = `
+const psCss = () => `
 .prow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid ${K.sep}}
 .prow .t{font-size:14px;font-weight:500;color:${K.text}}.prow .s{font-size:11px;color:${K.sub};margin-top:2px}.prow .r{text-align:right;font-size:14px;font-weight:600}
-.prow.tot{border-top:1px solid #2E333B}.prow.tot .t,.prow.tot .r{font-size:15px;font-weight:700}
+.prow.tot{border-top:1px solid ${K.line2}}.prow.tot .t,.prow.tot .r{font-size:15px;font-weight:700}
 .pgrp{font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:${K.or};padding:12px 0 4px}
 .pdot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px}
 .pmatch{display:flex;align-items:center;gap:10px;margin-top:12px;padding:11px 12px;border-radius:12px;font-size:12.5px;line-height:1.4}
-.pmatch.ok{background:rgba(52,199,123,.07);box-shadow:inset 0 0 0 1px rgba(52,199,123,.28);color:#BFE9D1}
-.pmatch.warn{background:rgba(233,185,73,.07);box-shadow:inset 0 0 0 1px rgba(233,185,73,.3);color:#E8D5A6}
-.pmatch.no{background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px ${K.line};color:${K.sub}}
+.pmatch.ok{background:rgba(52,199,123,.07);box-shadow:inset 0 0 0 1px rgba(52,199,123,.28);color:${K.grn}}
+.pmatch.warn{background:rgba(233,185,73,.07);box-shadow:inset 0 0 0 1px rgba(233,185,73,.3);color:${K.gold}}
+.pmatch.no{background:${ta(.03)};box-shadow:inset 0 0 0 1px ${K.line};color:${K.sub}}
 .pmatch b{color:${K.text}}
 .pin{display:grid;grid-template-columns:1fr 128px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid ${K.sep}}
 .ptabs{display:flex;gap:6px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}.ptabs::-webkit-scrollbar{display:none}
-.ptab{flex:none;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:10px;box-shadow:inset 0 0 0 1px #2C3038;color:${K.sub};cursor:pointer}
-.ptab.on{color:${K.or};box-shadow:inset 0 0 0 1px rgba(255,106,0,.55);background:rgba(255,106,0,.1)}
+.ptab{flex:none;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:10px;box-shadow:inset 0 0 0 1px ${K.line2};color:${K.sub};cursor:pointer}
+.ptab.on{color:${K.or};box-shadow:inset 0 0 0 1px ${oa(.55)};background:${oa(.1)}}
 .ptab small{display:block;font-size:10.5px;font-weight:500;color:${K.sub};margin-top:1px}
 .padd{color:${K.or};font-size:13px;font-weight:600;padding:12px 0 0;cursor:pointer;text-align:center}
 .pin .t{font-size:13.5px;font-weight:500}.pin .s{font-size:10.5px;color:${K.sub};margin-top:2px}.pin .s.ok{color:${K.grn}}.pin .s.warn{color:${K.gold}}
@@ -189,7 +189,7 @@ export const scrPayslip = {
         <div class="lnote" style="margin-top:12px">Ready for e-Filing: check these against your <b>EA form</b> next year. Zakat paid through salary also reduces the tax you owe.</div>
       </div>` : null;
     return html`<div>
-      <style>${css()}${PS_CSS}</style>
+      <style>${css()}${psCss()}</style>
       ${TabHeader()}
       ${L(18, 68, 240, 32, 'Payslip', { s: 17 })}
       <div class="lz" style="top:104px" id="pocketPayslip" data-t="pocketPayslip">${note}${sel}${kids}${year}<div style="height:6px"></div></div>

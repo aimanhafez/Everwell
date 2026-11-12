@@ -16,9 +16,9 @@ const YC_CSS = () => `
 .yc-row:first-child{border-top:0}.yc-row .t{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.yc-row .s{font-size:11px;color:${K.sub};margin-top:2px}
 .yc-chk{display:grid;grid-template-columns:20px 1fr;gap:10px;padding:8px 0;border-top:1px solid ${K.sep};font-size:13px;line-height:1.4}.yc-chk:first-child{border-top:0}
 .yc-days{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:8px}
-.yc-days span{text-align:center;padding:10px 0;border-radius:10px;font-size:13px;font-weight:700;color:${K.sub};box-shadow:inset 0 0 0 1px ${K.line2 || '#2C3038'};cursor:pointer}
+.yc-days span{text-align:center;padding:10px 0;border-radius:10px;font-size:13px;font-weight:700;color:${K.sub};box-shadow:inset 0 0 0 1px ${K.line2 || K.line2};cursor:pointer}
 .yc-days span.on{color:${K.or};box-shadow:inset 0 0 0 1.5px ${K.or};background:${K.orTint}}
-.yc-tot{display:flex;justify-content:space-between;padding:11px 0 2px;border-top:1px solid ${K.line2 || '#2E333B'};font-weight:700;font-size:14px}`;
+.yc-tot{display:flex;justify-content:space-between;padding:11px 0 2px;border-top:1px solid ${K.line2 || K.line2};font-weight:700;font-size:14px}`;
 
 const sweepBalance = () => round2(DB.txns.filter(t => t.TxAcc === SWEEP_ID && !t.TxParent).reduce((s, t) => s + (t.TxDir === 'In' ? t.TxAmt : -t.TxAmt), 0));
 /** Where the Balance Sweep can go: Lens Savings and Tabung (not Balance Sweep itself), or Pocket Savings/Asset categories if Lens isn't set up. */

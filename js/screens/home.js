@@ -2,8 +2,7 @@
 import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, heroBg, Navigate, rerender,
   bal, psum, flowSum, flowSplit, catSpend, acc, byTxDesc, dueCount, lowBal, stStart, fmtD, Today, PLABEL, Year, Month, diffDays, minD,
-  RM, sRM, n0, pct, PALETTE, esc, monthLabel, resetTxPeriodToMonth, round2, fs
-} from '../core.js';
+  RM, sRM, n0, pct, PALETTE, esc, monthLabel, resetTxPeriodToMonth, round2, fs, ta } from '../core.js';
 import { TabHeader, NavBar, Fab, PeriodCard, FlowCard, SectionHead } from '../shared.js';
 import { addDays as addD, addMonths as addM, PSTART as PST, Day as DayOf, D as mkD, perKey } from '../core.js';
 
@@ -50,7 +49,7 @@ export function donutSvg(top, label = 'SPENT') {
     arcs += `<circle cx='80' cy='80' r='54' fill='none' stroke='${PALETTE[i]}' stroke-width='22' stroke-dasharray='${(r.Amt / tot * c).toFixed(2)} ${c.toFixed(2)}' stroke-dashoffset='${(-o / tot * c).toFixed(2)}' transform='rotate(-90 80 80)'/>`;
     o += r.Amt;
   });
-  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><circle cx='80' cy='80' r='54' fill='none' stroke='#2A2E35' stroke-width='22'/>${arcs}<text x='80' y='74' text-anchor='middle' font-family='Segoe UI,Arial' font-size='10' letter-spacing='2' fill='#A0A6AE'>${label}</text><text x='80' y='95' text-anchor='middle' font-family='Segoe UI,Arial' font-size='17' font-weight='700' fill='#FFFFFF'>RM ${esc(n0(tot))}</text></svg>`;
+  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><circle cx='80' cy='80' r='54' fill='none' stroke='${K.line2}' stroke-width='22'/>${arcs}<text x='80' y='74' text-anchor='middle' font-family='Segoe UI,Arial' font-size='10' letter-spacing='2' fill='${K.sub}'>${label}</text><text x='80' y='95' text-anchor='middle' font-family='Segoe UI,Arial' font-size='17' font-weight='700' fill='${K.onAcc}'>RM ${esc(n0(tot))}</text></svg>`;
 }
 
 /** Thin ring with small gaps between segments (Home). Text is drawn in HTML on top, in the app font. */
@@ -62,7 +61,7 @@ export function ringSvg(parts, total) {
     arcs += `<circle cx='80' cy='80' r='${R0}' fill='none' stroke='${p.Col}' stroke-width='15' stroke-linecap='butt' stroke-dasharray='${len.toFixed(2)} ${c.toFixed(2)}' stroke-dashoffset='${(-o / total * c).toFixed(2)}' transform='rotate(-90 80 80)'/>`;
     o += p.Amt;
   });
-  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><defs><filter id='glow' x='-20%' y='-20%' width='140%' height='140%'><feGaussianBlur stdDeviation='2.2' result='b'/><feMerge><feMergeNode in='b'/><feMergeNode in='SourceGraphic'/></feMerge></filter></defs><circle cx='80' cy='80' r='${R0}' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='15'/><g filter='url(#glow)'>${arcs}</g></svg>`;
+  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><defs><filter id='glow' x='-20%' y='-20%' width='140%' height='140%'><feGaussianBlur stdDeviation='2.2' result='b'/><feMerge><feMergeNode in='b'/><feMergeNode in='SourceGraphic'/></feMerge></filter></defs><circle cx='80' cy='80' r='${R0}' fill='none' stroke='${ta(0.05)}' stroke-width='15'/><g filter='url(#glow)'>${arcs}</g></svg>`;
 }
 /** Warm orange → red palette for the spending ring (biggest first) */
 const SPEND_PAL = ['#FF7A00', '#FF2A1F', '#FFB800', '#FF5A4E', '#FFDA3A'];
@@ -113,7 +112,7 @@ export const scrHome = {
       ${!hasAcc ? Card(null, 0, 366, 146, html`
         ${L(18, 14, 330, 28, 'Welcome to Pocket.', { s: 15 })}
         ${L(18, 44, 330, 34, stStart() ? 'Tracking from ' + fmtD(stStart(), 'dd mmm yyyy') + '. Add your first account with its balance on that date.' : 'Add your first account to get started.', { s: 8.5, c: K.sub, wrap: true })}
-        ${B(18, 86, 330, 42, '＋   Add your first account', { fill: K.or, c: '#FFFFFF', r: 21, s: 10, onClick: () => { G.gblEditMode = 'new'; Navigate('scrAccountEdit'); }, id: 'addFirst' })}`, { b: K.or }) : null}
+        ${B(18, 86, 330, 42, '＋   Add your first account', { fill: K.or, c: K.onAcc, r: 21, s: 10, onClick: () => { G.gblEditMode = 'new'; Navigate('scrAccountEdit'); }, id: 'addFirst' })}`, { b: K.or }) : null}
       ${hasAcc ? Box(null, 0, 366, 172, html`
         ${Svg(0, 0, 366, 172, heroBg(172), { stretch: true })}
         ${L(18, 18, 150, 14, 'NET WORTH', { s: 7.5, w: 6, c: K.sub })}
@@ -121,7 +120,7 @@ export const scrHome = {
         ${L(18, 36, 330, 36, sRM(nw), { s: 21, w: 6, id: 'nw' })}
         ${L(18, 72, 330, 16, fmtD(stStart(), 'dd mmm yyyy') + '   —   ' + fmtD(Today(), 'dd mmm yyyy'), { s: 8, c: K.sub })}
         ${L(18, 90, 330, 16, (grown >= 0 ? '▲  ' : '▼  ') + RM(Math.abs(grown)) + (grown >= 0 ? '  grown' : '  down') + ' since you started', { s: 8, w: 6, c: grown >= 0 ? K.grn : K.red })}
-        ${R(18, 116, 330, 1, 'rgba(255,255,255,0.07)')}
+        ${R(18, 116, 330, 1, ta(0.07))}
         ${L(18, 126, 150, 14, 'ASSETS', { s: 7.5, w: 6, c: K.sub })}
         ${L(18, 140, 160, 20, RM(assets), { s: 11, w: 6 })}
         ${L(189, 126, 150, 14, 'LIABILITIES', { s: 7.5, w: 6, c: K.sub })}
@@ -135,7 +134,7 @@ export const scrHome = {
         ${L(250, 14, 100, 22, 'See all  ›', { s: 8.5, w: 6, c: K.or, a: 'r', onClick: () => Navigate('scrAccounts') })}
         ${L(16, 36, 200, 14, 'CURRENT BALANCE', { s: 7.5, w: 6, c: K.mute })}
         ${Gal(0, 58, 366, openAcc.length * 44, openAcc, 44, a => html`
-          ${C(16, 9, 26, a.AccColor)}${L(16, 9, 26, 26, a.AccShort, { s: 7, w: 7, a: 'c', c: '#FFFFFF' })}
+          ${C(16, 9, 26, a.AccColor)}${L(16, 9, 26, 26, a.AccShort, { s: 7, w: 7, a: 'c', c: K.onAcc })}
           ${L(54, 0, 162, 44, a.AccName, { s: 10 })}
           ${L(220, 0, 130, 44, sRM(a.Bal), { s: 10, w: 6, a: 'r', c: a.Bal < 0 ? K.red : K.text })}
           ${R(54, 43, 296, 1, K.sep)}`, { onSelect: a => { G.gblAccId = a.AccId; Navigate('scrAccountDetail'); }, key: a => a.AccId })}`, { id: 'homeAccounts' }) : null}
@@ -146,9 +145,9 @@ export const scrHome = {
       ${Card(null, 0, 366, 218, html`
         ${L(16, 14, 246, 22, 'Spending', { s: 11.5, w: 6 })}
         ${L(250, 14, 100, 22, 'Analysis  ›', { s: 8.5, w: 6, c: K.or, a: 'r', onClick: () => Navigate('scrAnalysis') })}
-        ${Svg(12, 50, 150, 150, ringSvg(SP.parts.length ? SP.parts : [{ Amt: 1, Col: 'rgba(255,255,255,0.05)' }], SP.tot || 1))}
+        ${Svg(12, 50, 150, 150, ringSvg(SP.parts.length ? SP.parts : [{ Amt: 1, Col: ta(0.05) }], SP.tot || 1))}
         ${L(12, 106, 150, 12, 'TOTAL SPENT', { s: 5, w: 6, c: K.mute, a: 'c', ls: 1.4 })}
-        <div class="abs" style="left:12px;top:117px;width:150px;height:22px;display:flex;align-items:center;justify-content:center;white-space:nowrap;color:#F4F2EE" data-t="spendTotal">
+        <div class="abs" style="left:12px;top:117px;width:150px;height:22px;display:flex;align-items:center;justify-content:center;white-space:nowrap;color:${K.text}" data-t="spendTotal">
           <span><span style=${`font-size:${fs(6)};font-weight:600;color:${K.sub};margin-right:2px;vertical-align:4px`}>RM</span><span style=${`font-size:${fs(11.5)};font-weight:600;letter-spacing:-0.3px`}>${n0(Math.round(SP.tot))}</span></span>
         </div>
         ${Gal(178, 50, 172, 160, SP.parts, 32, it => html`
@@ -156,7 +155,7 @@ export const scrHome = {
           ${L(12, 2, 104, 15, it.Nm, { s: 8.5, w: 6 })}
           ${L(12, 17, 104, 12, pct(it.Amt / Math.max(SP.tot, 1)) + ' of spending', { s: 6.5, c: K.mute })}
           ${L(112, 2, 60, 15, 'RM ' + n0(Math.round(it.Amt)), { s: 8.5, w: 6, a: 'r' })}
-          ${it === SP.parts[SP.parts.length - 1] ? null : R(12, 31, 160, 1, 'rgba(255,255,255,0.04)')}`, { id: 'spendList' })}
+          ${it === SP.parts[SP.parts.length - 1] ? null : R(12, 31, 160, 1, ta(0.04))}`, { id: 'spendList' })}
         ${!spend.length ? L(178, 110, 172, 30, 'No spending in this month', { s: 8.5, c: K.mute }) : null}`, { id: 'spendCard' })}
       ${Card(null, 0, 366, 52 + Math.max(recent.length, 1) * 54 + 4, html`
         ${L(16, 14, 246, 22, 'Recent activity', { s: 11.5, w: 6 })}
@@ -233,7 +232,7 @@ function Upcoming() {
     ${Box(12, 58 + listH + 8, 342, 52, html`
       ${L(14, 8, 150, 14, 'COMMITTED', { s: 7, w: 6, c: K.sub })}
       ${L(14, 22, 150, 22, RM(committed), { s: 11, w: 6, id: 'committed' })}
-      ${R(171, 10, 1, 32, 'rgba(255,255,255,0.07)')}
+      ${R(171, 10, 1, 32, ta(0.07))}
       ${L(186, 8, 142, 14, 'SAFE TO SPEND', { s: 7, w: 6, c: K.sub, a: 'r' })}
-      ${L(186, 22, 142, 22, sRM(safe), { s: 11, w: 6, a: 'r', c: safe < 0 ? K.red : K.grn, id: 'safe' })}`, { fill: 'rgba(255,255,255,0.025)', r: 12, b: 'rgba(255,255,255,0.05)' })}`, { id: 'upcoming' });
+      ${L(186, 22, 142, 22, sRM(safe), { s: 11, w: 6, a: 'r', c: safe < 0 ? K.red : K.grn, id: 'safe' })}`, { fill: ta(0.025), r: 12, b: ta(0.05) })}`, { id: 'upcoming' });
 }

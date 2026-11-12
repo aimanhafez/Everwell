@@ -1,13 +1,13 @@
-// MansWell · themes for Lens. Pocket and the main page always stay Ember Noir.
-// A theme swaps the colour tokens in K just before a Lens screen renders, plus a few base styles (page, nav, brand).
-import { K, store, setThemeHook } from './core.js';
+// MansWell · app themes. One choice (on the main page, Settings) colours the whole app: main page, Pocket and Lens.
+// A theme swaps the colour tokens in K and the card surface before each render, plus the base styles (page, nav, brand, inputs).
+import { K, store, setThemeHook, setSurface } from './core.js';
 
 const BASE = { ...K };
 /** Tokens every theme sets. card2 = raised tile, panel = bottom sheet, line2 = stronger line, onAcc = text on the accent,
  *  accRGB / tintRGB feed oa() and ta(). Status colours keep their meaning in every theme. */
-const EMBER = { card2: '#1A1E24', panel: '#15181D', line2: '#2C3038', onAcc: '#FFFFFF', or2: '#FFB27A', accRGB: '255,106,0', tintRGB: '255,255,255', glass: 'rgba(19,22,27,0.92)', glow: 'rgba(255,106,0,.30)', light: false };
+const EMBER = { card2: '#1A1E24', panel: '#15181D', line2: '#2C3038', onAcc: '#FFFFFF', or2: '#FFB27A', accRGB: '255,106,0', tintRGB: '255,255,255', glass: 'rgba(19,22,27,0.92)', glow: 'rgba(255,106,0,.30)', light: false, ctaText: '#160A02' };
 export const THEMES = {
-  ember: { name: 'Ember Noir', note: 'Dark and warm. Matches Pocket.', K: { ...EMBER } },
+  ember: { name: 'Ember Noir', note: 'Dark and warm. The original MansWell look.', K: { ...EMBER } },
   ivory: { name: 'Ivory Ledger', note: 'Light paper and ink, like a private-bank statement.', K: {
     bg: '#F6F1E8', card: '#FFFDF8', field: '#F3EDE2', line: '#E4DACB', sep: '#ECE3D6', text: '#1E1B16', sub: '#7A7064', mute: '#A69C8E',
     or: '#8C2F2A', grn: '#2F6B4F', red: '#B2392F', gold: '#A9741B', orSoft: 'rgba(140,47,42,0.10)', orBorder: 'rgba(140,47,42,0.45)', orTint: 'rgba(140,47,42,0.08)',
@@ -30,8 +30,8 @@ export const THEMES = {
     surface: 'linear-gradient(180deg,#18181A 0%,#141416 100%)', hair: 'rgba(255,255,255,0.07)' } }
 };
 export const THEME_ORDER = ['ember', 'ivory', 'sapphire', 'rose', 'graphite'];
-export const lensTheme = () => { const t = store.get('lens_theme', 'ember'); return THEMES[t] ? t : 'ember'; };
-export const setLensTheme = t => store.set('lens_theme', THEMES[t] ? t : 'ember');
+export const appTheme = () => { const t = store.get('app_theme', store.get('lens_theme', 'ember')); return THEMES[t] ? t : 'ember'; };
+export const setAppTheme = t => store.set('app_theme', THEMES[t] ? t : 'ember');
 
 let cur = null, styleEl = null;
 export function applyTheme(name) {
@@ -40,12 +40,19 @@ export function applyTheme(name) {
   for (const k of Object.keys(K)) if (!(k in BASE)) delete K[k];
   Object.assign(K, BASE, EMBER, t.K);
   if (!styleEl) { styleEl = document.createElement('style'); styleEl.id = 'themeStyle'; document.head.appendChild(styleEl); }
+  if (name !== 'ember') K.mainGlow = `radial-gradient(120% 90% at 85% 0%,${K.glow},transparent 70%)`;
+  setSurface(t.K.surface, t.K.hair);
+  const tint = a => `rgba(${K.tintRGB},${a})`, acc = a => `rgba(${K.accRGB},${a})`;
   styleEl.textContent = name === 'ember' ? '' : `html,body,#frame,#stage{background:${K.bg}!important;color:${K.text}}
-.navbar-glass{background:${K.glass};box-shadow:inset 0 1px 0 rgba(${K.tintRGB},0.08)}
+.navbar-glass{background:${K.glass};box-shadow:inset 0 1px 0 ${tint(0.08)}}
 .brand .mark{color:${K.text}}.brand .mark span{color:${K.or}}.brand .tag{color:${K.sub}}
-.inp::placeholder{color:${K.mute}}.inp:focus{box-shadow:inset 0 0 0 1px ${K.or}!important}
-.dd select option{background:${K.field};color:${K.text}}.tog.on{background:${K.or}}`;
+.inp{color:${K.text}}.inp::placeholder{color:${K.mute}}.inp:focus{box-shadow:inset 0 0 0 1px ${K.or}!important}
+.row.tap:active{background:${tint(0.04)}}.dd select option{background:${K.field};color:${K.text}}
+.tog{background:${K.light ? K.line2 : K.mute}}.tog.on{background:${K.or}}.tog i{background:${K.light ? '#FFFFFF' : '#FFFFFF'}}
+#notify.info{background:${K.light ? K.text : '#2A2F37'};color:${K.light ? K.bg : '#FFFFFF'}}
+body.busy #busybar::after{background:${K.or}}body.syncing #busybar::after{background:${acc(0.55)}}
+#syncnote{background:${K.field};box-shadow:inset 0 0 0 1px ${K.line2}}`;
   const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', K.bg);
 }
-/** Lens screens use your chosen theme; everything else stays Ember Noir. */
-setThemeHook(screen => applyTheme(String(screen || '').startsWith('scrLens') ? lensTheme() : 'ember'));
+/** The whole app follows your chosen theme. */
+setThemeHook(() => applyTheme(appTheme()));

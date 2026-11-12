@@ -30,7 +30,7 @@ What's new:
   3. **Pick the day 2027's months start**, from the 24th to the 2nd. 2026 stays as it is (it ends on 27 Dec), and January 2027 stretches or shrinks once to meet the new day.
   4. **Lock** with your password. 2026 can no longer change in the app, its months can't be reopened, and the Apps Script refuses changes too. Only editing the Google Sheet by hand can change it. A copy of the Sheet is saved to Drive.
 - **Weekly backup:** turn it on in Pocket → Settings → Backup. Every Sunday at about 3 am, a full copy of your Google Sheet goes to Drive › **MansWell Backups**. The newest 12 are kept, and year-end copies are kept forever.
-- **Themes for Lens:** Lens → Settings → Appearance → Theme. Choose Ember Noir, Ivory Ledger, Midnight Sapphire, Rosé or Graphite. Pocket stays Ember Noir.
+- **Themes for the whole app:** on the MansWell main page, tap the gear → Settings → Appearance. Choose Ember Noir, Ivory Ledger, Midnight Sapphire, Rosé or Graphite. The main page, Pocket and Lens all change. The same panel leads to Pocket settings and Lens settings.
 
 ## Updating to 3.1.5
 

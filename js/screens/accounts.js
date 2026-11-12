@@ -2,16 +2,15 @@
 import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Gal, Svg, Flow, TI, DD, heroBg, Navigate, Back, Replace, Notify, SURFACE, HAIR, rerender, guard, save,
   bal, acc, byTxDesc, stStart, fmtD, Today, PLABEL, PSTART, Year, Month, addDays, addMonths, perKey, RM, sRM, n0, Value, round2,
-  mkTxn, txnId, nextTxSeq, shortName, accMoveUpTo
-} from '../core.js';
+  mkTxn, txnId, nextTxSeq, shortName, accMoveUpTo, oa } from '../core.js';
 import { TabHeader, NavBar, DetailHeader, SaveBar, DateBox, Calendar, PasswordDialog } from '../shared.js';
 import { SweepSection, SweepConfirm, sweepEnabled, isSystem, isLocked, lockMsg } from '../sweep.js';
 import { Tog } from '../core.js';
 
 /* ───────────── Accounts list + Monthly Balance Sweep ───────────── */
 function SubHead(t, right) {
-  return html`<div class="box" style="position:relative;flex:none;width:366px;height:24px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 4px 2px;font-size:9.33px;font-weight:600;letter-spacing:1.2px;color:#9AA0A8">
-    <span>${t}</span><span style="color:#626872">${right || ''}</span></div>`;
+  return html`<div class="box" style="position:relative;flex:none;width:366px;height:24px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 4px 2px;font-size:9.33px;font-weight:600;letter-spacing:1.2px;color:${K.sub}">
+    <span>${t}</span><span style="color:${K.mute}">${right || ''}</span></div>`;
 }
 export const scrAccounts = {
   onVisible(l) { l.sweepConfirm = null; l.goDetail = () => Navigate('scrAccountDetail'); },
@@ -27,7 +26,7 @@ export const scrAccounts = {
     const row = a => Box(null, 0, 366, 72, html`
       ${B(0, 0, 366, 72, '', { fill: SURFACE, b: HAIR, r: 16, flat: true })}
       ${C(14, 17, 38, a.AccColor)}
-      ${L(14, 17, 38, 38, a.AccShort, { s: 8, w: 7, a: 'c', c: '#FFFFFF' })}
+      ${L(14, 17, 38, 38, a.AccShort, { s: 8, w: 7, a: 'c', c: K.onAcc })}
       ${L(64, 16, 150, 20, a.AccName, { s: 10.5, w: 6, c: a.AccStatus === 'Closed' ? K.mute : K.text })}
       ${L(64, 37, 150, 16, a.AccType + (a.AccStatus === 'Closed' ? '  ·  Closed' : sweepEnabled(a) && a.AccStatus === 'Active' ? '  ·  Sweeps monthly' : ''), { s: 8, c: K.sub })}
       ${L(206, 16, 146, 20, a.AccClass === 'Liability' ? RM(-a.Bal) : sRM(a.Bal), { s: 12, w: 6, a: 'r', c: a.AccClass === 'Liability' || a.Bal < 0 ? K.red : K.text })}
@@ -37,7 +36,7 @@ export const scrAccounts = {
       ${SubHead('BANK ACCOUNTS', open.length + ' ACTIVE')}
       ${list.map(row)}
       ${!list.length ? Card(null, 0, 366, 72, L(16, 0, 334, 72, 'No accounts yet.', { s: 9.5, c: K.mute, a: 'c' })) : null}
-      ${B(null, 0, 366, 46, '＋   Add account', { fill: 'transparent', b: 'rgba(255,106,0,0.45)', c: K.or, r: 23, s: 10, flat: true, st: 'position:relative;flex:none;', onClick: () => { G.gblEditMode = 'new'; Navigate('scrAccountEdit'); }, id: 'addAccount' })}
+      ${B(null, 0, 366, 46, '＋   Add account', { fill: 'transparent', b: oa(0.45), c: K.or, r: 23, s: 10, flat: true, st: 'position:relative;flex:none;', onClick: () => { G.gblEditMode = 'new'; Navigate('scrAccountEdit'); }, id: 'addAccount' })}
       <div style="position:relative;flex:none;height:10px"></div>
       ${SubHead('MONTHLY BALANCE SWEEP', 'MONTH-END')}
       ${SweepSection(l)}
@@ -65,8 +64,8 @@ function trendSvg(accId) {
   const mx = Math.max(...ms.map(m => m.Bv)), mn = Math.min(Math.min(...ms.map(m => m.Bv)), 0);
   const rg = Math.max(mx - mn, 1);
   const pt = m => (30 + (m.Mi - 1) * 56) + ',' + (108 - (m.Bv - mn) / rg * 90).toFixed(1);
-  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 340 150'><line x1='8' y1='112' x2='332' y2='112' stroke='#2A2E35'/><polyline fill='none' stroke='#FF6A00' stroke-width='3' stroke-linejoin='round' points='${ms.map(pt).join(' ')}'/>` +
-    ms.map(m => `<circle cx='${30 + (m.Mi - 1) * 56}' cy='${(108 - (m.Bv - mn) / rg * 90).toFixed(1)}' r='4' fill='#0F1114' stroke='#FF6A00' stroke-width='2'/><text x='${30 + (m.Mi - 1) * 56}' y='132' text-anchor='middle' font-family='Segoe UI,Arial' font-size='10' fill='${m.Mi === 6 ? '#FF6A00' : '#A0A6AE'}'>${m.Lb}</text>`).join('') + '</svg>';
+  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 340 150'><line x1='8' y1='112' x2='332' y2='112' stroke='${K.line2}'/><polyline fill='none' stroke='${K.or}' stroke-width='3' stroke-linejoin='round' points='${ms.map(pt).join(' ')}'/>` +
+    ms.map(m => `<circle cx='${30 + (m.Mi - 1) * 56}' cy='${(108 - (m.Bv - mn) / rg * 90).toFixed(1)}' r='4' fill='${K.bg}' stroke='${K.or}' stroke-width='2'/><text x='${30 + (m.Mi - 1) * 56}' y='132' text-anchor='middle' font-family='Segoe UI,Arial' font-size='10' fill='${m.Mi === 6 ? K.or : K.sub}'>${m.Lb}</text>`).join('') + '</svg>';
 }
 
 export const scrAccountDetail = {
@@ -103,14 +102,14 @@ export const scrAccountDetail = {
     const kids = html`
       ${Box(null, 0, 366, 150, html`
         ${Svg(0, 0, 366, 150, heroBg(150), { stretch: true })}
-        ${C(18, 18, 38, a.AccColor)}${L(18, 18, 38, 38, a.AccShort, { s: 8, w: 7, a: 'c', c: '#FFFFFF' })}
+        ${C(18, 18, 38, a.AccColor)}${L(18, 18, 38, 38, a.AccShort, { s: 8, w: 7, a: 'c', c: K.onAcc })}
         ${L(66, 18, 282, 20, a.AccName, { s: 10.5, w: 6 })}
         ${L(66, 38, 282, 16, a.AccType + (closed ? '  ·  Closed' : ''), { s: 8, c: K.sub })}
         ${L(18, 74, 200, 14, isL ? 'AMOUNT OWED' : 'BALANCE', { s: 7.5, w: 6, c: K.sub })}
         ${L(18, 88, 330, 32, isL ? RM(-b) : sRM(b), { s: 20, w: 6, c: isL ? K.red : K.text, id: 'accBal' })}
         ${L(18, 122, 330, 16, isL && a.AccLimit > 0 ? RM(a.AccLimit + b) + ' available of RM ' + n0(a.AccLimit) + (a.AccDueDay > 0 ? '  ·  due on day ' + a.AccDueDay : '') : '', { s: 8, c: K.sub })}`, { r: 16 })}
       ${Box(null, 0, 366, 44, html`
-        ${isSystem(a) ? null : B(0, 0, 178, 42, '＋  Transaction', { fill: K.or, c: '#FFFFFF', r: 21, s: 10, onClick: () => { G.gblPrefill = { PfAcc: a.AccId, PfType: 'Expense', PfAmt: 0, PfCat: '', PfPayee: '', PfRule: '', PfDate: Today() }; G.gblEditMode = 'prefill'; Navigate('scrTxnEdit'); } })}
+        ${isSystem(a) ? null : B(0, 0, 178, 42, '＋  Transaction', { fill: K.or, c: K.onAcc, r: 21, s: 10, onClick: () => { G.gblPrefill = { PfAcc: a.AccId, PfType: 'Expense', PfAmt: 0, PfCat: '', PfPayee: '', PfRule: '', PfDate: Today() }; G.gblEditMode = 'prefill'; Navigate('scrTxnEdit'); } })}
         ${B(isSystem(a) ? 0 : 188, 0, isSystem(a) ? 366 : 178, 42, '⇄  Transfer', { fill: K.field, b: HAIR, r: 21, s: 10, onClick: () => Navigate('scrTransfer') })}`)}
       ${Card(null, 0, 366, 66, html`
         ${L(18, 14, 178, 14, 'IN THIS MONTH', { s: 7.5, w: 6, c: K.sub })}
@@ -145,7 +144,7 @@ export const scrAccountDetail = {
 };
 
 /* ───────────── Account create / edit ───────────── */
-const COLORS = ['#E0A800', '#C8102E', '#1E6BD6', '#EE4D2D', '#2E9E62', '#7B3FE4', '#FF6A00', '#5D6D7E'];
+const COLORS = ['#E0A800', '#C8102E', '#1E6BD6', '#EE4D2D', '#2E9E62', '#7B3FE4', K.or, '#5D6D7E'];
 const TYPES = ['Debit Card', 'E-Wallet', 'Credit Card', 'Cash'];
 
 export const scrAccountEdit = {
@@ -170,7 +169,7 @@ export const scrAccountEdit = {
     const cc = l.locAType === 'Credit Card';
     const s1 = cc ? 0 : 76, s2 = s1 + (edit ? 0 : 76);
     const set = k => v => { l[k] = v; rerender(); };
-    const typeBtn = (t, x) => B(x, 98, 87, 34, t, { fill: l.locAType === t ? K.or : K.field, c: l.locAType === t ? '#FFFFFF' : K.sub, b: l.locAType === t ? K.or : K.line, r: 17, s: 9, onClick: () => { l.locAType = t; rerender(); }, id: 'type-' + t });
+    const typeBtn = (t, x) => B(x, 98, 87, 34, t, { fill: l.locAType === t ? K.or : K.field, c: l.locAType === t ? K.onAcc : K.sub, b: l.locAType === t ? K.or : K.line, r: 17, s: 9, onClick: () => { l.locAType = t; rerender(); }, id: 'type-' + t });
     const sweepOn = l.sweep === null || l.sweep === undefined ? l.locAType === 'Debit Card' : l.sweep;
     const form = html`
       ${L(0, 4, 366, 14, 'ACCOUNT NAME', { s: 7.5, w: 6, c: K.sub })}
@@ -178,7 +177,7 @@ export const scrAccountEdit = {
       ${L(0, 80, 366, 14, 'ACCOUNT TYPE', { s: 7.5, w: 6, c: K.sub })}
       ${typeBtn('Debit Card', 0)}${typeBtn('E-Wallet', 93)}${typeBtn('Credit Card', 186)}${typeBtn('Cash', 279)}
       ${L(0, 146, 366, 14, 'COLOUR', { s: 7.5, w: 6, c: K.sub })}
-      ${Gal(0, 164, 366, 40, COLORS, 45, c => C(4, 4, 32, c, { b: l.locColor === c ? '#FFFFFF' : undefined, bt: 2, onClick: () => { l.locColor = c; rerender(); } }), { horizontal: true })}
+      ${Gal(0, 164, 366, 40, COLORS, 45, c => C(4, 4, 32, c, { b: l.locColor === c ? K.onAcc : undefined, bt: 2, onClick: () => { l.locColor = c; rerender(); } }), { horizontal: true })}
       ${L(0, 218, 178, 14, cc ? 'OPENING AMOUNT OWED (RM)' : 'OPENING BALANCE (RM)', { s: 7.5, w: 6, c: K.sub })}
       ${TI(0, 236, 178, 44, l.open, set('open'), { hint: '0.00', num: true, id: 'accOpen' })}
       ${L(188, 218, 178, 14, 'AS AT', { s: 7.5, w: 6, c: K.sub })}

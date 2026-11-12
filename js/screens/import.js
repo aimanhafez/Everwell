@@ -5,8 +5,7 @@
 // Excel (.xlsx) and CSV both work. Every row is checked and previewed before anything is saved.
 import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Flow, TI, DD, Tog, Back, Notify, rerender, guard, save, HAIR,
-  fmtD, Today, parseDMY, RM, round2, mkTxn, txnId, nextTxSeq, stStart, Year, PALETTE
-} from '../core.js';
+  fmtD, Today, parseDMY, RM, round2, mkTxn, txnId, nextTxSeq, stStart, Year, PALETTE, oa, ta } from '../core.js';
 import { DetailHeader, SaveBar, askPassword, PasswordDialog } from '../shared.js';
 import { isLocked, lockDate } from '../sweep.js';
 
@@ -314,9 +313,9 @@ export const scrImport = {
         }));
       };
       const step = (y, n, t, s) => html`
-        ${C(16, y, 24, 'rgba(255,106,0,0.12)', { b: 'rgba(255,106,0,0.35)' })}${L(16, y, 24, 24, String(n), { s: 8, w: 7, a: 'c', c: K.or })}
+        ${C(16, y, 24, oa(0.12), { b: oa(0.35) })}${L(16, y, 24, 24, String(n), { s: 8, w: 7, a: 'c', c: K.or })}
         ${L(52, y - 2, 290, 16, t, { s: 9, w: 6 })}${L(52, y + 14, 290, 14, s, { s: 7.5, c: K.sub })}`;
-      const col = (x, y, w, t, c) => html`${R(x, y, w, 24, 'rgba(255,255,255,0.04)', { r: 6, b: 'rgba(255,255,255,0.06)' })}${L(x, y, w, 24, t, { s: 6.5, w: 6, a: 'c', c: c || K.sub })}`;
+      const col = (x, y, w, t, c) => html`${R(x, y, w, 24, ta(0.04), { r: 6, b: ta(0.06) })}${L(x, y, w, 24, t, { s: 6.5, w: 6, a: 'c', c: c || K.sub })}`;
       const kids = html`
         ${Card(null, 0, 366, 272, html`
           ${L(16, 14, 334, 22, 'Bring in past transactions', { s: 11.5, w: 6 })}
@@ -329,7 +328,7 @@ export const scrImport = {
           ${step(232, 3, 'Check the preview, then import', 'Rows already in the app are skipped.')}`)}
         ${Box(null, 0, 366, 46, html`
           ${B(0, 0, 150, 46, 'Get template', { fill: 'transparent', b: HAIR, c: K.text, r: 23, s: 9.5, onClick: template, id: 'impTemplate' })}
-          ${B(158, 0, 208, 46, 'Choose Excel or CSV', { fill: K.or, c: '#FFFFFF', r: 23, s: 10, onClick: pick, id: 'impPick' })}`)}
+          ${B(158, 0, 208, 46, 'Choose Excel or CSV', { fill: K.or, c: K.onAcc, r: 23, s: 10, onClick: pick, id: 'impPick' })}`)}
         ${recent.length ? Card(null, 0, 366, 50 + recent.length * 56, html`
           ${L(16, 14, 250, 20, 'Recent imports', { s: 10.5, w: 6 })}
           ${L(16, 32, 334, 14, 'Undo removes every transaction from that import.', { s: 7.5, c: K.sub })}
@@ -432,11 +431,11 @@ export const scrImport = {
       ${L(16, 70, 334, 16, rows.length + ' rows' + (bad.length ? '  ·  ' + bad.length + ' need attention' : '') + (dups.length ? '  ·  ' + dups.length + ' already in app' : '') + (dates.length ? '  ·  ' + fmtD(dates[0], 'dd mmm yyyy') + ' – ' + fmtD(dates[dates.length - 1], 'dd mmm yyyy') : ''), { s: 7.5, c: K.sub, id: 'impSummary' })}
       ${Box(16, 96, 334, 58, html`
         ${L(14, 10, 100, 12, mode === 'statement' ? 'CREDIT · IN' : 'INCOME', { s: 6, w: 6, c: K.mute, ls: 1.3 })}${L(14, 25, 104, 20, RM(mode === 'statement' ? round2(ok.reduce((s, r) => s + (r.cr || 0), 0)) : sum('Income')), { s: 9.5, w: 6, c: K.grn, id: 'impIn' })}
-        ${R(117, 12, 1, 34, 'rgba(255,255,255,0.07)')}
+        ${R(117, 12, 1, 34, ta(0.07))}
         ${L(126, 10, 100, 12, mode === 'statement' ? 'DEBIT · OUT' : 'EXPENSES', { s: 6, w: 6, c: K.mute, ls: 1.3 })}${L(126, 25, 104, 20, RM(mode === 'statement' ? round2(ok.reduce((s, r) => s + (r.dr || 0), 0)) : sum('Expense')), { s: 9.5, w: 6, c: mode === 'statement' ? K.red : K.text, id: 'impOut' })}
-        ${R(228, 12, 1, 34, 'rgba(255,255,255,0.07)')}
+        ${R(228, 12, 1, 34, ta(0.07))}
         ${L(236, 10, 90, 12, 'TRANSFERS', { s: 6, w: 6, c: K.mute, ls: 1.3 })}${L(236, 25, 90, 20, String(ok.filter(r => r.type === 'Transfer').length), { s: 9.5, w: 6 })}`,
-        { fill: 'rgba(255,255,255,0.025)', r: 12, b: 'rgba(255,255,255,0.05)' })}
+        { fill: ta(0.025), r: 12, b: ta(0.05) })}
       ${mode === 'statement' ? html`
         ${L(16, 166, 160, 12, 'THIS FILE IS FOR', { s: 6, w: 6, c: K.mute, ls: 1.3 })}
         ${DD(16, 182, l.book.length > 1 ? 160 : 334, 38, ['', ...accs.map(a => a.AccName)], accName(l.accId), v => { l.accId = (accs.find(a => a.AccName === v) || {}).AccId || ''; Object.keys(l.trfMap).forEach(nm => { if (l.trfMap[nm] === l.accId) delete l.trfMap[nm]; }); rerender(); }, { s: 9.5, id: 'impAcc' })}
@@ -450,7 +449,7 @@ export const scrImport = {
       ${L(16, 32, 334, 14, 'Link each code to a category or Transfer. Remembered next time.', { s: 7.5, c: K.sub })}
       ${(() => { let y = 52; return codeList.map(c => { const top = y; y += CH(c); const v = l.codeMap[c.code] || ''; const nc = l.codeNew[c.code] || { name: c.code, type: 'Expense' }; return html`
         ${R(16, top, 334, 1, K.sep)}
-        ${R(16, top + 13, 46, 24, v ? 'rgba(255,106,0,0.1)' : 'rgba(229,72,77,0.1)', { r: 6, b: v ? 'rgba(255,106,0,0.35)' : 'rgba(229,72,77,0.4)' })}
+        ${R(16, top + 13, 46, 24, v ? oa(0.1) : 'rgba(229,72,77,0.1)', { r: 6, b: v ? oa(0.35) : 'rgba(229,72,77,0.4)' })}
         ${L(16, top + 13, 46, 24, c.code, { s: 7.5, w: 7, a: 'c', c: v ? K.or : K.red })}
         ${L(70, top + 9, 104, 16, c.count + ' row' + (c.count > 1 ? 's' : ''), { s: 8.5, w: 6 })}
         ${L(70, top + 26, 104, 14, (l.guessed && l.guessed[c.code] && v === l.codeMap[c.code] ? 'guessed · ' : '') + (c.sample || ''), { s: 6.5, c: l.guessed && l.guessed[c.code] ? K.gold : K.mute })}
@@ -491,7 +490,7 @@ export const scrImport = {
         ${Box(16, 56, 334, 42, html`
           ${L(14, 4, 150, 12, 'YOUR FILE', { s: 6, w: 6, c: K.mute, ls: 1.3 })}${L(14, 18, 150, 18, last ? RM(last.bal) : '—', { s: 9.5, w: 6 })}
           ${L(170, 4, 150, 12, 'APP (' + accName(l.accId).toUpperCase() + ')', { s: 6, w: 6, c: K.mute, ls: 1.3, a: 'r' })}${L(170, 18, 150, 18, after != null ? RM(after) : '—', { s: 9.5, w: 6, a: 'r', c: match ? K.grn : K.gold, id: 'impBalApp' })}`,
-          { fill: 'rgba(255,255,255,0.025)', r: 10, b: 'rgba(255,255,255,0.05)' })}
+          { fill: ta(0.025), r: 10, b: ta(0.05) })}
         ${wr.slice(0, 4).map((r, i) => L(16, 104 + i * 22, 334, 18, 'Row ' + r.n + ' · ' + r.warns[0], { s: 7.5, c: K.gold }))}
         ${!match && after != null && !wr.length ? L(16, 102, 334, 16, 'Differs by ' + RM(Math.abs(after - last.bal)) + '. Check the opening balance or rows that need attention.', { s: 7, c: K.gold }) : null}`, { id: 'impBal' });
     }

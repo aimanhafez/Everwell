@@ -65,7 +65,7 @@ function fullView(l, P) {
   render(html`<div style="height:100%;display:flex;flex-direction:column">
     <style>${css()} .ltbl{font-size:11px}.ltbl td,.ltbl th{padding:5px 6px}.ltbl td:first-child,.ltbl th:first-child{max-width:170px;min-width:150px}</style>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px 8px;gap:10px">
-      <div style="display:flex;align-items:baseline;gap:10px;min-width:0"><span style="font:25px Georgia,serif">Lens<i style="color:#FF6A00;font-style:normal">.</i></span><span class="lcap">P&L statement · ${P.y} · RM</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;min-width:0"><span style="font:25px Georgia,serif">Lens<i style="color:${K.or};font-style:normal">.</i></span><span class="lcap">P&L statement · ${P.y} · RM</span></div>
       <div style="display:flex;gap:8px"><button class="lbtn" onClick=${() => exportPnl(P, l.gross)} data-t="fullExport">${iconHtml('excel', K.grn, 15)}Export</button><button class="lbtn" onClick=${close} data-t="fullClose">Close</button></div>
     </div>
     <div class="ltw" style="margin:0;flex:1;overflow:auto;padding:0 0 20px">${Statement(P, { all: true, sel: l.sel, gross: l.gross })}</div>

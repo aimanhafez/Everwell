@@ -2,8 +2,7 @@
 // using real internal transfers dated on the last day of the month. Nothing is overwritten: history stays intact.
 import {
   html, K, G, DB, L, R, C, I, B, Box, Card, Tog, Notify, rerender, guard, save, Today, PSTART, PEND, perKey, fmtD, fmtTime,
-  RM, round2, mkTxn, nextTxSeq, settingsRow, stStart, HAIR, SURFACE, acc, yearClosedThrough, closedYears, Navigate
-} from './core.js';
+  RM, round2, mkTxn, nextTxSeq, settingsRow, stStart, HAIR, SURFACE, acc, yearClosedThrough, closedYears, Navigate, oa, ta } from './core.js';
 import { askPassword } from './shared.js';
 
 export const SWEEP_ID = 'ACC-SWEEP';
@@ -124,7 +123,7 @@ export async function runSweep(k, mode) {
   const p = planSweep(k);
   const up = { EW_Transactions: [] };
   if (!sweepAccount()) {
-    up.EW_Accounts = [{ AccId: SWEEP_ID, AccSeq: 0, AccName: 'Balance Sweep', AccShort: 'BS', AccColor: '#FF6A00', AccType: 'System', AccClass: 'Asset',
+    up.EW_Accounts = [{ AccId: SWEEP_ID, AccSeq: 0, AccName: 'Balance Sweep', AccShort: 'BS', AccColor: K.or, AccType: 'System', AccClass: 'Asset',
       AccOpenDate: stStart() || p.E, AccOB: 0, AccLimit: 0, AccDueDay: 0, AccStatus: 'Active', AccRemarks: 'Collects month-end balances', AccSweep: 'No' }];
   }
   let seq = nextTxSeq();
@@ -178,9 +177,9 @@ const pill = (x, y, txt, c, bg, bd, w = 78) => B(x, y, w, 22, txt, { fill: bg, b
 const STATUS = {
   Active: [K.grn, 'rgba(52,199,123,0.1)', 'rgba(52,199,123,0.35)'],
   Completed: [K.grn, 'rgba(52,199,123,0.1)', 'rgba(52,199,123,0.35)'],
-  Due: [K.or, 'rgba(255,106,0,0.1)', 'rgba(255,106,0,0.4)'],
+  Due: [K.or, oa(0.1), oa(0.4)],
   Review: [K.gold, 'rgba(233,185,73,0.1)', 'rgba(233,185,73,0.4)'],
-  Manual: [K.sub, 'rgba(255,255,255,0.04)', 'rgba(255,255,255,0.12)']
+  Manual: [K.sub, ta(0.04), ta(0.12)]
 };
 export function statusPill(x, y, s, w) { const [c, bg, bd] = STATUS[s] || STATUS.Manual; return pill(x, y, s.toUpperCase(), c, bg, bd, w); }
 
@@ -231,18 +230,18 @@ export function SweepSection(l) {
     ${Box(12, 116, 342, 52, html`
       ${L(12, 9, 104, 12, 'SWEPT THIS MONTH', { s: 6.5, w: 6, c: K.sub })}
       ${L(12, 23, 104, 20, thisMonth ? RM(thisMonth.amt) : '—', { s: 9.5, w: 6, id: 'sweptThis' })}
-      ${R(118, 10, 1, 32, 'rgba(255,255,255,0.07)')}
+      ${R(118, 10, 1, 32, ta(0.07))}
       ${L(128, 9, 96, 12, 'CLOSED UNTIL', { s: 6.5, w: 6, c: K.sub })}
       ${L(128, 23, 96, 20, lastSwept() ? fmtD(lockDate(), 'dd mmm yyyy') : 'Nothing yet', { s: 9.5, w: 6, id: 'closedUntil' })}
-      ${R(228, 10, 1, 32, 'rgba(255,255,255,0.07)')}
+      ${R(228, 10, 1, 32, ta(0.07))}
       ${L(238, 9, 96, 12, open.length ? 'OPEN MONTHS' : 'NEXT SWEEP', { s: 6.5, w: 6, c: K.sub })}
       ${L(238, 23, 96, 20, open.length ? open.length + (open.length === 1 ? ' to close' : ' to close') : fmtD(keyEnd(curKey), 'dd mmm yyyy'), { s: 9.5, w: 6, c: open.length ? K.or : K.text, id: 'openMonths' })}`,
-    { fill: 'rgba(255,255,255,0.025)', r: 12, b: 'rgba(255,255,255,0.05)' })}
+    { fill: ta(0.025), r: 12, b: ta(0.05) })}
     ${Tog(16, 178, 56, 28, autoOn(), toggleAuto)}
     ${L(80, 176, 120, 16, 'Automatic', { s: 9, w: 6 })}
     ${L(80, 192, 120, 14, 'at month end', { s: 7.5, c: K.sub })}
     ${B(176, 176, 82, 30, l.sweepOpen ? 'Hide' : 'Last run', { fill: K.field, b: HAIR, r: 15, s: 8.5, onClick: () => { l.sweepOpen = !l.sweepOpen; rerender(); }, id: 'sweepLast', disabled: !last })}
-    ${B(266, 176, 84, 30, 'Sweep now', { fill: K.or, c: '#FFFFFF', r: 15, s: 8.5, onClick: askSweep, id: 'sweepNow' })}
+    ${B(266, 176, 84, 30, 'Sweep now', { fill: K.or, c: K.onAcc, r: 15, s: 8.5, onClick: askSweep, id: 'sweepNow' })}
     ${l.sweepOpen && last ? Box(0, 214, 366, lastH + 8, html`${R(16, 0, 334, 1, K.sep)}<div class="abs" style="left:0;top:4px;width:366px">${lastBody}</div>`) : null}
     ${skipped.length ? Box(12, 214 + (l.sweepOpen && last ? lastH + 8 : 0), 342, 48, html`
       ${I(12, 15, 16, 16, 'Clock', K.gold, { pad: 0 })}
@@ -251,8 +250,8 @@ export function SweepSection(l) {
     ${ytc ? Box(12, 214 + (l.sweepOpen && last ? lastH + 8 : 0) + (skipped.length ? 58 : 0), 342, 56, html`
       ${L(14, 9, 210, 18, 'December ' + ytc + ' is swept', { s: 9.5, w: 6 })}
       ${L(14, 27, 210, 22, 'Close ' + ytc + ' to lock it and move your Balance Sweep into savings.', { s: 7.5, c: K.sub, wrap: true })}
-      ${B(234, 11, 96, 34, 'Close ' + ytc, { fill: K.or, c: '#FFFFFF', r: 17, s: 8.5, onClick: () => Navigate('scrYearClose'), id: 'yearClose' })}`,
-      { fill: 'rgba(255,106,0,0.07)', r: 12, b: 'rgba(255,106,0,0.4)', id: 'yearCloseNote' }) : null}`, { id: 'sweepCard' });
+      ${B(234, 11, 96, 34, 'Close ' + ytc, { fill: K.or, c: K.onAcc, r: 17, s: 8.5, onClick: () => Navigate('scrYearClose'), id: 'yearClose' })}`,
+      { fill: oa(0.07), r: 12, b: oa(0.4), id: 'yearCloseNote' }) : null}`, { id: 'sweepCard' });
 
   const showAll = l.histAll;
   const rows = showAll ? hist : hist.slice(0, 4);
@@ -333,7 +332,7 @@ export function SweepConfirm(l) {
         ${C(254, 14, 36, K.field, { onClick: () => step(1) })}${I(263, 23, 18, 18, 'ChevronRight', open.indexOf(k) < open.length - 1 ? K.text : K.mute, { pad: 1, onClick: () => step(1) })}
         <div class="abs tap" style="left:0;top:0;width:50px;height:64px" onClick=${() => step(-1)} data-t="sweepPrev"></div>
         <div class="abs tap" style="left:250px;top:0;width:50px;height:64px" onClick=${() => step(1)} data-t="sweepNext"></div>`,
-        { fill: 'rgba(255,255,255,0.025)', r: 14, b: 'rgba(255,106,0,0.35)' })}
+        { fill: ta(0.025), r: 14, b: oa(0.35) })}
       ${L(20, 158, 300, 14, n === 1 ? '1 MONTH TO CLOSE' : n + ' MONTHS TO CLOSE  ·  ' + range.toUpperCase(), { s: 6.5, w: 6, c: K.mute, ls: 1.2 })}
       ${R(20, 178, 300, 1, K.sep)}
       ${hidden.length ? html`${L(20, top - 12, 200, 30, hidden.length + ' earlier month(s)', { s: 9, c: K.sub })}${L(200, top - 12, 120, 30, RM(hiddenAmt), { s: 9, w: 6, a: 'r', c: K.sub })}` : null}
@@ -346,8 +345,8 @@ export function SweepConfirm(l) {
       ${Box(20, top + 30 + nl * 34, 300, 50, html`
         ${I(12, 16, 16, 16, 'Lock', K.or, { pad: 0 })}
         ${L(38, 5, 254, 40, 'After this, transactions up to ' + fmtD(keyEnd(k), 'dd mmm yyyy') + " can't be added, changed or deleted.", { s: 7.5, c: K.sub, wrap: true })}`,
-        { fill: 'rgba(255,106,0,0.05)', r: 12, b: 'rgba(255,106,0,0.2)' })}
+        { fill: oa(0.05), r: 12, b: oa(0.2) })}
       ${B(20, h - 52, 144, 38, 'Cancel', { fill: K.field, b: HAIR, s: 9.5, r: 19, onClick: close, id: 'sweepCancel' })}
-      ${B(176, h - 52, 144, 38, n > 1 ? 'Close ' + n + ' months' : 'Close month', { fill: K.or, c: '#FFFFFF', s: 9.5, r: 19, onClick: go, id: 'sweepConfirm' })}`, { b: 'rgba(255,106,0,0.35)' })}
+      ${B(176, h - 52, 144, 38, n > 1 ? 'Close ' + n + ' months' : 'Close month', { fill: K.or, c: K.onAcc, s: 9.5, r: 19, onClick: go, id: 'sweepConfirm' })}`, { b: oa(0.35) })}
   </div>`;
 }
