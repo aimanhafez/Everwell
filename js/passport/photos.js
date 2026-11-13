@@ -71,7 +71,7 @@ export async function upload(files, o) {
       const row = await api('ppPhotoUp', { id, trip: o.trip, folder: o.folder, data: p.data, thumb: p.thumb, w: p.w, h: p.h, taken: p.taken, seq: (o.seq || 0) + i + 1 }, undefined, { quiet: true });
       mem.set(id, p.thumb); cachePut(keyT(id), p.thumb);
       applySaved({ PP_Photos: [row] }); rows.push(row);
-    } catch (e) { Notify("Couldn't save a photo: " + e.message, 'error'); }
+    } catch (e) { Notify(/setupPassport/.test(e.message) ? e.message : "Couldn't save a photo: " + e.message, 'error'); if (/setupPassport/.test(e.message)) break; }
   }
   o.onStep && o.onStep(0, 0);
   rerender();

@@ -52,7 +52,9 @@ export const css = () => lensCss() + `
 .pcover{position:relative;height:250px}.pcover:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.25),transparent 30%,transparent 50%,rgba(0,0,0,.6))}
 .pcover .ov{position:absolute;left:18px;right:18px;bottom:16px;z-index:1;color:#fff}.pcover .ov b{display:block;font:400 28px Georgia,serif;text-shadow:0 2px 12px rgba(0,0,0,.4)}.pcover .ov span{font-size:12.5px;opacity:.92}
 .pmeta{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 12px}.pmeta div{background:${K.card2};border-radius:12px;padding:9px 11px;box-shadow:inset 0 0 0 1px ${K.line}}.pmeta b{display:block;font-size:14.5px;margin-top:3px;color:${K.text}}
-.pgal{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:0 12px 12px}.pgal div{aspect-ratio:1;border-radius:9px;cursor:pointer;position:relative}
+.pcvb{position:absolute;right:14px;top:46px;z-index:3;font-size:12px;font-weight:600;color:#fff;padding:7px 11px;border-radius:99px;background:rgba(0,0,0,.32);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.pcvb.big{right:auto;left:50%;top:44%;transform:translate(-50%,-50%);font-size:14px;padding:12px 18px;background:rgba(0,0,0,.38);box-shadow:inset 0 0 0 1px rgba(255,255,255,.55)}
+.pgal{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:0 12px 12px}.pgal div,.pgal label{aspect-ratio:1;border-radius:9px;cursor:pointer;position:relative}
 .pgal .add{display:grid;place-items:center;text-align:center;font-size:11.5px;font-weight:600;color:${K.or};box-shadow:inset 0 0 0 1.5px ${oa(.45)};border-radius:9px;background:${oa(.06)}}
 .pgal .cv:after{content:'COVER';position:absolute;left:5px;top:5px;font-size:8px;font-weight:700;letter-spacing:.8px;color:#fff;background:rgba(0,0,0,.5);padding:2px 5px;border-radius:4px}
 ul.pmom{list-style:none;margin:0;padding:0}ul.pmom li{position:relative;padding:7px 0 7px 16px;font-size:13.5px;line-height:1.45;color:${K.text};border-top:1px solid ${K.sep}}ul.pmom li:first-child{border-top:0;padding-top:0}
@@ -134,7 +136,7 @@ export function StPill(iso) {
   return html`<span class=${'pst ' + st} data-t=${'st-' + iso}>${ST_TXT[st]}${n > 1 ? ' ×' + n : ''}</span>`;
 }
 export const plural = (n, w) => n + ' ' + (n === 1 ? w : /[^aeiou]y$/i.test(w) ? w.slice(0, -1) + (w === w.toUpperCase() ? 'IES' : 'ies') : w + (w === w.toUpperCase() ? 'S' : 's'));
-export const tripLine = t => P.range(t.TrStart, t.TrEnd) + ' · ' + plural(P.daysOf(t), 'day') + (t.TrWith ? ' · ' + t.TrWith : '');
+export const tripLine = t => P.range(t.TrStart, t.TrEnd) + ' · ' + plural(P.daysOf(t), 'day') + (t.TrWith ? ' · ' + P.withTxt(t) : '');
 export const Seg = (opts, cur, set, id, dis) => html`<div class=${'pseg' + (dis ? ' dis' : '')} style=${`grid-template-columns:repeat(${opts.length},1fr)`}>${opts.map(([k, t]) => html`<span class=${cur === k ? 'on' : ''} data-t=${id + '-' + k} onClick=${() => !dis && set(k)}>${t}</span>`)}</div>`;
 
 /* ───────── the map ───────── */
@@ -312,7 +314,7 @@ export function openWish(l, iso) {
 export function openTrip(id) { G.ppTrip = id; Navigate('scrPpTrip'); }
 export function openTripEdit(l, t, preset = {}) {
   const stops = t ? P.stopsOf(t.TrId).map(s => ({ iso: s.StIso, days: s.StDays ? String(s.StDays) : '' })) : (preset.isos || []).map(iso => ({ iso, days: '' }));
-  const f = { name: t ? t.TrName : '', start: t ? t.TrStart : '', end: t ? t.TrEnd : '', with: t ? t.TrWith : 'Solo', route: t ? t.TrRoute : '', desc: t ? t.TrDesc : '', mom: t ? t.TrMoments : '', notes: t ? t.TrNotes : '', stops, q: '' };
+  const f = { name: t ? t.TrName : '', start: t ? t.TrStart : '', end: t ? t.TrEnd : '', with: t ? P.withList(t) : ['Solo'], route: t ? t.TrRoute : '', desc: t ? t.TrDesc : '', mom: t ? t.TrMoments : '', notes: t ? t.TrNotes : '', stops, q: '' };
   const dur = () => (f.start && f.end && f.end >= f.start ? P.daysOf({ TrStart: f.start, TrEnd: f.end }) : 0);
   openSheet(l, { title: t ? 'Edit trip' : 'New trip', body: () => {
     const sug = f.q.trim() ? P.search(f.q).filter(c => !f.stops.some(s => s.iso === c.iso) && c.iso !== P.homeIso()).slice(0, 5) : [];
@@ -329,7 +331,7 @@ export function openTripEdit(l, t, preset = {}) {
         <div><div class="llab">From</div><input class="lin" type="date" value=${f.start} max=${Today()} onInput=${e => { f.start = e.target.value; if (!f.end || f.end < f.start) f.end = f.start; rerender(); }} data-t="tStart" /></div>
         <div><div class="llab">To</div><input class="lin" type="date" value=${f.end} min=${f.start} onInput=${e => { f.end = e.target.value; rerender(); }} data-t="tEnd" /></div></div>
       <div class="lnote" style="margin-top:6px" data-t="tDur">${d ? plural(d, 'day') + ' in total' + (f.stops.length > 1 ? '. Days per country are optional.' : '.') : 'The length is worked out from the dates.'}</div>
-      <div class="llab">Who with</div>${Seg(P.WITH.map(w => [w, w]), f.with, k => { f.with = k; rerender(); }, 'tWith')}
+      <div class="llab">Who with · pick one or more</div><div class="pseg" style="grid-template-columns:repeat(5,1fr)">${P.WITH.map(w => html`<span class=${f.with.includes(w) ? 'on' : ''} data-t=${'tWith-' + w} onClick=${() => { f.with = f.with.includes(w) ? f.with.filter(x => x !== w) : P.WITH.filter(x => x === w || f.with.includes(x)); rerender(); }}>${w}</span>`)}</div>
       <div class="llab">Route (optional)</div><input class="lin" placeholder="Hanoi → Phnom Penh → Bangkok" value=${f.route} onInput=${e => { f.route = e.target.value; }} data-t="tRoute" />
       <div class="llab">The story</div><textarea class="lin" placeholder="What the trip was about" value=${f.desc} onInput=${e => { f.desc = e.target.value; }} data-t="tDesc"></textarea>
       <div class="llab">Memorable moments · one per line</div><textarea class="lin" placeholder=${'Sunrise at Angkor Wat\nNight train to Hanoi'} value=${f.mom} onInput=${e => { f.mom = e.target.value; }} data-t="tMom"></textarea>
@@ -344,11 +346,12 @@ export function openTripEdit(l, t, preset = {}) {
     if (!f.stops.length) return Notify('Add at least one country.', 'error');
     if (!f.start || !f.end) return Notify('Choose the dates.', 'error');
     if (f.end < f.start) return Notify('The trip ends before it starts.', 'error');
+    if (!f.with.length) return Notify('Choose who you went with.', 'error');
     if (f.start > Today()) return Notify('Journeys are trips you have taken. Put future trips on your Wishlist.', 'error');
     const d = dur(), sum = f.stops.reduce((s, x) => s + (Number(x.days) || 0), 0);
     if (sum > d) return Notify('The days per country add up to ' + sum + ', but the trip is ' + d + ' days.', 'error');
     const id = t ? t.TrId : newId('TR');
-    const row = { TrId: id, TrName: name, TrStart: f.start, TrEnd: f.end, TrWith: f.with, TrDesc: f.desc.trim(), TrMoments: f.mom.trim(), TrNotes: f.notes.trim(), TrRoute: f.route.trim(), TrCover: t ? t.TrCover : '', TrAdded: t ? t.TrAdded : new Date().toISOString() };
+    const row = { TrId: id, TrName: name, TrStart: f.start, TrEnd: f.end, TrWith: f.with.join(', '), TrDesc: f.desc.trim(), TrMoments: f.mom.trim(), TrNotes: f.notes.trim(), TrRoute: f.route.trim(), TrCover: t ? t.TrCover : '', TrAdded: t ? t.TrAdded : new Date().toISOString() };
     const keep = f.stops.map((s, i) => ({ StKey: id + '|' + s.iso, StTrip: id, StIso: s.iso, StDays: Number(s.days) || 0, StSeq: i + 1 }));
     const gone = t ? P.stopsOf(id).filter(s => !keep.some(k => k.StKey === s.StKey)).map(s => s.StKey) : [];
     psave({ up: { PP_Trips: [row], PP_Stops: keep }, del: gone.length ? { PP_Stops: gone } : {} }, t ? 'Trip edited' : 'Trip added', name + ' · ' + keep.map(k => k.StIso).join(', '));

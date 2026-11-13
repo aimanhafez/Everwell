@@ -17,7 +17,7 @@ export const scrPpOverview = {
     const vis = P.firstVisits().slice().reverse();
     return Page(l, 0, html`
       <div class="ppass" data-t="ppHero">
-        <span class="lcap">Your world${s.since ? ' · since ' + P.yearOf(s.since) : ''}</span>
+        <span class="lcap">Footprint${s.since ? ' · since ' + P.yearOf(s.since) : ''}</span>
         <div class="big" data-t="ppCount">${plural(s.n, 'country').replace('countrys', 'countries')}</div>
         <div class="sub"><b data-t="ppPct">${s.pct.toFixed(1)}%</b> of ${P.WORLD_N} countries · <b data-t="ppConts">${s.conts} of 7</b> continents${s.extra ? html` · +${plural(s.extra, 'place')}` : null}</div>
         <div class="bar"><i style=${`width:${Math.max(s.n ? 1.5 : 0, s.pct)}%`}></i></div>
@@ -27,14 +27,14 @@ export const scrPpOverview = {
         <div class="lnote" style="margin-top:6px">Write up a trip you've taken, mark the countries you've been to before, or start a wishlist. Everything here is about travel only.</div>
         <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="lbtn o on" onClick=${() => openTripEdit(l, null)} data-t="ppFirstTrip">+ Add a trip</button><button class="lbtn" onClick=${() => go('scrPpWorld')}>Mark countries</button><button class="lbtn" onClick=${() => go('scrPpWishlist')}>Wishlist</button></div></div>` : null}
       <div class="lc" style="padding:10px">${WorldMap('ov', { h: 150, onTap: () => go('scrPpWorld') })}${Legend(s)}</div>
-      ${ts.length ? html`${Sect('Latest trips', 'All', () => go('scrPpJourneys'), 'ovAllTrips')}
+      ${ts.length ? html`${Sect('Recent journeys', 'All', () => go('scrPpJourneys'), 'ovAllTrips')}
         <div class="lc">${ts.slice(0, 3).map(t => html`<div class="phl" onClick=${() => openTrip(t.TrId)} data-t=${'ovTrip-' + t.TrId}><div class="im" style=${coverBg(t)}></div><div><div class="t">${t.TrName}</div><div class="s">${tripLine(t)}</div></div><span style="display:flex;gap:3px">${tripFlags(t.TrId, 12).slice(0, 3)}</span></div>`)}</div>` : null}
       ${recent.length ? html`${Sect('Recently visited')}<div class="lc"><div class="pfr">${recent.slice(0, 8).map(iso => html`<span class="pfc" onClick=${() => openCountry(l, iso)}>${Flag(iso, 15)}${P.BY[iso].name}</span>`)}</div></div>` : null}
-      ${wl.length ? html`${Sect('Dream destinations', 'Wishlist', () => go('scrPpWishlist'), 'ovWish')}
-        <div class="lc"><span class="pk" style=${`color:${WISHC()}`}>NEXT DREAMS</span>
+      ${wl.length ? html`${Sect('On the horizon', 'Wishlist', () => go('scrPpWishlist'), 'ovWish')}
+        <div class="lc"><span class="pk" style=${`color:${WISHC()}`}>UP NEXT</span>
           <div style="margin-top:8px">${wl.slice(0, 3).map(p => html`<div class="phl" onClick=${() => openCountry(l, p.PlIso)}><div class="im" style=${PH.bg(p.PlPhoto, p.PlIso)}></div><div><div class="t">${P.BY[p.PlIso].name} ${Flag(p.PlIso, 12)}</div><div class="s">${{ H: 'High', M: 'Medium', L: 'Low' }[p.PlPri] || 'Medium'}${p.PlYear ? ' · ' + p.PlYear : ''}${p.PlWhy ? ' · ' + p.PlWhy : ''}</div></div><span></span></div>`)}</div>
-          ${newly.length ? html`<div class="lhr"></div><span class="pk" style=${`color:${K.sub}`}>NEWLY WISHED</span><div class="pfr" style="margin-top:8px">${newly.map(p => html`<span class="pfc" onClick=${() => openCountry(l, p.PlIso)}>${Flag(p.PlIso, 15)}${P.BY[p.PlIso].name}<span style=${`color:${K.mute};font-weight:500`}>${p.PlAdded ? P.fmtDay(p.PlAdded).replace(/ \d{4}$/, '') : ''}</span></span>`)}</div>` : null}</div>` : null}
-      ${vis.length ? html`${Sect('Your collection', 'See all', () => { G.ppWorldSt = 'visited'; go('scrPpWorld'); }, 'ovColl')}
+          ${newly.length ? html`<div class="lhr"></div><span class="pk" style=${`color:${K.sub}`}>JUST ADDED</span><div class="pfr" style="margin-top:8px">${newly.map(p => html`<span class="pfc" onClick=${() => openCountry(l, p.PlIso)}>${Flag(p.PlIso, 15)}${P.BY[p.PlIso].name}<span style=${`color:${K.mute};font-weight:500`}>${p.PlAdded ? P.fmtDay(p.PlAdded).replace(/ \d{4}$/, '') : ''}</span></span>`)}</div>` : null}</div>` : null}
+      ${vis.length ? html`${Sect('Flags collected', 'See all', () => { G.ppWorldSt = 'visited'; go('scrPpWorld'); }, 'ovColl')}
         <div class="lc"><span class="pk" style=${`color:${K.or}`}>VISITED · ${vis.length}</span><div class="pfr" style="margin-top:8px">${vis.map(x => html`<span onClick=${() => openCountry(l, x.c.iso)} style="cursor:pointer" title=${x.c.name}>${Flag(x.c.iso, 22)}</span>`)}</div>
           ${wl.length ? html`<div class="lhr"></div><span class="pk" style=${`color:${WISHC()}`}>WISHLIST · ${wl.length}</span><div class="pfr" style="margin-top:8px">${wl.map(p => html`<span onClick=${() => openCountry(l, p.PlIso)} style="cursor:pointer;opacity:.85">${Flag(p.PlIso, 22)}</span>`)}</div>` : null}</div>` : null}
       ${Sect('Milestones', s.n + ' / 25', () => go('scrPpMemories'), 'ovMs')}
@@ -70,7 +70,7 @@ export const scrPpJourneys = {
   view(l) {
     const all = P.trips(), yrs = [...new Set(all.map(t => P.yearOf(t.TrStart)))];
     const ctry = [...new Set(all.flatMap(t => P.isosOf(t.TrId)))].sort((a, b) => P.BY[a].name.localeCompare(P.BY[b].name));
-    const list = all.filter(t => (!l.yr || P.yearOf(t.TrStart) === Number(l.yr)) && (!l.ctry || P.isosOf(t.TrId).includes(l.ctry)) && (!l.with || t.TrWith === l.with));
+    const list = all.filter(t => (!l.yr || P.yearOf(t.TrStart) === Number(l.yr)) && (!l.ctry || P.isosOf(t.TrId).includes(l.ctry)) && (!l.with || P.withList(t).includes(l.with)));
     const byYear = []; for (const t of list) { const y = P.yearOf(t.TrStart); let g = byYear.find(x => x.y === y); if (!g) byYear.push(g = { y, ts: [] }); g.ts.push(t); }
     const sel = (v, set, opts, all0, id) => html`<select class=${'pchip' + (v ? ' on' : '')} style="border:0;font-family:inherit;-webkit-appearance:none;appearance:none" onChange=${e => { set(e.target.value); rerender(); }} data-t=${id}><option value="">${all0}</option>${opts.map(([k, t]) => html`<option value=${k} selected=${String(k) === String(v)}>${t}</option>`)}</select>`;
     return Page(l, 2, html`
@@ -98,17 +98,24 @@ export const scrPpTrip = {
       const files = [...(e.target.files || [])]; e.target.value = ''; if (!files.length || !canWrite()) return;
       await PH.upload(files, { trip: t.TrId, folder: P.yearOf(t.TrStart) + ' · ' + t.TrName, seq: photos.reduce((m, p) => Math.max(m, p.PhSeq || 0), 0), onStep: (i, n) => { l.up = i ? 'Saving photo ' + i + ' of ' + n + ' to your Drive…' : ''; rerender(); } });
     };
+    const addCover = async e => {
+      const files = [...(e.target.files || [])].slice(0, 1); e.target.value = ''; if (!files.length || !canWrite()) return;
+      const rows = await PH.upload(files, { trip: t.TrId, folder: P.yearOf(t.TrStart) + ' · ' + t.TrName, seq: 0, onStep: (i) => { l.up = i ? 'Saving your cover photo to Drive…' : ''; rerender(); } });
+      if (rows[0]) psave({ up: { PP_Trips: [{ ...P.trip(t.TrId), TrCover: rows[0].PhId }] } }, 'Trip cover', t.TrName);
+    };
+    const hasCover = !!P.coverOf(t);
     return Page(l, 2, html`
       <div class="pcover" style=${coverBg(t)} data-t="tCover">
+        ${DB.ppOk ? html`<label class=${'pcvb' + (hasCover ? '' : ' big')} data-t="tCoverAdd">${hasCover ? 'Change cover' : '+ Add a cover photo'}<input class="pfile" type="file" accept="image/*" onChange=${addCover} data-t="tCoverFile" /></label>` : null}
         <div class="abs" style="left:16px;top:14px;z-index:2;color:#fff;font-size:13.5px;font-weight:600;cursor:pointer" onClick=${() => go('scrPpJourneys')} data-t="tBack">‹ Journeys</div>
         <div class="abs" style="right:16px;top:14px;z-index:2;color:#fff;font-size:13.5px;font-weight:600;cursor:pointer" onClick=${() => openTripEdit(l, t)} data-t="tEdit">Edit</div>
         <div class="ov"><b data-t="tTitle">${t.TrName}</b><span>${P.range(t.TrStart, t.TrEnd)}${t.TrRoute ? ' · ' + t.TrRoute : ''}</span></div></div>
-      <div class="pmeta"><div>${Cap('Days')}<b data-t="tDays">${d}</b></div><div>${Cap('With')}<b>${t.TrWith || '—'}</b></div><div>${Cap('Countries')}<b data-t="tN">${stops.length}${nNew ? html` <span style=${`font-size:11px;color:${K.or}`}>· ${nNew} new</span>` : null}</b></div></div>
+      <div class="pmeta"><div>${Cap('Days')}<b data-t="tDays">${d}</b></div><div>${Cap('With')}<b style=${P.withList(t).length > 1 ? 'font-size:12.5px' : ''}>${P.withTxt(t) || '—'}</b></div><div>${Cap('Countries')}<b data-t="tN">${stops.length}${nNew ? html` <span style=${`font-size:11px;color:${K.or}`}>· ${nNew} new</span>` : null}</b></div></div>
       <div class="pfr" style="margin:0 12px 12px">${stops.map(s => html`<span class="pfc" onClick=${() => openCountry(l, s.StIso)} data-t=${'tStop-' + s.StIso}>${Flag(s.StIso, 15)}${P.BY[s.StIso].name}${s.StDays ? html`<span style=${`color:${K.sub};font-weight:500`}>· ${s.StDays}d</span>` : null}${isNew(s.StIso) ? html`<span style=${`color:${K.or};font-size:9px;font-weight:700;letter-spacing:.5px`}>NEW</span>` : null}</span>`)}</div>
       ${t.TrDesc ? html`<div class="lc">${Cap('The story')}<div style=${`font-size:14px;line-height:1.55;margin-top:7px;color:${K.text};white-space:pre-wrap`}>${t.TrDesc}</div></div>` : null}
       ${Sect('Gallery', plural(photos.length, 'photo'))}
       ${l.up ? html`<div class="pprog" data-t="tUp">${l.up}</div>` : null}
-      <div class="pgal" data-t="tGal">${photos.map(p => html`<div class=${t.TrCover === p.PhId ? 'cv' : ''} style=${PH.bg(p.PhId, p.PhId)} onClick=${() => openPhoto(l, p)} data-t=${'ph-' + p.PhId}></div>`)}
+      <div class="pgal" data-t="tGal">${photos.map(p => html`<div class=${(P.coverOf(t) || {}).PhId === p.PhId ? 'cv' : ''} style=${PH.bg(p.PhId, p.PhId)} onClick=${() => openPhoto(l, p)} data-t=${'ph-' + p.PhId}></div>`)}
         <label class="add" data-t="tAddPh">${DB.ppOk ? html`<span>+ Add<br/>photos</span><input class="pfile" type="file" accept="image/*" multiple onChange=${add} data-t="tFile" />` : html`<span style="font-size:10.5px">Update the Apps Script to add photos</span>`}</label></div>
       ${moments.length ? html`${Sect('Moments')}<div class="lc"><ul class="pmom">${moments.map(m => html`<li>${m}</li>`)}</ul></div>` : null}
       ${t.TrNotes ? html`<div class="lc">${Cap('My notes')}<div class="lnote" style="margin-top:6px;white-space:pre-wrap;font-size:12.5px">${t.TrNotes}</div></div>` : null}

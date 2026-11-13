@@ -14,7 +14,10 @@
  *   5. Deploy > New deployment > Web app.  Execute as: Me.  Who has access: Anyone.
  *      Copy the Web app URL (it ends with /exec).
  *
- * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup()
+ * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport()
+ *
+ * 3.2.1 · PASSPORT PHOTOS: run setupPassport() once from this editor and approve Google Drive.
+ *   Google only asks for Drive permission when you run something here yourself, never from the app.
  *
  * 3.2.0 · PASSPORT (travel)
  *   - New tabs PP_Settings, PP_Places, PP_Trips, PP_Stops, PP_Photos, PP_Thumbs. Travel only: nothing here
@@ -30,7 +33,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.2.0';
+var EW_VERSION = '3.2.1';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -200,7 +203,8 @@ var ACTIONS = {
     if (!p.id || !p.data) throw new Error('No photo to save.');
     ensureTables_(ss);
     var blob = Utilities.newBlob(Utilities.base64Decode(String(p.data)), 'image/jpeg', String(p.id) + '.jpg');
-    var file = ppFolder_(String(p.folder || 'Photos')).createFile(blob);
+    var file;
+    try { file = ppFolder_(String(p.folder || 'Photos')).createFile(blob); } catch (e) { throw driveErr_(e); }
     var row = { PhId: String(p.id), PhTrip: String(p.trip || ''), PhFile: file.getId(), PhW: Number(p.w) || 0, PhH: Number(p.h) || 0, PhTaken: String(p.taken || ''), PhCap: String(p.cap || ''), PhSeq: Number(p.seq) || 0 };
     upsertRows_(ss, 'PP_Photos', [row]);
     if (p.thumb) upsertRows_(ss, 'PP_Thumbs', [{ ThId: row.PhId, ThData: String(p.thumb) }]);
@@ -217,7 +221,7 @@ var ACTIONS = {
   ppPhoto: function (ss, p) {
     var row = readTable_(ss, 'PP_Photos').filter(function (r) { return r.PhId === String(p.id); })[0];
     if (!row || !row.PhFile) throw new Error('Photo not found.');
-    var bytes = DriveApp.getFileById(row.PhFile).getBlob().getBytes();
+    var bytes; try { bytes = DriveApp.getFileById(row.PhFile).getBlob().getBytes(); } catch (e) { throw driveErr_(e); }
     return { id: row.PhId, data: 'data:image/jpeg;base64,' + Utilities.base64Encode(bytes) };
   },
   /** Passport · delete photos: their Drive files go to the bin, their rows are removed. */
@@ -302,8 +306,20 @@ function closedYearBlock_(ss, ups, del) {
 
 /* ───────── 3.2.0 · Passport photos in Google Drive ───────── */
 var PP_FOLDER = 'MansWell Passport';
+/** Run this once from the Apps Script editor (choose setupPassport, press Run) and approve Google Drive. */
+function setupPassport() {
+  var root = ppRoot_();
+  Logger.log('Passport is ready. Photos go to Google Drive › ' + PP_FOLDER + ' (' + root.getUrl() + ')');
+  return root.getName();
+}
+function ppRoot_() { var it = DriveApp.getFoldersByName(PP_FOLDER); return it.hasNext() ? it.next() : DriveApp.createFolder(PP_FOLDER); }
+function driveErr_(e) {
+  var m = String((e && e.message) || e);
+  if (/permission|authoriz|scope/i.test(m)) return new Error('Google Drive is not approved yet. Open Apps Script, choose setupPassport and press Run, approve Drive, then try again.');
+  return e;
+}
 function ppFolder_(name) {
-  var it = DriveApp.getFoldersByName(PP_FOLDER), root = it.hasNext() ? it.next() : DriveApp.createFolder(PP_FOLDER);
+  var root = ppRoot_();
   var clean = String(name || 'Photos').replace(/[\\/:*?"<>|]/g, ' ').slice(0, 80);
   var sub = root.getFoldersByName(clean);
   return sub.hasNext() ? sub.next() : root.createFolder(clean);

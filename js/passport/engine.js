@@ -9,6 +9,9 @@ export const BY = Object.fromEntries(COUNTRIES.map(c => [c.iso, c]));
 export const WORLD_N = COUNTRIES.filter(c => !c.ex).length; // 195
 export const CONTINENTS = ['Africa', 'Antarctica', 'Asia', 'Europe', 'North America', 'Oceania', 'South America'];
 export const WITH = ['Solo', 'Family', 'Friends', 'Partner', 'Other'];
+/** Who you went with: one or more, stored as "Solo, Friends". */
+export const withList = t => String((t && t.TrWith) || '').split(',').map(s => s.trim()).filter(Boolean);
+export const withTxt = t => withList(t).join(' & ');
 export const flagUrl = iso => 'flags/' + String(iso).toLowerCase() + '.svg';
 
 /* dates */
