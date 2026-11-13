@@ -32,6 +32,21 @@ async function loadThumbs() {
   rerender();
 }
 
+/** The full photo for big places (trip cover, Journeys cards): the preview shows first, the sharp one replaces it. */
+const memF = new Map(), wantF = new Set();
+export function hd(id) {
+  if (!id) return null;
+  if (memF.has(id)) return memF.get(id);
+  if (!wantF.has(id)) {
+    wantF.add(id);
+    cacheGet(keyF(id)).then(c => c || api('ppPhoto', { id }, undefined, { quiet: true }).then(r => { cachePut(keyF(id), r.data); return r.data; }))
+      .then(d => { memF.set(id, d || ''); rerender(); }).catch(() => { memF.set(id, ''); });
+  }
+  return null;
+}
+/** Background for a big photo spot: sharp photo when ready, the preview (or a gradient) until then. */
+export function bgHd(id, seed) { const h = id ? hd(id) : null; return h ? `background:center/cover no-repeat url("${h}")` : bg(id, seed); }
+
 /** The full photo (from this phone if seen before, otherwise from Drive). */
 export async function full(id) {
   const c = await cacheGet(keyF(id)); if (c) return c;
@@ -70,6 +85,7 @@ export async function upload(files, o) {
       const p = await prepare(files[i]), id = newPhotoId();
       const row = await api('ppPhotoUp', { id, trip: o.trip, folder: o.folder, data: p.data, thumb: p.thumb, w: p.w, h: p.h, taken: p.taken, seq: (o.seq || 0) + i + 1 }, undefined, { quiet: true });
       mem.set(id, p.thumb); cachePut(keyT(id), p.thumb);
+      const fullUrl = 'data:image/jpeg;base64,' + p.data; memF.set(id, fullUrl); cachePut(keyF(id), fullUrl);
       applySaved({ PP_Photos: [row] }); rows.push(row);
     } catch (e) { Notify(/setupPassport/.test(e.message) ? e.message : "Couldn't save a photo: " + e.message, 'error'); if (/setupPassport/.test(e.message)) break; }
   }

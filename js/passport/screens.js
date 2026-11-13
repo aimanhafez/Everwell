@@ -6,6 +6,7 @@ import { Page, Sect, Cap, Flag, StPill, WorldMap, Legend, focusMap, openCountry,
 const MONS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 const tripFlags = (id, h = 14) => P.isosOf(id).map(iso => Flag(iso, h));
 const coverBg = t => { const c = P.coverOf(t); return PH.bg(c && c.PhId, t.TrId); };
+const coverHd = t => { const c = P.coverOf(t); return PH.bgHd(c && c.PhId, t.TrId); };
 
 /* ───────── Overview ───────── */
 export const scrPpOverview = {
@@ -79,7 +80,7 @@ export const scrPpJourneys = {
       ${!all.length ? html`<div class="lc lempty" data-t="jEmpty">No trips yet. Add the first one: name, countries, dates and who you went with. Photos come after.<div style="margin-top:12px"><button class="lbtn o on" onClick=${() => openTripEdit(l, null)}>+ Add a trip</button></div></div>`
         : !list.length ? html`<div class="lc lempty">No trips match these filters.</div>`
         : byYear.map(g => { const cs = new Set(g.ts.flatMap(t => P.isosOf(t.TrId))); return html`<div class="pyr" data-t=${'jYr-' + g.y}><b>${g.y}</b><span>${plural(g.ts.length, 'TRIP').toUpperCase()} · ${g.ts.reduce((s, t) => s + P.daysOf(t), 0)} DAYS · ${plural(cs.size, 'COUNTRY').replace('COUNTRYS', 'COUNTRIES')}</span></div>
-          ${g.ts.map(t => html`<div class="ptrip" onClick=${() => openTrip(t.TrId)} data-t=${'jTrip-' + t.TrId}><div class="ph" style=${coverBg(t)}><span class="fl">${tripFlags(t.TrId, 15)}</span></div>
+          ${g.ts.map(t => html`<div class="ptrip" onClick=${() => openTrip(t.TrId)} data-t=${'jTrip-' + t.TrId}><div class="ph" style=${coverHd(t)}><span class="fl">${tripFlags(t.TrId, 15)}</span></div>
             <div class="tx"><b>${t.TrName}</b><div class="s">${tripLine(t)}${P.isosOf(t.TrId).length > 1 ? ' · ' + plural(P.isosOf(t.TrId).length, 'country').replace('countrys', 'countries') : ''}${P.photosOf(t.TrId).length ? ' · ' + plural(P.photosOf(t.TrId).length, 'photo') : ''}</div></div></div>`)}`; })}
     `, 'ppJourneys');
   }
@@ -105,7 +106,7 @@ export const scrPpTrip = {
     };
     const hasCover = !!P.coverOf(t);
     return Page(l, 2, html`
-      <div class="pcover" style=${coverBg(t)} data-t="tCover">
+      <div class="pcover" style=${coverHd(t)} data-t="tCover">
         ${DB.ppOk ? html`<label class=${'pcvb' + (hasCover ? '' : ' big')} data-t="tCoverAdd">${hasCover ? 'Change cover' : '+ Add a cover photo'}<input class="pfile" type="file" accept="image/*" onChange=${addCover} data-t="tCoverFile" /></label>` : null}
         <div class="abs" style="left:16px;top:14px;z-index:2;color:#fff;font-size:13.5px;font-weight:600;cursor:pointer" onClick=${() => go('scrPpJourneys')} data-t="tBack">‹ Journeys</div>
         <div class="abs" style="right:16px;top:14px;z-index:2;color:#fff;font-size:13.5px;font-weight:600;cursor:pointer" onClick=${() => openTripEdit(l, t)} data-t="tEdit">Edit</div>
@@ -176,7 +177,7 @@ export const scrPpMemories = {
     return Page(l, 4, html`
       ${Sect('Memories', null)}
       ${yrs.length > 1 ? html`<div class="pchips">${[['', 'All years'], ...yrs.map(y => [String(y), String(y)])].map(([k, t]) => html`<span class=${'pchip' + ((l.yr || '') === k ? ' on' : '')} onClick=${() => { l.yr = k; rerender(); }} data-t=${'mYr-' + (k || 'all')}>${t}</span>`)}</div>` : null}
-      ${photos.length ? html`<div class="pwall" data-t="mWall">${shown.map(p => html`<div style=${PH.bg(p.PhId, p.PhId)} onClick=${() => openPhoto(l, p, { onOpenTrip: t => openTrip(t.TrId) })} data-t=${'mPh-' + p.PhId}></div>`)}</div>
+      ${photos.length ? html`<div class="pwall" data-t="mWall">${shown.map((p, i) => html`<div style=${i ? PH.bg(p.PhId, p.PhId) : PH.bgHd(p.PhId, p.PhId)} onClick=${() => openPhoto(l, p, { onOpenTrip: t => openTrip(t.TrId) })} data-t=${'mPh-' + p.PhId}></div>`)}</div>
         <div class="lsub" style="margin:-4px 18px 6px">${plural(photos.length, 'photo')} from ${plural(new Set(photos.map(p => p.PhTrip)).size, 'trip')} · tap one to open it${photos.length > 15 ? html` · <span class="lor" style="cursor:pointer;font-weight:600" onClick=${() => { l.allPh = !l.allPh; rerender(); }}>${l.allPh ? 'Show fewer' : 'Show all'}</span>` : null}</div>`
         : html`<div class="lc lempty">Photos you add to your trips gather here.</div>`}
       ${Sect('Passport stamps', String(fv.length))}

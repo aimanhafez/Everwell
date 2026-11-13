@@ -2,7 +2,7 @@
  * Your money data is never cached here; it always comes from your Google Sheet.
  * Passport photo previews you have opened are kept in 'manswell-pp-photos' (kept across updates).
  * Change CACHE whenever you upload new files so phones pick them up. */
-var CACHE = 'manswell-3.2.1-1';
+var CACHE = 'manswell-3.2.2-1';
 var SHELL = ['./', 'index.html', 'styles.css', 'manifest.webmanifest', 'js/main.js', 'js/core.js', 'js/shared.js', 'js/sweep.js', 'js/logo.js',
   'js/screens/home.js', 'js/screens/accounts.js', 'js/screens/transactions.js', 'js/screens/more.js', 'js/screens/import.js', 'js/screens/dreamer.js', 'js/screens/payslip.js', 'js/screens/yearclose.js', 'js/payslip-data.js', 'js/backup.js', 'js/vendor/xlsx.mini.min.js', 'js/vendor/preact-htm.js',
   'js/lens/engine.js', 'js/lens/ui.js', 'js/lens/pnl.js', 'js/lens/assets.js', 'js/lens/plan.js', 'js/lens/budget.js', 'js/lens/settings.js', 'js/lens/guide.js', 'js/theme.js',
