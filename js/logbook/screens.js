@@ -42,7 +42,8 @@ function Stops(l, t, d, list, tk) {
     ${list.map((s, i) => { const lg = legs[i - 1], odd = i && tk && L.oddLeg(list, i, lg), md = L.MODE[s.LpMode] || L.MODE.bike; return html`
       ${i ? html`<div class="lbleg" data-t=${'leg-' + i}><span>${md.e}</span><b>${md.n}</b>
         ${lg ? html`<em data-t=${'legKm-' + i}>${L.n1(lg.km)} km</em>` : null}
-        ${odd ? html`<span class="lbwarn" style="margin-left:auto;font-size:10.5px" onClick=${() => openPins(l, t.TrId, d, [i - 1, i])} data-t=${'legOdd-' + i}>⚠ check pins ›</span>` : null}</div>` : null}
+        ${odd ? html`<span class="lbwarn" style="margin-left:auto;font-size:10.5px" onClick=${() => openPins(l, t.TrId, d, [i - 1, i])} data-t=${'legOdd-' + i}>⚠ check pins ›</span>` : null}
+        ${L.timeClash(list, i) ? html`<span class="lbwarn" style="margin-left:auto;font-size:10.5px" onClick=${() => openStop(l, t.TrId, d, list[i - 1])} data-t=${'legTime-' + i}>⚠ times don't add up ›</span>` : null}</div>` : null}
       <div class="lbst" onClick=${() => openStop(l, t.TrId, d, s)} data-t=${'stop-' + i}><div class=${'b ' + badge(i, list.length)}>${i === 0 ? 'S' : i === list.length - 1 && list.length > 1 ? 'E' : i}</div>
         <div style="min-width:0"><div class="t">${s.LpPlace}${L.hasPin(s) ? html` <span style=${`color:${K.or};font-size:11px`}>●</span>` : null}</div><div class="s">${[s.LpCity, s.LpArr ? (i === 0 ? 'start ' : 'arrive ') + s.LpArr : '', s.LpNote].filter(Boolean).join(' · ')}</div></div>
         <div class="r">${i === 0 ? html`<b>START</b>` : i === list.length - 1 ? html`<b>END</b>` : null}</div></div>`; })}

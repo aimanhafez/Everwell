@@ -193,7 +193,7 @@ export function openStop(l, id, day, s) {
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
       <div><div class="llab">Day</div><select class="lin" value=${String(f.day)} onChange=${e => { f.day = Number(e.target.value); rerender(); }} data-t="sDay">${L.days(t).map(d => html`<option value=${String(d.n)}>Day ${d.n}</option>`)}</select></div>
       <div><div class="llab">${first() ? 'Left at' : 'Arrived'}</div><input class="lin" type="time" value=${f.arr} onInput=${e => { f.arr = e.target.value; }} data-t="sArr" /></div>
-      <div><div class="llab">Stayed</div><input class="lin" placeholder="25m" value=${f.stay} onInput=${e => { f.stay = e.target.value; }} data-t="sStay" /></div></div>
+      ${first() ? html`<div></div>` : html`<div><div class="llab">Stayed</div><input class="lin" placeholder="25m" value=${f.stay} onInput=${e => { f.stay = e.target.value; }} data-t="sStay" /></div>`}</div>
     ${first() ? html`<div class="lnote" style="margin-top:10px">This is where the day starts.</div>` : html`
       <div class="llab">Got there by</div><div class="lbmode">${L.MODES.map(([k, n, e]) => html`<span class=${f.mode === k ? 'on' : ''} onClick=${() => { f.mode = k; rerender(); }} data-t=${'sMode-' + k}><i>${e}</i>${n}</span>`)}</div>
       <div class="lnote" style="margin-top:8px">Travel time is worked out from your times (arrived here − left the last place). Distance comes from the GPX track.</div>`}

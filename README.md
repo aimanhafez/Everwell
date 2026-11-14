@@ -1,4 +1,7 @@
-# MansWell · v3.5.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.5.2 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.5.2 · fix: "on the road" too long
+When a stop's arrival was earlier than the time you left the stop before (arrived + stayed), the gap was counted as running over midnight (+24 h). Now that leg is left out of "on the road" and shows "⚠ times don't add up" so you can fix the times. The start's time is when you left, so its "stayed" is not used (the field is hidden for the start). App files only; Code.gs unchanged from 3.5.1.
 
 ## 3.5.1 · fix: elevation missing on some days
 Long days sent Google's elevation service a route that was too long, and the heights came back empty without a message. Code.gs now sends a shorter version of the route (120 points spread along it), tries point by point if that fails, and tells you if heights still can't be read. Days without heights show a note.

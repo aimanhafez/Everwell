@@ -109,10 +109,14 @@ export function lineOf(id, day) {
 /** "09:30" → 570 */
 const hm = t => { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
 /** Travel time into stop i: its arrival minus (the previous arrival + how long you stayed there). */
+/** The start's time is when you left it; any other stop: arrived + stayed. */
+const leftAt = (list, i) => { const a = hm(list[i].LpArr); return a === null ? null : a + (i === 0 ? 0 : Number(list[i].LpStay) || 0); };
 export function legMin(list, i) {
-  if (i < 1) return null; const a = hm(list[i - 1].LpArr), b = hm(list[i].LpArr); if (a === null || b === null) return null;
-  let m = b - (a + (Number(list[i - 1].LpStay) || 0)); if (m < 0) m += 1440; return m;
+  if (i < 1) return null; const a = leftAt(list, i - 1), b = hm(list[i].LpArr); if (a === null || b === null) return null;
+  const m = b - a; return m < 0 ? null : m; // a time that doesn't add up is left out (shown as ⚠), never wrapped round to the next day
 }
+/** Minutes the times are off by when you'd have arrived before you left the last place (0 = fine). */
+export function timeClash(list, i) { if (i < 1) return 0; const a = leftAt(list, i - 1), b = hm(list[i].LpArr); return a !== null && b !== null && b < a ? a - b : 0; }
 /** km always come from the GPX track. */
 export function dayKm(id, day) { const tk = track(id, day); return tk ? Number(tk.TkKm) || 0 : 0; }
 export function dayMin(id, day) { const l = stops(id, day); let m = 0, any = false; for (let i = 1; i < l.length; i++) { const v = legMin(l, i); if (v !== null) { m += v; any = true; } } return any ? m : 0; }
