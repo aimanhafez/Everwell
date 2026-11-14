@@ -16,6 +16,9 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.5.1 · fix: Voyage heights were missing on long days (the route sent to Google's elevation service was too long).
+ *   Make track again on those days to get the elevation.
+ *
  * 3.5.0 · VOYAGE (Logbook renamed): places found as you type (Google Maps), travel time from your arrival times,
  *   km always from the GPX track, Discovery page (journey badges + what you found). New tab LB_Finds.
  *   If you already ran setupLogbook() for 3.4.0 there is nothing new to approve: paste, save, deploy a new version.
@@ -44,7 +47,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.5.0';
+var EW_VERSION = '3.5.1';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -288,12 +291,13 @@ var ACTIONS = {
     }
     if (all.length > 6000) { var st = Math.ceil(all.length / 6000), th = []; for (var q = 0; q < all.length; q += 2) if ((q / 2) % st === 0 || q === all.length - 2) th.push(all[q], all[q + 1]); all = th; } // stays inside one cell
     var poly = Maps.encodePolyline(all), ele = [];
-    try { var es = Maps.newElevationSampler().samplePath(poly, 256); ele = (es.results || []).map(function (x) { return Math.round(x.elevation); }); } catch (e) { ele = []; }
+    var eh = heights_(all); ele = eh.ele;
     var up = 0, down = 0, last = ele.length ? ele[0] : 0, max = ele.length ? ele[0] : 0;
     ele.forEach(function (v) { if (v > max) max = v; var dlt = v - last; if (Math.abs(dlt) >= 5) { if (dlt > 0) up += dlt; else down -= dlt; last = v; } });
     var row = { TkKey: p.trip + '|' + p.day, TkTrip: String(p.trip), TkDay: Number(p.day), TkPoly: poly, TkEle: ele.join(','), TkKm: Math.round(legs.reduce(function (s, l) { return s + l.km; }, 0) * 10) / 10,
       TkMin: legs.reduce(function (s, l) { return s + l.min; }, 0), TkUp: up, TkDown: down, TkMax: max, TkLegs: JSON.stringify(legs), TkSrc: 'made' + (p.sig ? ':' + String(p.sig).slice(0, 40) : ''), TkWhen: new Date().toISOString() };
     ensureTables_(ss); upsertRows_(ss, 'LB_Tracks', [row]);
+    if (eh.err) { var out = {}; for (var k in row) out[k] = row[k]; out.eleErr = eh.err; return out; }
     return row;
   },
   /** Voyage · today's rate (how much of a currency 1 MYR buys), from Google Finance in a helper tab. */
@@ -417,6 +421,36 @@ function mapsErr_(e) {
   if (/permission|authoriz|scope/i.test(m)) return new Error('Google Maps is not approved yet. Open Apps Script, choose setupVoyage and press Run, approve, then try again.');
   if (/too many times|quota|limit/i.test(m)) return new Error("DAILY LIMIT: Google Maps' free daily limit is used up. Try again tomorrow; tracks already made are kept.");
   return e;
+}
+/**
+ * 3.5.1 · heights along a day's route. A long day has thousands of points; sent as one path it was too long for
+ * Google's elevation service, so the heights were silently empty. Now: thin the line to 120 points spread by distance,
+ * ask for 256 samples along it; if that fails, ask point by point in small batches. Returns { ele, err }.
+ */
+function heights_(all) {
+  var pts = [], cum = [0];
+  for (var i = 0; i < all.length; i += 2) pts.push({ lat: all[i], lng: all[i + 1] });
+  if (pts.length < 2) return { ele: [], err: '' };
+  for (var j = 1; j < pts.length; j++) cum.push(cum[j - 1] + hav_(pts[j - 1], pts[j]));
+  var tot = cum[cum.length - 1] || 1, N = Math.min(120, pts.length), th = [], k = 0;
+  for (var n = 0; n < N; n++) { var want = tot * n / (N - 1); while (k < pts.length - 1 && cum[k] < want) k++; th.push(pts[k].lat, pts[k].lng); }
+  var err = '';
+  try {
+    var r = Maps.newElevationSampler().samplePath(th, 256);
+    if (r && r.status === 'OK' && r.results && r.results.length) return { ele: r.results.map(function (x) { return Math.round(x.elevation); }), err: '' };
+    err = (r && (r.error_message || r.status)) || 'no answer';
+  } catch (e) { err = String((e && e.message) || e); }
+  try {
+    var ele = [];
+    for (var b = 0; b < th.length; b += 80) {
+      var r2 = Maps.newElevationSampler().samplePoints(th.slice(b, b + 80));
+      if (!r2 || r2.status !== 'OK') throw new Error((r2 && (r2.error_message || r2.status)) || 'no answer');
+      r2.results.forEach(function (x) { ele.push(Math.round(x.elevation)); });
+      Utilities.sleep(150);
+    }
+    return { ele: ele, err: '' };
+  } catch (e2) { err = String((e2 && e2.message) || e2) || err; }
+  return { ele: [], err: /too many times|quota|limit/i.test(err) ? "Google Maps' daily limit for heights is used up. Make the track again tomorrow." : 'Google could not read the heights (' + err + ').' };
 }
 function hav_(a, b) { var R = 6371, r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lng - a.lng) * r, x = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) * Math.sin(dLo / 2); return 2 * R * Math.asin(Math.sqrt(x)); }
 

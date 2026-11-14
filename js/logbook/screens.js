@@ -71,7 +71,7 @@ export const scrLbItinerary = {
         ${mt && mt.ele.length > 1 ? html`${Sect('Elevation', L.n0(mt.max) + ' m top')}
           <div class="lc" data-t="lbElev">${Profile(l, 'd' + d, mt.ele, mt.km, L.stopFractions(id, d))}
             <div class="lbm"><div><span>Route km</span><b data-t="mKm">${L.n0(mt.km)}</b></div><div><span>Climb</span><b data-t="mUp">↑ ${L.n0(mt.up)}</b></div><div><span>Descent</span><b>↓ ${L.n0(mt.down)}</b></div><div><span>Steepest</span><b>${mt.steep.toFixed(0)}%</b></div></div>
-            <div class="lnote" style="margin-top:8px">Drag along the profile to read any point.</div></div>` : null}` : list.length > 1 ? html`
+            <div class="lnote" style="margin-top:8px">Drag along the profile to read any point.</div></div>` : html`<div class="lwarn" data-t="lbNoEle">No heights for this day yet, so no elevation or climb. Tap “Make track again” to read them.</div>`}` : list.length > 1 ? html`
         <div class="lnote" style="margin:0 18px 14px">Make the GPX track to get the day's km, map and heights. Google follows the roads by each leg's transport.</div>` : null}
     `, 'scrLbItinerary');
   }

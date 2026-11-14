@@ -223,7 +223,9 @@ async function makeTrack(id, day, upd) {
   if (changed.length) await save({ up: { LB_Stops: changed }, log: [{ AuAction: 'Voyage · Pins saved', AuRef: 'VOYAGE', AuDetail: changed.length + ' stop(s)' }] });
   G.lbMaking = id + '|' + day; rerender();
   const row = await call('lbRoute', { trip: id, day, sig: L.sigOf(upd), pts: upd.map(u => ({ lat: u.LpLat, lng: u.LpLng, mode: u.LpMode })) });
-  G.lbMaking = ''; if (row) applySaved({ LB_Tracks: [row] }); rerender();
+  G.lbMaking = '';
+  if (row) { const { eleErr, ...r } = row; applySaved({ LB_Tracks: [r] }); if (eleErr) Notify('Track made, but no heights: ' + eleErr, 'error'); }
+  rerender();
   return !!row;
 }
 const qOf = s => [s.LpPlace, s.LpCity, (P.BY[s.LpCountry] || {}).name].filter(Boolean).join(', ');

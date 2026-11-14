@@ -1,4 +1,8 @@
-# MansWell · v3.5.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.5.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.5.1 · fix: elevation missing on some days
+Long days sent Google's elevation service a route that was too long, and the heights came back empty without a message. Code.gs now sends a shorter version of the route (120 points spread along it), tries point by point if that fails, and tells you if heights still can't be read. Days without heights show a note.
+To update: upload Step 1, replace Code.gs, Deploy › New version, then tap **Make track again** on the days without elevation.
 
 ## 3.5.0 · Voyage (Logbook renamed)
 - **Itinerary**: type a place and pick it from Google Maps; the city, country and pin fill in by themselves. Travel time is worked out from your times (arrived − left the last place); no km or time to type. Km always come from the GPX track (no road/typed choice). Today · On the road · Highest sit above the start. Legs show just transport and km; a leg that can't be right (too fast, too far) shows "⚠ check pins". Every stop pinned → Make GPX track runs straight away. Google's daily limit shows a clear message.
