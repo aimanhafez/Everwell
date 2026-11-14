@@ -14,7 +14,11 @@
  *   5. Deploy > New deployment > Web app.  Execute as: Me.  Who has access: Anyone.
  *      Copy the Web app URL (it ends with /exec).
  *
- * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport()
+ * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupLogbook()
+ *
+ * 3.4.0 · LOGBOOK (fourth room): itinerary, expenses (cash in local currency, card in MYR), budget,
+ *   results, and a GPX track made from your stops with Google Maps (route + elevation).
+ *   Run setupLogbook() once from this editor so Google can ask for Maps permission, then deploy a new version.
  *
  * 3.3.0 · ATLAS (Passport renamed): Wanderlist tiers and "I'm going", route places per country.
  *   New columns only (PP_Places, PP_Stops); they are added to your Sheet by themselves.
@@ -36,7 +40,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.3.0';
+var EW_VERSION = '3.4.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -64,9 +68,16 @@ var TABLES = {
   PP_Trips: { key: 'TrId', cols: { TrId: 's', TrName: 's', TrStart: 'd', TrEnd: 'd', TrWith: 's', TrDesc: 's', TrMoments: 's', TrNotes: 's', TrRoute: 's', TrCover: 's', TrAdded: 't' } },
   PP_Stops: { key: 'StKey', cols: { StKey: 's', StTrip: 's', StIso: 's', StDays: 'n', StSeq: 'n', StRoute: 's' } },
   PP_Photos: { key: 'PhId', cols: { PhId: 's', PhTrip: 's', PhFile: 's', PhW: 'n', PhH: 'n', PhTaken: 'd', PhCap: 's', PhSeq: 'n' } },
-  PP_Thumbs: { key: 'ThId', cols: { ThId: 's', ThData: 's' } }
+  PP_Thumbs: { key: 'ThId', cols: { ThId: 's', ThData: 's' } },
+  // MansWell Logbook: the detail of each Atlas journey (linked by its TrId). Travel only.
+  LB_Stops: { key: 'LpId', cols: { LpId: 's', LpTrip: 's', LpDay: 'n', LpSeq: 'n', LpPlace: 's', LpCity: 's', LpCountry: 's', LpArr: 's', LpStay: 'n', LpMode: 's', LpKm: 'n', LpMin: 'n', LpNote: 's', LpLat: 'n', LpLng: 'n', LpAddr: 's' } },
+  LB_Tracks: { key: 'TkKey', cols: { TkKey: 's', TkTrip: 's', TkDay: 'n', TkPoly: 's', TkEle: 's', TkKm: 'n', TkMin: 'n', TkUp: 'n', TkDown: 'n', TkMax: 'n', TkLegs: 's', TkSrc: 's', TkWhen: 't' } },
+  LB_Expenses: { key: 'ExId', cols: { ExId: 's', ExTrip: 's', ExDay: 'n', ExCat: 's', ExWhat: 's', ExPay: 's', ExAmt: 'n', ExCur: 's', ExRate: 'n', ExMyr: 'n', ExBill: 'n', ExBillCur: 's', ExSeq: 'n' } },
+  LB_Budget: { key: 'BgKey', cols: { BgKey: 's', BgTrip: 's', BgCat: 's', BgAmt: 'n' } },
+  LB_Rates: { key: 'RtKey', cols: { RtKey: 's', RtTrip: 's', RtCur: 's', RtRate: 'n', RtDate: 'd' } },
+  LB_Results: { key: 'RsTrip', cols: { RsTrip: 's', RsRoads: 'n', RsScenery: 'n', RsComfort: 'n', RsFood: 'n', RsValue: 'n', RsVerdict: 's', RsBack: 's', RsKmMode: 's' } }
 };
-var WRITE_ACTIONS = ['commit', 'startFresh', 'ppPhotoUp', 'ppPhotoDel'];
+var WRITE_ACTIONS = ['commit', 'startFresh', 'ppPhotoUp', 'ppPhotoDel', 'lbRoute', 'lbGpxSave'];
 
 // Starter categories (the same idea as your SharePoint EW_Categories list). Edit them in the app.
 var SEED_CATEGORIES = [
@@ -165,6 +176,7 @@ var ACTIONS = {
       imports: readTable_(ss, 'SYS_Imports'),
       payslips: readTable_(ss, 'EW_Payslips'),
       lens: { settings: readTable_(ss, 'LN_Settings'), assets: readTable_(ss, 'LN_Assets'), values: readTable_(ss, 'LN_Values'), goals: readTable_(ss, 'LN_Goals'), budget: readTable_(ss, 'LN_Budget') },
+      logbook: { stops: readTable_(ss, 'LB_Stops'), tracks: readTable_(ss, 'LB_Tracks'), expenses: readTable_(ss, 'LB_Expenses'), budget: readTable_(ss, 'LB_Budget'), rates: readTable_(ss, 'LB_Rates'), results: readTable_(ss, 'LB_Results') },
       passport: { settings: readTable_(ss, 'PP_Settings'), places: readTable_(ss, 'PP_Places'), trips: readTable_(ss, 'PP_Trips'), stops: readTable_(ss, 'PP_Stops'), photos: readTable_(ss, 'PP_Photos') },
       serverTime: new Date().toISOString()
     };
@@ -233,6 +245,57 @@ var ACTIONS = {
     readTable_(ss, 'PP_Photos').forEach(function (r) { if (want[r.PhId] && r.PhFile) { try { DriveApp.getFileById(r.PhFile).setTrashed(true); } catch (e) { /* already gone */ } } });
     deleteRows_(ss, 'PP_Photos', ids); deleteRows_(ss, 'PP_Thumbs', ids);
     return { deleted: ids.length };
+  },
+
+  /** Logbook · find a place (Google Maps). Up to 3 matches. */
+  lbGeocode: function (ss, p) {
+    var r; try { r = Maps.newGeocoder().geocode(String(p.q || '')); } catch (e) { throw mapsErr_(e); }
+    return (r.results || []).slice(0, 3).map(function (x) { return { lat: x.geometry.location.lat, lng: x.geometry.location.lng, addr: x.formatted_address }; });
+  },
+  /** Logbook · make the track for one day from its stops: road route per leg (by its transport), then heights along it. Saved to LB_Tracks. */
+  lbRoute: function (ss, p) {
+    var pts = p.pts || []; if (pts.length < 2) throw new Error('A day needs at least two stops with a pin to make a track.');
+    var legs = [], all = [];
+    for (var i = 1; i < pts.length; i++) {
+      var a = pts[i - 1], b = pts[i], mode = String(b.mode || 'bike'), leg = null;
+      if (mode !== 'flight' && mode !== 'boat') {
+        try {
+          var f = Maps.newDirectionFinder().setOrigin(a.lat, a.lng).setDestination(b.lat, b.lng)
+            .setMode(mode === 'walk' ? Maps.DirectionFinder.Mode.WALKING : mode === 'train' || mode === 'bus' ? Maps.DirectionFinder.Mode.TRANSIT : Maps.DirectionFinder.Mode.DRIVING);
+          var d = f.getDirections();
+          if ((!d.routes || !d.routes.length) && (mode === 'train' || mode === 'bus')) d = f.setMode(Maps.DirectionFinder.Mode.DRIVING).getDirections();
+          if (d.routes && d.routes.length) {
+            var rt = d.routes[0], km = 0, sec = 0; rt.legs.forEach(function (l) { km += l.distance.value; sec += l.duration.value; });
+            leg = { km: Math.round(km / 100) / 10, min: Math.round(sec / 60), pts: Maps.decodePolyline(rt.overview_polyline.points), road: true };
+          }
+        } catch (e) { throw mapsErr_(e); }
+      }
+      if (!leg) leg = { km: Math.round(hav_(a, b) * 10) / 10, min: 0, pts: [a.lat, a.lng, b.lat, b.lng], road: false };
+      legs.push({ km: leg.km, min: leg.min, road: leg.road });
+      for (var k = (all.length ? 2 : 0); k < leg.pts.length; k += 2) all.push(leg.pts[k], leg.pts[k + 1]);
+    }
+    if (all.length > 6000) { var st = Math.ceil(all.length / 6000), th = []; for (var q = 0; q < all.length; q += 2) if ((q / 2) % st === 0 || q === all.length - 2) th.push(all[q], all[q + 1]); all = th; } // stays inside one cell
+    var poly = Maps.encodePolyline(all), ele = [];
+    try { var es = Maps.newElevationSampler().samplePath(poly, 256); ele = (es.results || []).map(function (x) { return Math.round(x.elevation); }); } catch (e) { ele = []; }
+    var up = 0, down = 0, last = ele.length ? ele[0] : 0, max = ele.length ? ele[0] : 0;
+    ele.forEach(function (v) { if (v > max) max = v; var dlt = v - last; if (Math.abs(dlt) >= 5) { if (dlt > 0) up += dlt; else down -= dlt; last = v; } });
+    var row = { TkKey: p.trip + '|' + p.day, TkTrip: String(p.trip), TkDay: Number(p.day), TkPoly: poly, TkEle: ele.join(','), TkKm: Math.round(legs.reduce(function (s, l) { return s + l.km; }, 0) * 10) / 10,
+      TkMin: legs.reduce(function (s, l) { return s + l.min; }, 0), TkUp: up, TkDown: down, TkMax: max, TkLegs: JSON.stringify(legs), TkSrc: 'made' + (p.sig ? ':' + String(p.sig).slice(0, 40) : ''), TkWhen: new Date().toISOString() };
+    ensureTables_(ss); upsertRows_(ss, 'LB_Tracks', [row]);
+    return row;
+  },
+  /** Logbook · today's rate (how much of a currency 1 MYR buys), from Google Finance in a helper tab. */
+  lbFx: function (ss, p) {
+    var cur = String(p.cur || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3); if (!cur) throw new Error('Choose a currency.');
+    var sh = ss.getSheetByName('LB_FX') || ss.insertSheet('LB_FX');
+    sh.getRange('A1').setFormula('=GOOGLEFINANCE("CURRENCY:MYR' + cur + '")'); SpreadsheetApp.flush();
+    var v = Number(sh.getRange('A1').getValue()); if (!v) throw new Error('No rate found for ' + cur + '. Type it yourself.');
+    return { cur: cur, rate: v };
+  },
+  /** Logbook · save a .gpx file to Drive, in the journey's folder next to its photos. */
+  lbGpxSave: function (ss, p) {
+    var f; try { f = ppFolder_(String(p.folder || 'Journeys')).createFile(Utilities.newBlob(String(p.xml || ''), 'application/gpx+xml', String(p.name || 'journey') + '.gpx')); } catch (e) { throw driveErr_(e); }
+    return { id: f.getId(), url: f.getUrl ? f.getUrl() : '' };
   },
 
   /** Weekly backup: status, turn on/off, back up now. */
@@ -327,6 +390,21 @@ function ppFolder_(name) {
   var sub = root.getFoldersByName(clean);
   return sub.hasNext() ? sub.next() : root.createFolder(clean);
 }
+
+/* ───────── 3.4.0 · Logbook: Google Maps ───────── */
+/** Run once from this editor (choose setupLogbook, press Run) so Google asks for Maps permission. */
+function setupLogbook() {
+  var r = Maps.newGeocoder().geocode('Kuala Lumpur');
+  Logger.log('Logbook is ready. Google Maps answered: ' + ((r.results && r.results[0] && r.results[0].formatted_address) || r.status));
+  return r.status;
+}
+function mapsErr_(e) {
+  var m = String((e && e.message) || e);
+  if (/permission|authoriz|scope/i.test(m)) return new Error('Google Maps is not approved yet. Open Apps Script, choose setupLogbook and press Run, approve, then try again.');
+  if (/too many times|quota|limit/i.test(m)) return new Error("Google Maps' free daily limit is used up. Try again tomorrow; what's already made is saved.");
+  return e;
+}
+function hav_(a, b) { var R = 6371, r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lng - a.lng) * r, x = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) * Math.sin(dLo / 2); return 2 * R * Math.asin(Math.sqrt(x)); }
 
 /* ───────── 3.1.6 · weekly backup to Google Drive ───────── */
 var BACKUP_FOLDER = 'MansWell Backups', BACKUP_KEEP = 12;

@@ -1,4 +1,21 @@
-# MansWell · v3.3.0 (Pocket + Payslip + Lens + Atlas)
+# MansWell · v3.4.0 (Pocket + Payslip + Lens + Atlas + Logbook)
+
+## 3.4.0 · Logbook (fourth room)
+Every Atlas journey in full. Journeys are made in Atlas only; every Logbook row carries the journey ID (TrId). Logbook never reads or writes Pocket or Lens.
+- **Itinerary**: day by day (days come from the Atlas dates). Each stop: place, city, country, arrived, stayed, transport, km, travel time, note.
+- **Make GPX track**: Google Maps (in your Apps Script) finds each stop (you check the pins once), follows the roads per leg by transport, and reads the heights. Gives road km (next to your typed km, you choose which counts), climb, descent, highest and steepest, the day on a map and an elevation profile.
+- **Expenses**: six categories. Cash in the country's currency at the journey rate (set once, or "Get today's rate" from Google Finance). Card in the RM your bank charged; type the bill amount too to see the card cost %. Budget vs actual per category (from a total split by the usual mix, or from your Wanderlist tier).
+- **Results**: five ratings (Roads, Scenery, Riding comfort, Food & hospitality, Value for money), verdict, "Would you go back?", the numbers, an elevation meter against Everest, a route map (full map with zoom and colour per day), and the .gpx file (download or save to Drive › MansWell Passport › journey name).
+- New tabs (made by themselves): LB_Stops, LB_Tracks, LB_Expenses, LB_Budget, LB_Rates, LB_Results, and a small helper tab LB_FX for today's rate.
+- Map data: Natural Earth (public domain), in js/logbook/geo, loaded only when a map is first opened.
+
+### Updating to 3.4.0
+1. Upload everything inside "Step 1" to GitHub (53 files, keep the folders). Same names overwrite the old ones. The flags are unchanged.
+2. Apps Script: replace all of Code.gs with the new one and save.
+3. In the editor choose **setupLogbook** and press **Run**. Approve when Google asks (it needs Google Maps and external access). The log says "Logbook is ready".
+4. Deploy › Manage deployments › edit › **New version** › Deploy (same URL).
+5. Open the app and pull to refresh.
+
 
 ## 3.3.0 · Atlas (Passport renamed)
 - Three pages: **Odyssey · Journeys · Wanderlist**. Overview, World and Memories are folded into Odyssey.

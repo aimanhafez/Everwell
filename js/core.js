@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '3.3.0';
+export const VERSION = '3.4.0';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -16,7 +16,8 @@ export const PALETTE = ['#FF6A00', '#E5484D', '#A3236F', '#E9B949', '#6B7178', '
 /* ───────────── Data (the SharePoint lists, now Google Sheet tabs) ───────────── */
 export const DB = { settings: null, accounts: [], categories: [], payees: [], recurring: [], txns: [], audit: [], importMap: [], imports: [], sysOk: false,
   lnSettings: [], lnAssets: [], lnValues: [], lnGoals: [], lnBudget: [], lnOk: false, payslips: [], psOk: false,
-  ppSettings: [], ppPlaces: [], ppTrips: [], ppStops: [], ppPhotos: [], ppOk: false };
+  ppSettings: [], ppPlaces: [], ppTrips: [], ppStops: [], ppPhotos: [], ppOk: false,
+  lbStops: [], lbTracks: [], lbExp: [], lbBudget: [], lbRates: [], lbResults: [], lbOk: false };
 
 /* ───────────── Global variables (Set(...) in the Power App) ───────────── */
 export const G = {
@@ -287,7 +288,7 @@ export async function api(action, payload, conn = CONN.v, opts = {}) {
  * Every save is applied on the phone straight away and put in an "outbox" kept in phone storage.
  * The outbox is sent to Google one batch at a time. Each batch is safe to send twice (rows are keyed),
  * so nothing is lost if the app is closed, offline or interrupted: it is sent again next time. */
-const MAP = { PP_Settings: ['ppSettings', 'PsetKey'], PP_Places: ['ppPlaces', 'PlIso'], PP_Trips: ['ppTrips', 'TrId'], PP_Stops: ['ppStops', 'StKey'], PP_Photos: ['ppPhotos', 'PhId'], EW_Payslips: ['payslips', 'PsKey'], LN_Settings: ['lnSettings', 'LsKey'], LN_Assets: ['lnAssets', 'AsId'], LN_Values: ['lnValues', 'VaId'], LN_Goals: ['lnGoals', 'GoId'], LN_Budget: ['lnBudget', 'BuKey'],
+const MAP = { LB_Stops: ['lbStops', 'LpId'], LB_Tracks: ['lbTracks', 'TkKey'], LB_Expenses: ['lbExp', 'ExId'], LB_Budget: ['lbBudget', 'BgKey'], LB_Rates: ['lbRates', 'RtKey'], LB_Results: ['lbResults', 'RsTrip'], PP_Settings: ['ppSettings', 'PsetKey'], PP_Places: ['ppPlaces', 'PlIso'], PP_Trips: ['ppTrips', 'TrId'], PP_Stops: ['ppStops', 'StKey'], PP_Photos: ['ppPhotos', 'PhId'], EW_Payslips: ['payslips', 'PsKey'], LN_Settings: ['lnSettings', 'LsKey'], LN_Assets: ['lnAssets', 'AsId'], LN_Values: ['lnValues', 'VaId'], LN_Goals: ['lnGoals', 'GoId'], LN_Budget: ['lnBudget', 'BuKey'],
   SYS_ImportMap: ['importMap', 'MapKey'], SYS_Imports: ['imports', 'ImpId'], EW_Accounts: ['accounts', 'AccId'], EW_Categories: ['categories', 'CatId'], EW_Payees: ['payees', 'PyName'], EW_Recurring: ['recurring', 'RcId'], EW_Transactions: ['txns', 'TxnId'] };
 export const SYNC = { outbox: store.get('ew_outbox', []), flushing: false, failed: false, timer: null };
 /** Bumped whenever the data changes, so cached totals (Lens P&L) never show an old category, date or type. */
@@ -319,7 +320,8 @@ function persistOutbox() { store.set('ew_outbox', SYNC.outbox); syncState(); }
 let cacheTimer = null;
 const writeCache = () => { cacheTimer = null; store.set('ew_data', { at: Date.now(), settings: DB.settings, accounts: DB.accounts, categories: DB.categories, payees: DB.payees, recurring: DB.recurring, txns: DB.txns, audit: DB.audit.slice(0, 30), importMap: DB.importMap, imports: DB.imports, sysOk: DB.sysOk,
   lens: { settings: DB.lnSettings, assets: DB.lnAssets, values: DB.lnValues, goals: DB.lnGoals, budget: DB.lnBudget }, lnOk: DB.lnOk, payslips: DB.payslips, psOk: DB.psOk,
-  passport: { settings: DB.ppSettings, places: DB.ppPlaces, trips: DB.ppTrips, stops: DB.ppStops, photos: DB.ppPhotos }, ppOk: DB.ppOk, srvVer: DB.srvVer }); };
+  passport: { settings: DB.ppSettings, places: DB.ppPlaces, trips: DB.ppTrips, stops: DB.ppStops, photos: DB.ppPhotos }, ppOk: DB.ppOk, srvVer: DB.srvVer,
+  logbook: { stops: DB.lbStops, tracks: DB.lbTracks, expenses: DB.lbExp, budget: DB.lbBudget, rates: DB.lbRates, results: DB.lbResults }, lbOk: DB.lbOk }); };
 function persistCache() { clearTimeout(cacheTimer); cacheTimer = setTimeout(writeCache, 300); }
 /** Write a pending cache save now (the app is being closed / hidden). */
 export function flushCache() { if (cacheTimer) { clearTimeout(cacheTimer); writeCache(); } }
@@ -380,6 +382,10 @@ function applyLoaded(d) {
   DB.srvVer = String(d.version || d.srvVer || '');
   DB.ppOk = !!pp || !!d.ppOk;
   DB.ppSettings = (pp && pp.settings) || []; DB.ppPlaces = (pp && pp.places) || []; DB.ppTrips = (pp && pp.trips) || []; DB.ppStops = (pp && pp.stops) || []; DB.ppPhotos = (pp && pp.photos) || [];
+  // Logbook tabs exist only once the Apps Script is v3.4 or newer
+  const lb = d.logbook || null;
+  DB.lbOk = !!lb || !!d.lbOk;
+  DB.lbStops = (lb && lb.stops) || []; DB.lbTracks = (lb && lb.tracks) || []; DB.lbExp = (lb && lb.expenses) || []; DB.lbBudget = (lb && lb.budget) || []; DB.lbRates = (lb && lb.rates) || []; DB.lbResults = (lb && lb.results) || [];
   for (const item of SYNC.outbox) applyLocal(item.p); // changes not yet on Google stay visible
   G.gblCycleDay = (DB.settings && DB.settings.StCycleDay) || 28;
   const l = PLABEL(Today());
@@ -677,6 +683,10 @@ const P = {
   Passport: '<rect x="5" y="2.5" width="14" height="19" rx="2"/><circle cx="12" cy="10" r="3.2"/><path d="M8.8 10h6.4M12 6.8c-1.2 1.6-1.2 4.8 0 6.4M12 6.8c1.2 1.6 1.2 4.8 0 6.4M9 17h6"/>',
   Plane: '<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
   Star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+  Logbook: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7h6M9 10.5h4"/>',
+  Route: '<circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8.2 19H16a3.5 3.5 0 0 0 0-7H8a3.5 3.5 0 0 1 0-7h7.8"/>',
+  Wallet: '<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H17v3"/><rect x="4" y="8" width="16" height="11" rx="2.5"/><path d="M15.5 13.5h4.5"/>',
+  Medal: '<circle cx="12" cy="15" r="5.5"/><path d="M8.5 10.5 6 3h4l2 5 2-5h4l-2.5 7.5"/><path d="m12 12.5.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3z"/>',
   Images: '<rect x="3" y="5" width="14" height="12" rx="2"/><path d="M7 21h12a2 2 0 0 0 2-2V9"/><circle cx="8" cy="9.5" r="1.5"/><path d="m3 15 4-4 4 4 2-2 4 4"/>'
 };
 export function icon(name) {
