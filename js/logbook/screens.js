@@ -2,7 +2,7 @@
 // Expenses (cash in local currency, card in MYR, budget vs actual) and Discovery (journey badges, what you found, verdict, GPX).
 // The route map, elevation meter and the numbers moved out: they go to Atlas (the summary) later.
 import { html, K, G, rerender, Notify } from '../core.js';
-import { Page, Sect, Switcher, Empty, Ring, cur, setCur, go, openStop, openPins, openExpense, openRate, openBudget, confirmAsk, lbsave, call, download, LimitNote, setBadge, openFind,
+import { Page, Sect, Switcher, Empty, Ring, cur, setCur, go, openStop, openPins, openExpense, openRate, openBudget, confirmAsk, lbsave, call, download, LimitNote, setBadge, openFind, PlacesBar,
   canWrite, Seg, Flag, plural, oa, L } from './ui.js';
 import { RouteMap, Profile } from './map.js';
 
@@ -30,6 +30,7 @@ export const scrLbJourneys = {
           <div style="min-width:0"><div class="t">${t.TrName}</div><div class="s">${P.range(t.TrStart, t.TrEnd)} · ${plural(x.days, 'day')}</div>
             <div><span class=${'lbtag' + (x.filled.itin ? ' on' : '')}>ITINERARY</span><span class=${'lbtag' + (x.filled.exp ? ' on' : '')}>EXPENSES</span><span class=${'lbtag' + (x.filled.disc ? ' on' : '')}>DISCOVERY</span></div></div>
           <div class="r"><b>${x.spent ? L.RM(x.spent) : '—'}</b><span>${x.km ? L.n0(x.km) + ' km' : '—'}</span></div></div>`; })}</div>
+        <div style="margin:0 12px 10px">${PlacesBar()}</div>
         <div class="lnote" style="margin:0 18px 14px">Add a journey in Atlas and it shows up here. Rename it or change its dates in Atlas and Voyage follows.</div>`}
     `, 'scrLbJourneys');
   }
@@ -68,7 +69,8 @@ export const scrLbItinerary = {
       ${stale ? html`<div class="lwarn" data-t="lbStale">The stops changed after this track was made. Tap “Make track again”.</div>` : null}
       ${tk ? html`
         ${Sect('On the map', 'Day GPX', () => { const g = L.gpx(id, d); download(g.name + '.gpx', g.xml, 'application/gpx+xml'); }, 'lbDayGpx')}
-        <div class="lbmap" style="margin:0 12px 12px" data-t="lbDayMap">${RouteMap({ id, days: [d], w: 366, h: 220, key: 'dayMap' }).svg}</div>
+        <div class="lbmap" style="margin:0 12px 12px;background:#07080B" data-t="lbDayMap">${RouteMap({ id, days: [d], w: 366, h: 230, key: 'dayMap' }).svg}
+          <div class="ovc">${((P.BY[(list.find(x => x.LpCountry) || {}).LpCountry || P.isosOf(id)[0]] || {}).name || '').toUpperCase()}</div><div class="ov2"><b>${L.n0(mt.km)} km</b><span>DAY ${d}</span></div></div>
         ${mt && mt.ele.length > 1 ? html`${Sect('Elevation', L.n0(mt.max) + ' m top')}
           <div class="lc" data-t="lbElev">${Profile(l, 'd' + d, mt.ele, mt.km, L.stopFractions(id, d))}
             <div class="lbm"><div><span>Route km</span><b data-t="mKm">${L.n0(mt.km)}</b></div><div><span>Climb</span><b data-t="mUp">↑ ${L.n0(mt.up)}</b></div><div><span>Descent</span><b>↓ ${L.n0(mt.down)}</b></div><div><span>Steepest</span><b>${mt.steep.toFixed(0)}%</b></div></div>
@@ -146,11 +148,11 @@ export const scrLbResults = {
       ${Sect('What you found', fs.length ? plural(fs.length, 'find') : '')}
       ${fs.length ? html`<div class="lc" data-t="lbFinds">${fs.map(f => { const k = L.FIND[f.FdKind] || L.FINDS[0]; return html`<div class="lbex" onClick=${() => openFind(l, id, f)} data-t=${'find-' + f.FdId}>
         <div class="e">${k.e}</div><div style="min-width:0"><div class="s" style="margin:0 0 2px;font-size:9.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:${K.or}">${k.n}</div><div class="t">${f.FdName}</div>
-          <div class="s">${[f.FdWhere, f.FdDay ? 'Day ' + f.FdDay : '', f.FdNote].filter(Boolean).join(' · ')}</div></div><div class="r">${Number(f.FdLat) ? html`<span class="lor">📍</span>` : null}</div></div>`; })}</div>` : null}
+          <div class="s">${[f.FdWhere, f.FdProv, f.FdDay ? 'Day ' + f.FdDay : '', f.FdNote].filter(Boolean).join(' · ')}</div></div><div class="r">${Number(f.FdLat) ? html`<span class="lor">📍</span>` : null}</div></div>`; })}</div>` : null}
       <div class="pchips" style="flex-wrap:wrap;overflow:visible" data-t="lbFindKinds">${L.FINDS.filter(k => !fs.some(f => f.FdKind === k.k)).map(k => html`<span class="pchip" onClick=${() => canWrite() && openFind(l, id, null, k.k)} data-t=${'addFind-' + k.k}>+ ${k.e} ${k.n}</span>`)}
         ${fs.length ? html`<span class="pchip" onClick=${() => canWrite() && openFind(l, id, null)} data-t="addFind">+ Another</span>` : null}</div>
       ${Sect('Verdict')}
-      <div class="lc" data-t="lbVerdictCard"><div class="llab" style="margin-top:0">In a few words</div><input class="lin" placeholder="Best ride so far" value=${r.RsVerdict} onChange=${e => saveR('RsVerdict', e.target.value.trim())} data-t="lbVerdict" />
+      <div class="lc" data-t="lbVerdictCard"><div class="llab" style="margin-top:0">In a few words</div><input class="lin" value=${r.RsVerdict} onChange=${e => saveR('RsVerdict', e.target.value.trim())} data-t="lbVerdict" />
         <div class="llab">Would you go back?</div>${Seg(L.BACK, r.RsBack, k => saveR('RsBack', r.RsBack === k ? '' : k), 'lbBack')}</div>
       ${Sect('GPX file')}
       <div class="lc" data-t="lbGpx"><div style="display:flex;gap:12px;align-items:center"><div style=${`width:44px;height:44px;border-radius:11px;display:grid;place-items:center;font:800 11px Inter;color:${K.or};background:${oa(.13)}`}>GPX</div>

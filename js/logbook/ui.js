@@ -5,13 +5,13 @@ import { syncNow, PasswordDialog } from '../shared.js';
 import { css as atlasCss, Seg, Flag, plural } from '../passport/ui.js';
 import { Sheet, openSheet, closeSheet, oa, ta, newId } from '../lens/ui.js';
 import * as L from './engine.js';
-import { RouteMap, fit } from './map.js';
+import { RouteMap, fit, routeCardCss } from './map.js';
 
 export { openSheet, closeSheet, oa, ta, newId, Seg, Flag, plural, L };
 const P = L.P;
 
 /* ───────── styles ───────── */
-export const css = () => atlasCss() + `
+export const css = () => atlasCss() + routeCardCss() + `
 .lbsw{display:flex;align-items:center;gap:10px;margin:2px 12px 10px;padding:10px 12px;border-radius:14px;background:${K.surface || K.card};box-shadow:inset 0 0 0 1px ${K.hair || K.line};cursor:pointer}
 .lbsw b{display:block;font-size:12px;font-weight:800;letter-spacing:1.2px;color:${K.text};text-transform:uppercase}.lbsw span{display:block;font-size:11px;color:${K.sub};margin-top:2px}.lbsw em{margin-left:auto;font-style:normal;color:${K.or};font-size:13px}
 .lbj{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid ${K.sep};cursor:pointer}.lbj:first-child{border-top:0;padding-top:2px}.lbj:last-child{padding-bottom:2px}
@@ -28,8 +28,8 @@ export const css = () => atlasCss() + `
 .lbm span{display:block;font-size:8.5px;font-weight:700;letter-spacing:1px;color:${K.sub};text-transform:uppercase}.lbm b{display:block;font-size:14px;margin-top:3px;color:${K.text}}.lbm b .ptier{display:inline-grid;font-size:11px;letter-spacing:.4px;color:#0D0F12;text-transform:none;margin-top:1px}
 .lblg{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:7px 0;border-top:1px solid ${K.sep}}.lblg:first-child{border-top:0;padding-top:0}.lblg .t{font-size:13px;font-weight:600;color:${K.text};min-width:0}.lblg .r{text-align:right;white-space:nowrap}.lblg .r b{font-size:13.5px;color:${K.text}}
 .lbmap{position:relative;border-radius:14px;overflow:hidden;box-shadow:inset 0 0 0 1px ${K.hair || K.line}}
-.lbmap .ov{position:absolute;left:12px;top:10px;pointer-events:none}.lbmap .ov b{display:block;font:800 22px Inter,system-ui;letter-spacing:2px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.6)}
-.lbmap .ov2{position:absolute;right:12px;bottom:10px;text-align:right;pointer-events:none;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.7)}.lbmap .ov2 b{display:block;font-size:20px;font-weight:800;color:${K.or}}.lbmap .ov2 span{font-size:9.5px;font-weight:600;letter-spacing:1px;opacity:.85}
+.lbmap .ovc{position:absolute;left:14px;bottom:11px;font:700 14px Inter,system-ui;letter-spacing:1.4px;color:#9AA3AE;text-shadow:0 1px 6px #000}.lbmap .ov{position:absolute;left:12px;top:10px;pointer-events:none}.lbmap .ov b{display:block;font:800 22px Inter,system-ui;letter-spacing:2px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+.lbmap .ov2{position:absolute;right:12px;bottom:10px;text-align:right;pointer-events:none;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.7)}.lbmap .ov2 b{display:block;font-size:20px;font-weight:800;color:${K.light ? `color-mix(in srgb,${K.or} 70%,#fff)` : K.or}}.lbmap .ov2 span{font-size:9.5px;font-weight:600;letter-spacing:1px;opacity:.85}
 .lbmap .fb{position:absolute;right:10px;top:10px;font-size:11.5px;font-weight:600;color:#fff;padding:6px 10px;border-radius:99px;background:rgba(0,0,0,.45);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3);cursor:pointer}
 .lbex{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid ${K.sep};cursor:pointer}.lbex:first-child{border-top:0;padding-top:2px}.lbex:last-child{padding-bottom:2px}
 .lbex .e{font-size:19px;text-align:center}.lbex .t{font-size:13.5px;font-weight:600;color:${K.text}}.lbex .s{font-size:11px;color:${K.sub};margin-top:2px}.lbex .r{text-align:right}.lbex .r b{display:block;font-size:13.5px;color:${K.text}}.lbex .r span{font-size:10.5px;color:${K.sub}}
@@ -49,6 +49,10 @@ export const css = () => atlasCss() + `
 .lbch{margin:8px 0 0 36px;display:flex;flex-direction:column;gap:5px}.lbch div{font-size:11.5px;padding:7px 9px;border-radius:9px;background:${K.field};color:${K.sub};cursor:pointer}.lbch div.on{color:${K.text};box-shadow:inset 0 0 0 1.5px ${oa(.55)}}
 .lbbadges{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.lbbadges span{font-size:12px;font-weight:700;padding:6px 10px;border-radius:99px;background:rgba(255,255,255,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
 .lbbg{padding:10px 0;border-top:1px solid ${K.sep}}.lbbg:first-child{border-top:0;padding-top:2px}.lbbg .t{font-size:13.5px;font-weight:600;color:${K.text}}
+.lbg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lbg3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.lbg2>div,.lbg3>div{min-width:0}.lbg3 .lin{padding-left:10px;padding-right:8px;text-overflow:ellipsis;font-size:14px}
+.lbsrc{margin:6px 2px 0;display:flex;justify-content:space-between;gap:8px}.lbsrc span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lbsrc b{white-space:nowrap}
+.lbgp{display:flex;align-items:center;gap:8px;margin-top:10px;padding:9px 11px;border-radius:11px;background:${K.card2};box-shadow:inset 0 0 0 1px ${K.line};font-size:11px;color:${K.sub}}.lbgp b{color:${K.text};white-space:nowrap}.lbgp>span{white-space:nowrap}.lbgp .m{flex:1;min-width:30px;height:5px;border-radius:4px;background:${K.field};overflow:hidden}.lbgp .m i{display:block;height:100%}
+.lbexact{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.6px;color:#34C77B;background:rgba(52,199,123,.13);padding:2px 6px;border-radius:5px;margin-left:6px;vertical-align:1px}
 .lbfull{position:absolute;inset:0;z-index:65;background:#000;display:flex;flex-direction:column}.lbfull .top{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 10px;color:#fff;font-size:14px;font-weight:600}.lbfull .top span{cursor:pointer;padding:4px 6px}
 .lbfull .mp{flex:1;position:relative;overflow:hidden;touch-action:none}.lbfull .mp svg{position:absolute;inset:0;height:100%!important}
 .lbfull .zb{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px}.lbfull .zb span{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:rgba(20,22,26,.85);color:#fff;font-size:19px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
@@ -146,31 +150,56 @@ export function download(name, text, type) {
   a.href = url; a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
 }
 
-/* ───────── find a place with Google Maps, as you type ───────── */
+/* ───────── find a place, as you type: Google Places (same list as the Google Maps app) when set up, else the free search ───────── */
 const SUG = { t: null, n: 0 };
-/** f: { place, city, country, pin, sug, look } — fills city, country and the pin when you pick a match. */
+const newSession = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+export const PER_SEARCH = 5;
+/** This month's Google Places count, e.g. "312 / 9,950". */
+export function PlacesBar() {
+  const u = DB.lbPlaces; if (!u || !u.on) return null;
+  const n = Math.max(u.ac || 0, u.det || 0), cap = u.cap || 9950, full = n >= cap;
+  return html`<div class="lbgp" data-t="plUse"><span>Google Places</span><div class="m"><i style=${`width:${Math.min(100, n / cap * 100).toFixed(1)}%;background:${full ? K.red : K.or}`}></i></div><b>${L.n0(n)} / ${L.n0(cap)}</b><span>${full ? 'free search till next month' : 'this month'}</span></div>`;
+}
+/** f: { place, city, prov, country, pin, sug, look, ses, used } — picking a place fills city, province, country and the exact pin. */
 export function PlaceField(f, o = {}) {
-  const look = v => {
-    clearTimeout(SUG.t); f.sug = []; f.look = false;
-    if (String(v).trim().length < 3) return rerender();
-    SUG.t = setTimeout(async () => {
-      const tok = ++SUG.n; f.look = true; rerender();
-      const cn = (P.BY[f.country] || {}).name || '';
-      const res = await call('lbGeocode', { q: String(v).trim(), country: cn, region: f.country || '', near: o.near || null, n: 6 }, true);
-      if (tok !== SUG.n) return; f.look = false; f.sug = res || []; rerender();
-    }, 750);
+  if (!f.ses) { f.ses = newSession(); f.used = 0; }
+  const run = async v => {
+    if (f.used >= PER_SEARCH) { f.full = true; return rerender(); }
+    const tok = ++SUG.n; f.look = true; rerender();
+    const res = await call('lbPlaces', { q: String(v).trim(), session: f.ses, country: (P.BY[f.country] || {}).name || '', region: f.country || '', near: o.near || null }, true);
+    if (tok !== SUG.n) return; f.look = false;
+    if (!res) { f.sug = []; return rerender(); }
+    if (res.use) DB.lbPlaces = res.use;
+    if (res.mode === 'google') f.used++;
+    f.src = res.mode; f.full = res.mode === 'max' || (res.mode === 'google' && f.used >= PER_SEARCH); f.sug = res.list || []; rerender();
   };
-  // the name you typed stays: a match only gives the pin, city and country
-  const pick = x => { if (!f.place.trim()) f.place = x.name; if (x.city) f.city = x.city; if (x.cc && P.BY[x.cc]) f.country = x.cc; f.pin = { lat: x.lat, lng: x.lng, addr: x.addr, area: !!x.area }; f.sug = []; f.look = false; clearTimeout(SUG.t); SUG.n++; rerender(); };
-  const useCoord = () => { const m = String(f.coord || '').match(/(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/); if (!m || Math.abs(m[1]) > 90 || Math.abs(m[2]) > 180) return Notify('Paste it as latitude, longitude, e.g. 23.2296, 105.4113', 'error'); f.pin = { lat: Number(m[1]), lng: Number(m[2]), addr: 'Pasted pin' }; f.coord = ''; f.sug = []; rerender(); };
+  const look = v => { clearTimeout(SUG.t); f.sug = []; f.look = false; if (String(v).trim().length < 3) return rerender(); if (f.used >= PER_SEARCH) { f.full = true; return rerender(); } SUG.t = setTimeout(() => run(v), 700); };
+  const again = () => { f.ses = newSession(); f.used = 0; f.full = false; run(f.place); };
+  const pick = async x => {
+    clearTimeout(SUG.t); SUG.n++; f.sug = []; f.look = false;
+    if (x.id) { // Google Places: the exact place
+      f.look = true; rerender();
+      const d = await call('lbPlace', { id: x.id, session: f.ses }); f.look = false;
+      f.ses = newSession(); f.used = 0; f.full = false;
+      if (!d) return rerender();
+      if (d.use) DB.lbPlaces = d.use;
+      f.place = x.name || f.place; f.city = d.city || f.city; f.prov = d.prov || ''; if (d.cc && P.BY[d.cc]) f.country = d.cc;
+      f.pin = { lat: d.lat, lng: d.lng, addr: d.addr, exact: true }; return rerender();
+    }
+    // free search: the name you typed stays
+    if (!f.place.trim()) f.place = x.name; if (x.city) f.city = x.city; f.prov = x.prov || f.prov || ''; if (x.cc && P.BY[x.cc]) f.country = x.cc;
+    f.pin = { lat: x.lat, lng: x.lng, addr: x.addr, area: !!x.area }; rerender();
+  };
   return html`<div>
-    <input class="lin" placeholder=${o.ph || 'Start typing, e.g. Ma Pi Leng Pass'} value=${f.place} onInput=${e => { f.place = e.target.value; f.pin = null; look(f.place); }} data-t=${o.id || 'sPlace'} autocomplete="off" />
-    ${f.look ? html`<div class="lsub" style="margin:6px 2px 0" data-t="sugLook">Looking on Google Maps…</div>` : null}
-    ${f.sug && f.sug.length ? html`<div class="psug" data-t="sug">${f.sug.map((x, i) => html`<div class="pcr" style="grid-template-columns:22px 1fr" onClick=${() => pick(x)} data-t=${'sug-' + i}>
-      <span style=${`color:${x.area ? K.mute : K.or}`}>📍</span><div><div class="t" style="font-size:13.5px">${x.name}${x.area ? html` <span class="lbtag" style="margin:0 0 0 4px">AREA</span>` : null}</div><div class="s">${x.addr}</div></div></div>`)}</div>` : null}
-    ${f.pin ? html`<div class="lnote" style="margin-top:6px" data-t="sPinned"><span class="lor">📍</span> ${f.pin.area ? html`Pinned at the area <b>${f.pin.addr.split(',')[0]}</b>, not the exact spot.` : f.pin.addr} · ${f.pin.lat.toFixed(3)}, ${f.pin.lng.toFixed(3)}</div>`
-      : o.noHint ? null : html`<div class="lnote" style="margin-top:6px">Pick a match to pin it and fill the city; the name you typed stays. Not listed? Paste the spot from Google Maps below.</div>`}
-    ${!f.pin || f.pin.area ? html`<div style="display:flex;gap:6px;margin-top:6px"><input class="lin" style="height:36px;font-size:12.5px" placeholder="or paste from Google Maps: 23.2296, 105.4113" value=${f.coord || ''} onInput=${e => { f.coord = e.target.value; }} data-t=${(o.id || 'sPlace') + 'Coord'} /><button class="lbtn" onClick=${useCoord} data-t=${(o.id || 'sPlace') + 'CoordUse'}>Use</button></div>` : null}
+    <input class="lin" value=${f.place} onInput=${e => { f.place = e.target.value; f.pin = null; look(f.place); }} data-t=${o.id || 'sPlace'} autocomplete="off" />
+    ${f.look ? html`<div class="lsub" style="margin:6px 2px 0" data-t="sugLook">Searching…</div>` : null}
+    ${f.sug && f.sug.length ? html`<div class="psug" data-t="sug">${f.sug.slice(0, 5).map((x, i) => html`<div class="pcr" style="grid-template-columns:22px 1fr" onClick=${() => pick(x)} data-t=${'sug-' + i}>
+      <span style=${`color:${x.area ? K.mute : K.or}`}>📍</span><div style="min-width:0"><div class="t" style="font-size:13.5px">${x.name}${x.area ? html` <span class="lbtag" style="margin:0 0 0 4px">AREA</span>` : null}</div><div class="s">${x.sub || x.addr}</div></div></div>`)}</div>` : null}
+    ${!f.look && !f.pin && f.place.trim().length >= 3 && f.sug && !f.sug.length && f.src && !f.full ? html`<div class="lsub" style="margin:6px 2px 0" data-t="sugNone">No match yet. Keep typing.</div>` : null}
+    ${f.full && !f.pin ? html`<div class="lnote" style="margin-top:6px" data-t="sugFull">${PER_SEARCH} searches used for this place. Pick one above, or <span class="lor" style="cursor:pointer;font-weight:700" onClick=${again} data-t="sugAgain">Search again ›</span></div>` : null}
+    ${f.pin ? html`<div class="lnote" style="margin-top:6px" data-t="sPinned"><span class="lor">📍</span> ${f.pin.area ? html`Pinned at the area <b>${f.pin.addr.split(',')[0]}</b>, not the exact spot.` : f.pin.addr} · ${f.pin.lat.toFixed(3)}, ${f.pin.lng.toFixed(3)}${f.pin.exact ? html`<span class="lbexact">EXACT PIN</span>` : null}</div>` : null}
+    ${f.src && !f.pin ? html`<div class="lsub lbsrc" data-t="sugSrc"><span>${o.near ? 'Near your last stop' : 'Searching'}${f.country && P.BY[f.country] ? ' · ' + P.BY[f.country].name + ' only' : ''}${f.src === 'google' ? ' · ' + f.used + ' of ' + PER_SEARCH : ''}</span><b>${f.src === 'free' ? 'Free search' : 'Google Places'}</b></div>` : null}
+    ${PlacesBar()}
   </div>`;
 }
 
@@ -179,14 +208,22 @@ function nearOf(id, day, idx) {
   const l = L.stops(id, day), pin = s => (s && L.hasPin(s) ? { lat: Number(s.LpLat), lng: Number(s.LpLng) } : null);
   return pin(l[idx - 1]) || pin(l.find(L.hasPin)) || pin(L.stops(id).find(L.hasPin)) || null;
 }
+/** City · Province · Country on one line. */
+function CityRow(f, isos, k) {
+  return html`<div class="lbg3">
+    <div><div class="llab">City</div><input class="lin" value=${f.city} onInput=${e => { f.city = e.target.value; }} data-t=${k + 'City'} /></div>
+    <div><div class="llab">Province</div><input class="lin" value=${f.prov || ''} onInput=${e => { f.prov = e.target.value; }} data-t=${k + 'Prov'} /></div>
+    <div><div class="llab">Country</div><select class="lin" value=${f.country} onChange=${e => { f.country = e.target.value; rerender(); }} data-t=${k + 'Country'}>
+      ${[...new Set([...isos, f.country].filter(Boolean))].map(iso => html`<option value=${iso}>${(P.BY[iso] || {}).name || iso}</option>`)}</select></div></div>`;
+}
 /* ───────── a stop ───────── */
 export function openStop(l, id, day, s) {
   const t = L.journey(id), list = L.stops(id, day), idx = s ? list.findIndex(x => x.LpId === s.LpId) : list.length, isos = P.isosOf(id);
   const prev = list[idx - 1] || list[list.length - 1];
-  const f = { place: s ? s.LpPlace : '', city: s ? s.LpCity : '', country: s ? s.LpCountry : (prev && prev.LpCountry) || isos.find(x => x !== P.homeIso()) || isos[0] || '',
+  const f = { place: s ? s.LpPlace : '', city: s ? s.LpCity : '', prov: s ? s.LpProv || '' : '', country: s ? s.LpCountry : (prev && prev.LpCountry) || isos.find(x => x !== P.homeIso()) || isos[0] || '',
     pin: s && L.hasPin(s) ? { lat: Number(s.LpLat), lng: Number(s.LpLng), addr: s.LpAddr || 'Saved pin' } : null, sug: [], look: false,
     arr: s ? s.LpArr : '', stay: s && s.LpStay ? L.dur(s.LpStay) : '', mode: s ? s.LpMode || 'bike' : (prev && prev.LpMode) || 'bike', note: s ? s.LpNote : '', day };
-  const first = () => (s ? idx === 0 && Number(f.day) === Number(s.LpDay) : list.length === 0);
+  const first = () => (s ? idx === 0 : list.length === 0);
   const move = dir => {
     const j = idx + dir; if (j < 0 || j >= list.length) return;
     const a = list[idx], b = list[j];
@@ -194,29 +231,23 @@ export function openStop(l, id, day, s) {
   };
   openSheet(l, { title: (s ? 'Edit stop · ' : 'Add a stop · ') + 'Day ' + day, body: () => html`<div data-t="stopForm">
     <div class="llab" style="margin-top:4px">Place</div>${PlaceField(f, { near: nearOf(id, day, idx) })}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div><div class="llab">City / area</div><input class="lin" placeholder="filled from Google" value=${f.city} onInput=${e => { f.city = e.target.value; }} data-t="sCity" /></div>
-      <div><div class="llab">Country</div><select class="lin" value=${f.country} onChange=${e => { f.country = e.target.value; }} data-t="sCountry">
-        ${[...new Set([...isos, f.country].filter(Boolean))].map(iso => html`<option value=${iso}>${(P.BY[iso] || {}).name || iso}</option>`)}</select></div></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-      <div><div class="llab">Day</div><select class="lin" value=${String(f.day)} onChange=${e => { f.day = Number(e.target.value); rerender(); }} data-t="sDay">${L.days(t).map(d => html`<option value=${String(d.n)}>Day ${d.n}</option>`)}</select></div>
+    ${CityRow(f, isos, 's')}
+    <div class="lbg2">
       <div><div class="llab">${first() ? 'Left at' : 'Arrived'}</div><input class="lin" type="time" value=${f.arr} onInput=${e => { f.arr = e.target.value; }} data-t="sArr" /></div>
-      ${first() ? html`<div></div>` : html`<div><div class="llab">Stayed</div><input class="lin" placeholder="25m" value=${f.stay} onInput=${e => { f.stay = e.target.value; }} data-t="sStay" /></div>`}</div>
+      ${first() ? html`<div></div>` : html`<div><div class="llab">Stayed</div><input class="lin" value=${f.stay} onInput=${e => { f.stay = e.target.value; }} data-t="sStay" /></div>`}</div>
     ${first() ? html`<div class="lnote" style="margin-top:10px">This is where the day starts.</div>` : html`
       <div class="llab">Got there by</div><div class="lbmode">${L.MODES.map(([k, n, e]) => html`<span class=${f.mode === k ? 'on' : ''} onClick=${() => { f.mode = k; rerender(); }} data-t=${'sMode-' + k}><i>${e}</i>${n}</span>`)}</div>
       <div class="lnote" style="margin-top:8px">Travel time is worked out from your times (arrived here − left the last place). Distance comes from the GPX track.</div>`}
-    <div class="llab">Note · optional</div><input class="lin" placeholder="Fog cleared at the top" value=${f.note} onInput=${e => { f.note = e.target.value; }} data-t="sNote" />
+    <div class="llab">Note · optional</div><input class="lin" value=${f.note} onInput=${e => { f.note = e.target.value; }} data-t="sNote" />
     ${s ? html`<div style="display:flex;gap:8px;margin-top:12px"><button class="lbtn" style="flex:1" disabled=${idx === 0} onClick=${() => move(-1)} data-t="sUp">▲ Earlier</button><button class="lbtn" style="flex:1" disabled=${idx === list.length - 1} onClick=${() => move(1)} data-t="sDown">▼ Later</button></div>` : null}
   </div>`,
   saveLabel: s ? 'Save stop' : 'Add stop',
   onSave: () => {
     const place = f.place.trim(); if (!place) return Notify('Type the place.', 'error');
-    const moved = s && Number(f.day) !== Number(s.LpDay), target = L.stops(id, f.day);
-    const row = { LpId: s ? s.LpId : newId('LP'), LpTrip: id, LpDay: Number(f.day), LpSeq: s && !moved ? s.LpSeq : (target.reduce((m, x) => Math.max(m, x.LpSeq || 0), 0) + 1), LpPlace: place, LpCity: f.city.trim(), LpCountry: f.country,
+    const row = { LpId: s ? s.LpId : newId('LP'), LpTrip: id, LpDay: Number(day), LpSeq: s ? s.LpSeq : (list.reduce((m, x) => Math.max(m, x.LpSeq || 0), 0) + 1), LpPlace: place, LpCity: f.city.trim(), LpProv: (f.prov || '').trim(), LpCountry: f.country,
       LpArr: f.arr, LpStay: L.parseDur(f.stay), LpMode: f.mode, LpKm: 0, LpMin: 0, LpNote: f.note.trim(),
       LpLat: f.pin ? Math.round(f.pin.lat * 1e6) / 1e6 : 0, LpLng: f.pin ? Math.round(f.pin.lng * 1e6) / 1e6 : 0, LpAddr: f.pin ? f.pin.addr : '' };
-    lbsave({ up: { LB_Stops: [row] } }, s ? 'Stop edited' : 'Stop added', t.TrName + ' · Day ' + f.day + ' · ' + place);
-    if (moved) (G.lbDayOf = G.lbDayOf || {})[id] = Number(f.day);
+    lbsave({ up: { LB_Stops: [row] } }, s ? 'Stop edited' : 'Stop added', t.TrName + ' · Day ' + day + ' · ' + place);
     closeSheet(l);
   },
   extra: s ? () => html`<button class="lbtn" style="padding:13px 14px;color:${K.red}" data-t="sDel" onClick=${() => confirmAsk(l, 'Delete this stop?', s.LpPlace + ' is removed from Day ' + day + '. Make the track again afterwards.', 'Delete', () => { lbsave({ del: { LB_Stops: [s.LpId] } }, 'Stop deleted', s.LpPlace); closeSheet(l); })}>Delete</button>` : null });
@@ -260,7 +291,7 @@ export function openPins(l, id, day, focus) {
           <div onClick=${() => { r.open = !r.open; rerender(); }} style="cursor:pointer">${tag}</div></div>
           ${r.open ? html`<div class="lbch">${r.res.map((x, k) => html`<div class=${r.pick === k ? 'on' : ''} onClick=${() => { r.pick = k; r.st = 'sure'; r.open = false; rerender(); }} data-t=${'pinOpt-' + i + '-' + k}>${x.addr} · ${x.lat.toFixed(3)}, ${x.lng.toFixed(3)}</div>`)}
             <div style="display:flex;gap:6px;background:none;padding:0"><input class="lin" style="height:34px;font-size:12.5px" value=${r.q} onInput=${e => { r.q = e.target.value; }} data-t=${'pinQ-' + i} /><button class="lbtn" onClick=${() => find(r)} data-t=${'pinFind-' + i}>Search</button></div>
-            <div style="display:flex;gap:6px;background:none;padding:0"><input class="lin" style="height:34px;font-size:12.5px" placeholder="or paste from Google Maps: 23.20, 105.37" value=${r.man} onInput=${e => { r.man = e.target.value; }} data-t=${'pinMan-' + i} />
+            <div style="display:flex;gap:6px;background:none;padding:0"><input class="lin" style="height:34px;font-size:12.5px" placeholder="latitude, longitude" value=${r.man} onInput=${e => { r.man = e.target.value; }} data-t=${'pinMan-' + i} />
               <button class="lbtn" data-t=${'pinSet-' + i} onClick=${() => { const m = r.man.match(/(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/); if (!m || Math.abs(m[1]) > 90 || Math.abs(m[2]) > 180) return Notify('Type it as latitude, longitude, e.g. 23.20, 105.37', 'error'); r.res = [{ lat: Number(m[1]), lng: Number(m[2]), addr: 'Typed pin' }, ...r.res]; r.pick = 0; r.st = 'man'; r.open = false; rerender(); }}>Use</button></div></div>` : null}
         </div>`; })}</div>
       <div class="lnote" style="margin-top:10px">Each leg follows its transport: bike, car, Grab → roads · walk → footpaths · bus, train → transit or roads · flight, boat → a straight line.</div>
@@ -282,23 +313,24 @@ export function setBadge(id, k, v) {
   const r = L.result(id) || L.blankResult(id), b = L.badges(id); if (b[k] === v) delete b[k]; else b[k] = v;
   lbsave({ up: { LB_Results: [{ ...r, RsBadges: JSON.stringify(b) }] } }, 'Badge', (L.journey(id) || {}).TrName + ' · ' + k + ' ' + (b[k] || 'cleared'));
 }
+const PLAIN = ['tip', 'avoid', 'people'];
 export function openFind(l, id, fd, kind) {
   const t = L.journey(id), isos = P.isosOf(id);
-  const f = { kind: fd ? fd.FdKind : kind || 'cafe', place: fd ? fd.FdName : '', city: fd ? fd.FdWhere : '', country: isos.find(x => x !== P.homeIso()) || isos[0] || '',
-    pin: fd && (Number(fd.FdLat) || Number(fd.FdLng)) ? { lat: Number(fd.FdLat), lng: Number(fd.FdLng), addr: fd.FdWhere } : null, sug: [], look: false, day: fd ? Number(fd.FdDay) : 0, note: fd ? fd.FdNote : '' };
+  const f = { kind: fd ? fd.FdKind : kind || 'cafe', place: fd ? fd.FdName : '', city: fd ? fd.FdWhere : '', prov: fd ? fd.FdProv || '' : '', country: isos.find(x => x !== P.homeIso()) || isos[0] || '',
+    pin: fd && (Number(fd.FdLat) || Number(fd.FdLng)) ? { lat: Number(fd.FdLat), lng: Number(fd.FdLng), addr: [fd.FdWhere, fd.FdProv].filter(Boolean).join(', ') || 'Saved pin' } : null, sug: [], look: false, day: fd ? Number(fd.FdDay) : 0, note: fd ? fd.FdNote : '' };
   openSheet(l, { title: fd ? 'Edit find' : 'Add a find', body: () => html`<div data-t="findForm">
     <div class="llab" style="margin-top:4px">What it is</div><div class="lbcat" style="grid-template-columns:repeat(3,1fr)">${L.FINDS.map(x => html`<div class=${f.kind === x.k ? 'on' : ''} style=${'--c:' + K.or} onClick=${() => { f.kind = x.k; rerender(); }} data-t=${'fKind-' + x.k}><i>${x.e}</i>${x.n}</div>`)}</div>
-    <div class="llab">${['tip', 'avoid'].includes(f.kind) ? 'In a few words' : 'Name'}</div>${['tip', 'avoid', 'people'].includes(f.kind) ? html`<input class="lin" placeholder=${f.kind === 'tip' ? 'Bring a rain cover' : f.kind === 'avoid' ? 'Night riding on the pass' : 'The family at the homestay'} value=${f.place} onInput=${e => { f.place = e.target.value; }} data-t="fName" />` : PlaceField(f, { id: 'fName', ph: 'Start typing, e.g. Café Cũ', noHint: true, near: f.day ? nearOf(id, f.day, 99) : nearOf(id, 1, 0) })}
-    <div style="display:grid;grid-template-columns:1fr 104px;gap:10px">
-      <div><div class="llab">Where</div><input class="lin" placeholder="Dong Van" value=${f.city} onInput=${e => { f.city = e.target.value; }} data-t="fWhere" /></div>
-      <div><div class="llab">Day</div><select class="lin" value=${String(f.day)} onChange=${e => { f.day = Number(e.target.value); }} data-t="fDay"><option value="0">—</option>${L.days(t).map(d => html`<option value=${String(d.n)}>Day ${d.n}</option>`)}</select></div></div>
-    <div class="llab">Why · optional</div><input class="lin" placeholder="Egg coffee with a view of the valley" value=${f.note} onInput=${e => { f.note = e.target.value; }} data-t="fNote" />
+    <div class="llab">${['tip', 'avoid'].includes(f.kind) ? 'In a few words' : 'Name'}</div>${PLAIN.includes(f.kind) ? html`<input class="lin" value=${f.place} onInput=${e => { f.place = e.target.value; }} data-t="fName" />` : PlaceField(f, { id: 'fName', near: f.day ? nearOf(id, f.day, 99) : nearOf(id, 1, 0) })}
+    ${PLAIN.includes(f.kind) ? null : CityRow(f, isos, 'f')}
+    <div class="lbg2">
+      <div><div class="llab">Day</div><select class="lin" value=${String(f.day)} onChange=${e => { f.day = Number(e.target.value); }} data-t="fDay"><option value="0">—</option>${L.days(t).map(d => html`<option value=${String(d.n)}>Day ${d.n}</option>`)}</select></div>
+      <div><div class="llab">Why · optional</div><input class="lin" value=${f.note} onInput=${e => { f.note = e.target.value; }} data-t="fNote" /></div></div>
   </div>`,
   onSave: () => {
     const name = f.place.trim(); if (!name) return Notify('Type what you found.', 'error');
-    const seq = fd ? fd.FdSeq : L.finds(id).filter(x => x.FdKind === f.kind).reduce((m, x) => Math.max(m, x.FdSeq || 0), 0) + 1;
-    lbsave({ up: { LB_Finds: [{ FdId: fd ? fd.FdId : newId('FD'), FdTrip: id, FdKind: f.kind, FdName: name, FdWhere: f.city.trim(), FdDay: Number(f.day) || 0, FdNote: f.note.trim(),
-      FdLat: f.pin ? Math.round(f.pin.lat * 1e6) / 1e6 : 0, FdLng: f.pin ? Math.round(f.pin.lng * 1e6) / 1e6 : 0, FdSeq: seq }] } }, fd ? 'Find edited' : 'Find added', t.TrName + ' · ' + L.FIND[f.kind].n + ' · ' + name);
+    const plain = PLAIN.includes(f.kind), seq = fd ? fd.FdSeq : L.finds(id).filter(x => x.FdKind === f.kind).reduce((m, x) => Math.max(m, x.FdSeq || 0), 0) + 1;
+    lbsave({ up: { LB_Finds: [{ FdId: fd ? fd.FdId : newId('FD'), FdTrip: id, FdKind: f.kind, FdName: name, FdWhere: plain ? '' : f.city.trim(), FdProv: plain ? '' : (f.prov || '').trim(), FdDay: Number(f.day) || 0, FdNote: f.note.trim(),
+      FdLat: f.pin && !plain ? Math.round(f.pin.lat * 1e6) / 1e6 : 0, FdLng: f.pin && !plain ? Math.round(f.pin.lng * 1e6) / 1e6 : 0, FdSeq: seq }] } }, fd ? 'Find edited' : 'Find added', t.TrName + ' · ' + L.FIND[f.kind].n + ' · ' + name);
     closeSheet(l);
   },
   extra: fd ? () => html`<button class="lbtn" style="padding:13px 14px;color:${K.red}" data-t="fDel" onClick=${() => confirmAsk(l, 'Delete this find?', fd.FdName, 'Delete', () => { lbsave({ del: { LB_Finds: [fd.FdId] } }, 'Find deleted', fd.FdName); closeSheet(l); })}>Delete</button>` : null });
@@ -310,7 +342,7 @@ export function openRate(l, id, curr) {
   const t = L.journey(id), old = L.rate(id, curr), f = { v: old ? String(old) : '', busy: false };
   const cash = L.expenses(id).filter(e => e.ExPay !== 'card' && e.ExCur === curr);
   openSheet(l, { title: 'Journey rate · ' + curr, body: () => html`<div data-t="rateForm">
-    <div class="llab" style="margin-top:4px">RM 1 =  ${L.sym(curr)} …</div><input class="lin" inputmode="decimal" placeholder="5760" value=${f.v} onInput=${e => { f.v = e.target.value; }} data-t="rateV" />
+    <div class="llab" style="margin-top:4px">RM 1 =  ${L.sym(curr)} …</div><input class="lin" inputmode="decimal" value=${f.v} onInput=${e => { f.v = e.target.value; }} data-t="rateV" />
     <button class="lbtn" style="margin-top:8px" disabled=${f.busy} data-t="rateToday" onClick=${async () => { f.busy = true; rerender(); const r = await todayRate(curr); f.busy = false; if (r) f.v = String(r); rerender(); }}>${f.busy ? 'Asking Google…' : "Get today's rate"}</button>
     <div class="lnote" style="margin-top:10px">Set once for the journey and kept. Cash in ${curr} is worked out to MYR at this rate.${cash.length && old ? ' Changing it works out your ' + plural(cash.length, 'cash entry') + ' again.' : ''}</div></div>`,
   onSave: () => {
@@ -333,23 +365,23 @@ export function openExpense(l, id, e, preset = {}) {
     return html`<div data-t="expForm">
       <div class="llab" style="margin-top:4px">Category</div><div class="lbcat">${L.CATS.map(c => html`<div class=${f.cat === c.k ? 'on' : ''} style=${'--c:' + c.c} onClick=${() => { f.cat = c.k; rerender(); }} data-t=${'eCat-' + c.k}><i>${c.e}</i>${c.n}</div>`)}</div>
       <div style="display:grid;grid-template-columns:1fr 104px;gap:10px">
-        <div><div class="llab">What</div><input class="lin" placeholder="Homestay Dong Van" value=${f.what} onInput=${ev => { f.what = ev.target.value; }} data-t="eWhat" /></div>
+        <div><div class="llab">What</div><input class="lin" value=${f.what} onInput=${ev => { f.what = ev.target.value; }} data-t="eWhat" /></div>
         <div><div class="llab">Day</div><select class="lin" value=${String(f.day)} onChange=${ev => { f.day = Number(ev.target.value); }} data-t="eDay"><option value="0">Before</option>${L.days(t).map(d => html`<option value=${String(d.n)}>Day ${d.n}</option>`)}</select></div></div>
       <div class="llab">Paid by</div>${Seg([['cash', '💵 Cash'], ['card', '💳 Card']], f.pay, k => { f.pay = k; rerender(); }, 'ePay')}
       <div class="lnote" style="margin-top:6px">${f.pay === 'cash' ? "Cash: type it in the country's currency." : 'Card: type the RM your bank charged.'}</div>
       ${f.pay === 'cash' ? html`
         <div style="display:grid;grid-template-columns:104px 1fr;gap:10px">
           <div><div class="llab">Currency</div><select class="lin" value=${f.cur} onChange=${ev => { f.cur = ev.target.value; rerender(); }} data-t="eCur">${[...curs, 'MYR'].map(c => html`<option value=${c}>${c}</option>`)}</select></div>
-          <div><div class="llab">Amount · ${L.sym(f.cur)}</div><input class="lin" inputmode="decimal" placeholder="180,000" value=${f.amt} onInput=${ev => { f.amt = ev.target.value; rerender(); }} data-t="eAmt" /></div></div>
+          <div><div class="llab">Amount · ${L.sym(f.cur)}</div><input class="lin" inputmode="decimal" value=${f.amt} onInput=${ev => { f.amt = ev.target.value; rerender(); }} data-t="eAmt" /></div></div>
         ${haveRate ? (f.cur === 'MYR' ? null : html`<div class="lnote" style="margin-top:8px" data-t="eRateLine">At the journey's rate RM 1 = ${L.money(L.rate(id, f.cur), f.cur)}: <b class="lor" data-t="eMyr">${L.RM2(myr)}</b></div>`)
           : html`<div class="lfx" style="margin-top:10px;padding:10px 12px" data-t="eNeedRate"><div class="llab" style="margin-top:0">Journey rate · RM 1 = ${L.sym(f.cur)} …</div>
-            <div style="display:flex;gap:6px"><input class="lin" inputmode="decimal" placeholder="5760" value=${f.rate} onInput=${ev => { f.rate = ev.target.value; rerender(); }} data-t="eRate" />
+            <div style="display:flex;gap:6px"><input class="lin" inputmode="decimal" value=${f.rate} onInput=${ev => { f.rate = ev.target.value; rerender(); }} data-t="eRate" />
               <button class="lbtn" disabled=${f.busy} onClick=${async () => { f.busy = true; rerender(); const v = await todayRate(f.cur); f.busy = false; if (v) f.rate = String(v); rerender(); }} data-t="eRateToday">${f.busy ? '…' : 'Today'}</button></div>
             <div class="lnote" style="margin-top:6px">Set once for this journey and kept.${myr ? ' This one is ' + L.RM2(myr) + '.' : ''}</div></div>`}` : html`
-        <div class="llab">Amount · RM</div><input class="lin" inputmode="decimal" placeholder="79.40" value=${f.amt} onInput=${ev => { f.amt = ev.target.value; rerender(); }} data-t="eAmt" />
+        <div class="llab">Amount · RM</div><input class="lin" inputmode="decimal" value=${f.amt} onInput=${ev => { f.amt = ev.target.value; rerender(); }} data-t="eAmt" />
         <div style="display:grid;grid-template-columns:104px 1fr;gap:10px">
           <div><div class="llab">Bill in</div><select class="lin" value=${f.billCur} onChange=${ev => { f.billCur = ev.target.value; rerender(); }} data-t="eBillCur">${curs.map(c => html`<option value=${c}>${c}</option>`)}</select></div>
-          <div><div class="llab">On the bill · optional</div><input class="lin" inputmode="decimal" placeholder="450,000" value=${f.bill} onInput=${ev => { f.bill = ev.target.value; rerender(); }} data-t="eBill" /></div></div>
+          <div><div class="llab">On the bill · optional</div><input class="lin" inputmode="decimal" value=${f.bill} onInput=${ev => { f.bill = ev.target.value; rerender(); }} data-t="eBill" /></div></div>
         ${a && b ? html`<div class="lnote" style="margin-top:8px" data-t="eCardRate">Card rate worked out RM 1 = ${L.money(b / a, f.billCur)}${cr ? html` · your cash rate ${L.money(cr, f.billCur)} · <b class=${cost > 0 ? 'lbov' : 'lbun'}>${cost >= 0 ? '+' : ''}${cost.toFixed(1)}% card cost</b>` : ' · set the journey rate to see the card cost'}</div>` : null}`}
     </div>`; },
   onSave: () => {
@@ -378,11 +410,11 @@ export function openBudget(l, id) {
       ${Seg([['total', 'Type a total'], ['each', 'Each category']], f.mode, k => { if (k === 'each' && num(f.total) && !L.CATS.some(c => num(f.each[c.k]))) f.each = Object.fromEntries(L.CATS.map(c => [c.k, String(split[c.k])])); f.mode = k; rerender(); }, 'bMode')}
       ${tier ? html`<div class="ptres" style=${'--c:' + P.TIER_COLOR[tier[0]] + ';cursor:pointer'} onClick=${() => { f.mode = 'total'; f.total = String(L.tierBudget(tier)); rerender(); }} data-t="bTier">
         <span class="ptier" style=${'--c:' + P.TIER_COLOR[tier[0]]}>${tier}</span><div><b>Start from your Wanderlist tier · ${L.RM(L.tierBudget(tier))}</b><span>${P.tierText(tier)}</span></div></div>` : null}
-      ${f.mode === 'total' ? html`<div class="llab">Total budget · RM</div><input class="lin" inputmode="decimal" placeholder="4,000" value=${f.total} onInput=${e => { f.total = e.target.value; rerender(); }} data-t="bTotal" />
+      ${f.mode === 'total' ? html`<div class="llab">Total budget · RM</div><input class="lin" inputmode="decimal" value=${f.total} onInput=${e => { f.total = e.target.value; rerender(); }} data-t="bTotal" />
         <div class="lfx" style="margin-top:10px;padding:6px 12px">${L.CATS.map(c => html`<div class="lr" style="padding:6px 0"><span class="t">${c.e} ${c.n}</span><span class="r" data-t=${'bSplit-' + c.k}>${L.RM(split[c.k])}</span></div>`)}</div>
         <div class="lnote" style="margin-top:6px">Split by the usual mix. Choose “Each category” to change any of them.</div>`
       : html`${L.CATS.map(c => html`<div style="display:grid;grid-template-columns:1fr 130px;gap:10px;align-items:center;margin-top:8px"><span style=${`font-size:13.5px;color:${K.text}`}>${c.e} ${c.n}</span>
-          <input class="lin r" inputmode="decimal" placeholder="0" value=${f.each[c.k]} onInput=${e => { f.each[c.k] = e.target.value; rerender(); }} data-t=${'bEach-' + c.k} /></div>`)}
+          <input class="lin r" inputmode="decimal" value=${f.each[c.k]} onInput=${e => { f.each[c.k] = e.target.value; rerender(); }} data-t=${'bEach-' + c.k} /></div>`)}
         <div class="lnote" style="margin-top:8px">Total ${L.RM(L.CATS.reduce((s, c) => s + num(f.each[c.k]), 0))}</div>`}
     </div>`; },
   onSave: () => {

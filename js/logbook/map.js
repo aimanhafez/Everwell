@@ -31,20 +31,25 @@ export function fit(pts, w, h, pad = 0.18, minSpan = 0.25) {
   return { x0: cx - w / 2 / k, y0: cy + h / 2 / k, k, w, h };
 }
 const P2 = (v, la, ln) => [(ln - v.x0) * v.k, (v.y0 - my(la)) * v.k];
-function geoPaths(v, conts) {
+function geoPaths(v, conts, home = []) {
   need(conts);
   const lon0 = v.x0, lon1 = v.x0 + v.w / v.k, yTop = v.y0, yBot = v.y0 - v.h / v.k;
   // bounding boxes are in lon/lat: convert the view's mercator y back to lat
   const lat = y => (2 * Math.atan(Math.exp(y * Math.PI / 180)) - Math.PI / 2) * 180 / Math.PI, la0 = lat(yBot), la1 = lat(yTop);
   const hit = bb => bb[2] >= lon0 && bb[0] <= lon1 && bb[3] >= la0 && bb[1] <= la1;
   const ring = (a, close) => { let s = ''; let px = -1e9, py = -1e9; for (let i = 0; i < a.length; i += 2) { const x = (a[i] - v.x0) * v.k, y = (v.y0 - my(a[i + 1])) * v.k; if (i && Math.abs(x - px) < 0.6 && Math.abs(y - py) < 0.6 && i < a.length - 2) continue; s += (i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1); px = x; py = y; } return s + (close ? 'Z' : ''); };
-  let land = '', prov = '';
-  if (GEO.land) for (const c of GEO.land) for (const r of c.rings) if (hit(r.bb)) land += ring(r.a, true);
+  let land = '', lit = '', prov = '';
+  if (GEO.land) for (const c of GEO.land) for (const r of c.rings) if (hit(r.bb)) { if (home.includes(c.iso)) lit += ring(r.a, true); else land += ring(r.a, true); }
   for (const cn of conts) { const ls = GEO.prov[CK[cn]]; if (ls) for (const r of ls) if (hit(r.bb)) prov += ring(r.a, false); }
-  return { land, prov };
+  return { land, lit, prov, ready: !!GEO.land };
 }
 
 /* ───────── the route map ───────── */
+/** The theme's accent, and a lighter version for the bright core of the road. */
+const hexRgb = h => { const r = /rgb\((\d+),(\d+),(\d+)\)/.exec(String(h || '').replace(/\s/g, '')); if (r) return [+r[1], +r[2], +r[3]]; const m = /^#?([0-9a-f]{6})$/i.exec(String(h || '').trim()); if (!m) return [255, 122, 26]; const n = parseInt(m[1], 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const mixW = (h, f) => { const [r, g, b] = hexRgb(h); return 'rgb(' + [r, g, b].map(v => Math.round(v + (255 - v) * f)).join(',') + ')'; };
+/** On the dark map a light theme's deep accent (Ivory maroon) is lifted a little so it still glows. */
+const accent = () => { const a = /^#?[0-9a-f]{6}$/i.test(String(K.or || '').trim()) ? K.or : '#FF7A1A'; return K.light ? mixW(a, 0.3) : a; };
 let uid = 0;
 const trunc = (s, n) => (String(s).length > n ? String(s).slice(0, n - 1) + '…' : String(s));
 /**
@@ -52,45 +57,69 @@ const trunc = (s, n) => (String(s).length > n ? String(s).slice(0, n - 1) + '…
  * Returns { svg, view } so callers (the full map) can pan and zoom.
  */
 export function RouteMap(o) {
-  const id = o.id, ds = o.days, w = o.w, h = o.h, light = false; // always the dark map (like your example); the route takes the theme's colour
+  const id = o.id, ds = o.days, w = o.w, h = o.h;
   const lines = ds.map(d => ({ d, ...L.lineOf(id, d) })).filter(x => x.pts.length);
   const pins = []; ds.forEach(d => L.stops(id, d).filter(L.hasPin).forEach(s => pins.push({ d, s })));
   const all = [].concat(...lines.map(x => x.pts), pins.map(p => [Number(p.s.LpLat), Number(p.s.LpLng)]));
-  const v = o.view || fit(all, w, h);
-  const conts = [...new Set(L.isosOf(id).map(iso => (L.P.BY[iso] || {}).cont).filter(Boolean))];
-  const g = geoPaths(v, conts.length ? conts : ['Asia']);
-  const sea = light ? '#DCE5EC' : '#05070A', land = light ? '#FBFAF7' : '#1A1F27', edge = light ? '#B9C1C9' : '#3A4350', prov = light ? 'rgba(80,90,100,.3)' : 'rgba(180,190,205,.24)';
-  const fid = 'lbg' + (++uid), z = o.view ? Math.sqrt(v.k / (o.baseK || v.k)) : 1;
+  const v = o.view || fit(all, w, h, o.pad ?? 0.2);
+  const isos = L.isosOf(id), conts = [...new Set(isos.map(iso => (L.P.BY[iso] || {}).cont).filter(Boolean))];
+  const g = geoPaths(v, conts.length ? conts : ['Asia'], isos);
+  // style of the example map: dark sea, darker neighbours, the journey's country lit, thin province lines, glowing orange road
+  const fid = 'lbg' + (++uid), z = o.view ? Math.sqrt(v.k / (o.baseK || v.k)) : 1, s1 = 1 / z;
   const path = pts => pts.map((p, i) => { const q = P2(v, p[0], p[1]); return (i ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join('');
   const route = lines.map((x, i) => {
-    const c = o.perDay ? L.DAYC[(x.d - 1) % L.DAYC.length] : K.or, d = path(x.pts), dash = x.road ? '' : '5 5';
-    return html`<g key=${'r' + i}><path d=${d} fill="none" stroke=${c} stroke-width=${7 / z} stroke-opacity=".38" stroke-linecap="round" stroke-linejoin="round" filter=${`url(#${fid})`} />
-      <path d=${d} fill="none" stroke=${c} stroke-width=${2.6 / z} stroke-linecap="round" stroke-linejoin="round" stroke-dasharray=${dash} />
-      <path d=${d} fill="none" stroke=${light ? '#fff' : '#FFE3C7'} stroke-width=${0.9 / z} stroke-opacity=${o.perDay ? 0 : 0.8} stroke-linecap="round" stroke-dasharray=${dash} /></g>`;
+    const c = o.perDay ? L.DAYC[(x.d - 1) % L.DAYC.length] : mixW(accent(), 0.08), glow = o.perDay ? c : accent(), d = path(x.pts), dash = x.road ? '' : '6 6';
+    return html`<g key=${'r' + i}><path d=${d} fill="none" stroke=${glow} stroke-width=${11 * s1} stroke-opacity=".42" stroke-linecap="round" stroke-linejoin="round" filter=${`url(#${fid})`} />
+      <path d=${d} fill="none" stroke=${c} stroke-width=${3.4 * s1} stroke-linecap="round" stroke-linejoin="round" stroke-dasharray=${dash} />
+      <path d=${d} fill="none" stroke=${mixW(accent(), 0.6)} stroke-width=${1.2 * s1} stroke-opacity=${o.perDay ? 0.5 : 0.95} stroke-linecap="round" stroke-linejoin="round" stroke-dasharray=${dash} /></g>`;
   });
-  const first = pins[0], last = pins[pins.length - 1], showLab = o.labels !== false;
-  // keep labels apart: skip one that would sit on top of an earlier one
-  const placed = [];
+  const first = pins[0], last = pins[pins.length - 1], showLab = o.labels !== false, placed = [];
   const pinEls = pins.map((p, i) => {
     const [x, y] = P2(v, Number(p.s.LpLat), Number(p.s.LpLng)), isS = p === first, isE = p === last && pins.length > 1;
-    const fill = isS ? '#34C77B' : isE ? '#E5484D' : (light ? '#fff' : '#0D0F12'), ring = isS || isE ? '#fff' : (o.perDay ? L.DAYC[(p.d - 1) % L.DAYC.length] : K.or), r = (isS || isE ? 6.5 : 5) / z;
+    const c = isS ? '#57C23A' : isE ? '#E8343B' : (o.perDay ? L.DAYC[(p.d - 1) % L.DAYC.length] : accent()), r = 7 * s1;
     let lab = null;
-    if (showLab && x > -20 && x < w + 20 && y > -20 && y < h + 20 && !placed.some(q => Math.abs(q[0] - x) < 70 && Math.abs(q[1] - y) < 14)) {
-      placed.push([x, y]); const right = x < w * 0.68;
-      lab = html`<text x=${x + (right ? 9 : -9) / z} y=${y + 3.5 / z} text-anchor=${right ? 'start' : 'end'} font-size=${10.5 / z} font-weight="600" fill=${light ? '#1D232B' : '#F1F3F6'} stroke=${light ? 'rgba(255,255,255,.9)' : 'rgba(0,0,0,.85)'} stroke-width=${3 / z} paint-order="stroke" style="pointer-events:none">${trunc(p.s.LpPlace, 20)}</text>`;
+    const name = trunc(p.s.LpPlace, 18), tw = (name.length * 6.3 + 14) * s1, th = 20 * s1;
+    if (showLab && x > -20 && x < w + 20 && y > -20 && y < h + 20 && !placed.some(q => Math.abs(q[1] - y) < th + 2 * s1 && Math.abs(q[0] - x) < tw + 10 * s1)) {
+      const right = x + 12 * s1 + tw < w - 4; placed.push([x, y]);
+      const lx = right ? x + 11 * s1 : x - 11 * s1 - tw;
+      lab = html`<g style="pointer-events:none"><rect x=${lx} y=${y - th / 2} width=${tw} height=${th} rx=${6 * s1} fill="rgba(9,11,15,.84)" stroke="rgba(255,255,255,.1)" stroke-width=${s1} />
+        <text x=${lx + 7 * s1} y=${y + 4 * s1} font-size=${11 * s1} font-weight="600" fill="#EEF0F3">${name}</text></g>`;
     }
     return html`<g key=${'p' + i} style=${o.onPin ? 'cursor:pointer' : ''} onClick=${o.onPin ? () => o.onPin(p.d, p.s) : null} data-t=${'pin-' + p.s.LpId}>
-      <circle cx=${x} cy=${y} r=${r + 4 / z} fill=${ring} opacity=".18" /><circle cx=${x} cy=${y} r=${r} fill=${fill} stroke=${ring} stroke-width=${2 / z} />${lab}</g>`;
+      <circle cx=${x} cy=${y} r=${r * 1.9} fill=${c} opacity=".25" filter=${`url(#${fid}b)`} /><circle cx=${x} cy=${y} r=${r} fill=${c} stroke="rgba(255,255,255,.92)" stroke-width=${1.5 * s1} /><circle cx=${x} cy=${y} r=${r * 0.36} fill="#fff" />${lab}</g>`;
   });
   const svg = html`<svg viewBox=${`0 0 ${w} ${h}`} width=${w} height=${h} style="display:block;width:100%;height:auto" data-t=${o.key || 'routeMap'}>
-    <defs><filter id=${fid} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation=${3.2 / z} /></filter></defs>
-    <rect width=${w} height=${h} fill=${sea} />
-    ${g.land ? html`<path d=${g.land} fill=${land} stroke=${edge} stroke-width=".7" fill-rule="evenodd" />` : html`<text x=${w / 2} y=${h / 2} text-anchor="middle" font-size="11" fill=${light ? '#889' : '#556'}>Loading map…</text>`}
-    ${g.prov ? html`<path d=${g.prov} fill="none" stroke=${prov} stroke-width=".6" stroke-dasharray="2.5 2" />` : null}
+    <defs><filter id=${fid} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation=${4.5 * s1} /></filter><filter id=${fid + 'b'}><feGaussianBlur stdDeviation=${2.5 * s1} /></filter>
+      <radialGradient id=${fid + 'v'} cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#11141A" /><stop offset="1" stop-color="#07080B" /></radialGradient></defs>
+    <rect width=${w} height=${h} fill=${`url(#${fid}v)`} />
+    ${g.ready ? html`<path d=${g.land} fill="#0D0F13" stroke="#1C2027" stroke-width=".8" fill-rule="evenodd" /><path d=${g.lit} fill="#181C23" stroke="#3B424D" stroke-width="1.3" fill-rule="evenodd" />`
+      : html`<text x=${w / 2} y=${h / 2} text-anchor="middle" font-size="11" fill="#556">Loading map…</text>`}
+    ${g.prov ? html`<path d=${g.prov} fill="none" stroke="rgba(160,170,185,.17)" stroke-width=".7" />` : null}
     ${route}${pinEls}
   </svg>`;
   return { svg, view: v, empty: !all.length };
 }
+
+/** The journey map card in the style of the example (ROUTE MAP · View Full Map · country, total km, days). Ready for Atlas. */
+export function RouteCard(o) {
+  const t = L.journey(o.id); if (!t) return null;
+  const tot = L.lbTotals(o.id), iso = L.isosOf(o.id).find(x => x !== L.P.homeIso()) || L.isosOf(o.id)[0], cn = ((L.P.BY[iso] || {}).name || '').toUpperCase();
+  const m = RouteMap({ id: o.id, days: L.days(t).map(d => d.n), w: o.w || 366, h: o.h || 400, perDay: o.perDay, onPin: o.onPin, key: o.key || 'routeCard', pad: 0.16 });
+  return html`<div class="lbcard" data-t=${(o.key || 'routeCard') + 'Box'}>${m.svg}
+    <div class="hd"><b>ROUTE MAP</b>${o.onFull ? html`<span onClick=${o.onFull} data-t="routeFull">View Full Map <i>⤢</i></span>` : null}</div>
+    <div class="ov"><div class="c">${cn}</div><div class="ln"></div>
+      <div class="st"><i></i><div><b>${L.n0(tot.km)} Km</b><span>Total Distance</span></div></div><div class="bar"></div>
+      <div class="st"><i></i><div><b>${tot.days} Days</b><span>Total Trip</span></div></div></div></div>`;
+}
+export const routeCardCss = () => { const a = accent(), soft = mixW(a, 0.75); return `
+.lbcard{position:relative;border-radius:18px;overflow:hidden;background:#07080B;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+.lbcard .hd{position:absolute;left:16px;right:16px;top:14px;display:flex;justify-content:space-between;align-items:center;color:#fff}.lbcard .hd b{font:800 16px Inter,system-ui;letter-spacing:.5px}
+.lbcard .hd span{font-size:12px;color:#C9CED6;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.lbcard .hd i{font-style:normal;margin-left:8px;display:inline-block;text-decoration:none}
+.lbcard .ov{position:absolute;left:16px;bottom:16px;color:#fff;pointer-events:none}.lbcard .c{font:700 16px Inter,system-ui;letter-spacing:1.4px;color:#9AA3AE}.lbcard .ln{width:96px;height:1px;background:#3A414C;margin:6px 0 10px}
+.lbcard .st{display:grid;grid-template-columns:20px 1fr;gap:9px;align-items:start}.lbcard .st i{width:16px;height:16px;border-radius:50%;border:3px solid ${a};background:#0B0D11;display:block;box-shadow:0 0 8px color-mix(in srgb,${a} 60%,transparent);position:relative}
+.lbcard .st i:after{content:'';position:absolute;inset:2.5px;border-radius:50%;background:${soft}}.lbcard .st b{font-size:19px;font-weight:600;display:block;line-height:1}.lbcard .st span{font-size:11px;color:#9AA3AE;display:block;margin-top:4px}
+.lbcard .bar{width:2px;height:16px;background:${a};margin:3px 0 3px 7px}
+.lbday .ov2,.lbmap .ovc{pointer-events:none}`; };
 
 /* ───────── elevation profile ───────── */
 /** ele: heights spread evenly along km. fr: stop positions (0..1). l.scrub (0..1) shows one point. */

@@ -16,6 +16,11 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.6.0 · Voyage searches places with Google Places (the same list as the Google Maps app) when you set a key:
+ *   paste it on the PLACES_KEY_TO_SAVE line below, run setPlacesKey(), then empty the line again. Used until 9,950 requests
+ *   this month (suggestions and place details each), at most 5 suggestion requests per search, then the free search.
+ *   Run placesUsage() to see this month's count. New columns: LpProv, FdProv.
+ *
  * 3.5.3 · Voyage place search also looks up named places (viewpoints, homestays, cafes) from OpenStreetMap, searches near
  *   your last stop, and never replaces the name you typed. Run setupVoyage() once (it now needs "connect to an external service").
  *
@@ -50,7 +55,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.5.3';
+var EW_VERSION = '3.6.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -80,13 +85,13 @@ var TABLES = {
   PP_Photos: { key: 'PhId', cols: { PhId: 's', PhTrip: 's', PhFile: 's', PhW: 'n', PhH: 'n', PhTaken: 'd', PhCap: 's', PhSeq: 'n' } },
   PP_Thumbs: { key: 'ThId', cols: { ThId: 's', ThData: 's' } },
   // MansWell Voyage (was Logbook): the detail of each Atlas journey (linked by its TrId). Travel only.
-  LB_Stops: { key: 'LpId', cols: { LpId: 's', LpTrip: 's', LpDay: 'n', LpSeq: 'n', LpPlace: 's', LpCity: 's', LpCountry: 's', LpArr: 's', LpStay: 'n', LpMode: 's', LpKm: 'n', LpMin: 'n', LpNote: 's', LpLat: 'n', LpLng: 'n', LpAddr: 's' } },
+  LB_Stops: { key: 'LpId', cols: { LpId: 's', LpTrip: 's', LpDay: 'n', LpSeq: 'n', LpPlace: 's', LpCity: 's', LpCountry: 's', LpArr: 's', LpStay: 'n', LpMode: 's', LpKm: 'n', LpMin: 'n', LpNote: 's', LpLat: 'n', LpLng: 'n', LpAddr: 's', LpProv: 's' } },
   LB_Tracks: { key: 'TkKey', cols: { TkKey: 's', TkTrip: 's', TkDay: 'n', TkPoly: 's', TkEle: 's', TkKm: 'n', TkMin: 'n', TkUp: 'n', TkDown: 'n', TkMax: 'n', TkLegs: 's', TkSrc: 's', TkWhen: 't' } },
   LB_Expenses: { key: 'ExId', cols: { ExId: 's', ExTrip: 's', ExDay: 'n', ExCat: 's', ExWhat: 's', ExPay: 's', ExAmt: 'n', ExCur: 's', ExRate: 'n', ExMyr: 'n', ExBill: 'n', ExBillCur: 's', ExSeq: 'n' } },
   LB_Budget: { key: 'BgKey', cols: { BgKey: 's', BgTrip: 's', BgCat: 's', BgAmt: 'n' } },
   LB_Rates: { key: 'RtKey', cols: { RtKey: 's', RtTrip: 's', RtCur: 's', RtRate: 'n', RtDate: 'd' } },
   LB_Results: { key: 'RsTrip', cols: { RsTrip: 's', RsRoads: 'n', RsScenery: 'n', RsComfort: 'n', RsFood: 'n', RsValue: 'n', RsVerdict: 's', RsBack: 's', RsKmMode: 's', RsBadges: 's' } },
-  LB_Finds: { key: 'FdId', cols: { FdId: 's', FdTrip: 's', FdKind: 's', FdName: 's', FdWhere: 's', FdDay: 'n', FdNote: 's', FdLat: 'n', FdLng: 'n', FdSeq: 'n' } }
+  LB_Finds: { key: 'FdId', cols: { FdId: 's', FdTrip: 's', FdKind: 's', FdName: 's', FdWhere: 's', FdDay: 'n', FdNote: 's', FdLat: 'n', FdLng: 'n', FdSeq: 'n', FdProv: 's' } }
 };
 var WRITE_ACTIONS = ['commit', 'startFresh', 'ppPhotoUp', 'ppPhotoDel', 'lbRoute', 'lbGpxSave'];
 
@@ -187,7 +192,7 @@ var ACTIONS = {
       imports: readTable_(ss, 'SYS_Imports'),
       payslips: readTable_(ss, 'EW_Payslips'),
       lens: { settings: readTable_(ss, 'LN_Settings'), assets: readTable_(ss, 'LN_Assets'), values: readTable_(ss, 'LN_Values'), goals: readTable_(ss, 'LN_Goals'), budget: readTable_(ss, 'LN_Budget') },
-      logbook: { stops: readTable_(ss, 'LB_Stops'), tracks: readTable_(ss, 'LB_Tracks'), expenses: readTable_(ss, 'LB_Expenses'), budget: readTable_(ss, 'LB_Budget'), rates: readTable_(ss, 'LB_Rates'), results: readTable_(ss, 'LB_Results'), finds: readTable_(ss, 'LB_Finds') },
+      logbook: { stops: readTable_(ss, 'LB_Stops'), tracks: readTable_(ss, 'LB_Tracks'), expenses: readTable_(ss, 'LB_Expenses'), budget: readTable_(ss, 'LB_Budget'), rates: readTable_(ss, 'LB_Rates'), results: readTable_(ss, 'LB_Results'), finds: readTable_(ss, 'LB_Finds'), places: placesUse_() },
       passport: { settings: readTable_(ss, 'PP_Settings'), places: readTable_(ss, 'PP_Places'), trips: readTable_(ss, 'PP_Trips'), stops: readTable_(ss, 'PP_Stops'), photos: readTable_(ss, 'PP_Photos') },
       serverTime: new Date().toISOString()
     };
@@ -272,7 +277,7 @@ var ACTIONS = {
         if (!pr.name || (region && cc && cc !== region)) return;
         var city = pr.city || pr.county || pr.district || pr.state || '';
         out.push({ name: pr.name, lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], addr: [pr.name, city, pr.state !== city ? pr.state : '', pr.country].filter(function (x) { return x; }).join(', '),
-          city: city, cc: cc, area: ['city', 'town', 'village', 'county', 'state', 'district', 'country', 'suburb'].indexOf(String(pr.type || '')) >= 0, src: 'osm' });
+          city: city, prov: pr.state && pr.state !== city ? pr.state : '', cc: cc, area: ['city', 'town', 'village', 'county', 'state', 'district', 'country', 'suburb'].indexOf(String(pr.type || '')) >= 0, src: 'osm' });
       });
     } catch (e) { /* not approved yet or Photon unreachable: Google alone below */ }
     // 2 · Google Maps (addresses, towns, well-known places), near the last stop when known
@@ -284,16 +289,50 @@ var ACTIONS = {
     var EXACT = ['point_of_interest', 'establishment', 'natural_feature', 'tourist_attraction', 'premise', 'lodging', 'park'];
     (r.results || []).forEach(function (x) {
       var c = x.address_components || [], t = x.types || [], pick = function (k) { for (var i = 0; i < c.length; i++) if ((c[i].types || []).indexOf(k) >= 0) return c[i]; return null; };
-      var city = pick('locality') || pick('administrative_area_level_2') || pick('administrative_area_level_1'), cc = pick('country');
+      var city = pick('locality') || pick('administrative_area_level_2') || pick('administrative_area_level_1'), cc = pick('country'), pv = pick('administrative_area_level_1');
       var exact = t.some(function (k) { return EXACT.indexOf(k) >= 0; }), area = !!x.partial_match || (!exact && t.some(function (k) { return AREA.indexOf(k) >= 0; }));
       out.push({ lat: x.geometry.location.lat, lng: x.geometry.location.lng, addr: x.formatted_address, name: String(x.formatted_address || '').split(',')[0].trim(),
-        city: city ? city.long_name : '', cc: cc ? cc.short_name : '', area: area, src: 'google' });
+        city: city ? city.long_name : '', prov: pv && pv !== city ? pv.long_name : '', cc: cc ? cc.short_name : '', area: area, src: 'google' });
     });
     // exact places first, areas last; drop near-duplicates
     var seen = [], list = out.filter(function (x) { return !x.area; }).concat(out.filter(function (x) { return x.area; })).filter(function (x) {
       if (seen.some(function (y) { return Math.abs(y.lat - x.lat) < 0.002 && Math.abs(y.lng - x.lng) < 0.002; })) return false; seen.push(x); return true; });
     return list.slice(0, n);
   },
+  /** Voyage · suggestions while you type (Google Places when a key is set and this month is under 9,950; else the free search). */
+  lbPlaces: function (ss, p) {
+    var key = placesKey_(), use = placesUse_(), q = String(p.q || '').trim(), sess = String(p.session || '').slice(0, 60);
+    var free = function (why) { return { mode: 'free', why: why, use: use, list: ACTIONS.lbGeocode(ss, { q: q, country: p.country, region: p.region, near: p.near, n: 5 }) }; };
+    if (!q) return { mode: 'google', use: use, list: [] };
+    if (!key) return free('nokey');
+    if (use.ac >= PLACES_CAP || use.det >= PLACES_CAP) return free('cap');
+    var c = CacheService.getScriptCache(), n = Number(c.get('pls_' + sess) || 0);
+    if (sess && n >= PLACES_PER_SEARCH) return { mode: 'max', use: use, list: [] };
+    var body = { input: q, sessionToken: sess || undefined };
+    if (p.region) body.includedRegionCodes = [String(p.region).toLowerCase()];
+    if (p.near && p.near.lat) body.locationBias = { circle: { center: { latitude: Number(p.near.lat), longitude: Number(p.near.lng) }, radius: 50000 } };
+    var r = placesFetch_('https://places.googleapis.com/v1/places:autocomplete', { method: 'post', contentType: 'application/json', payload: JSON.stringify(body) }, null);
+    use = placesCount_('ac'); if (sess) c.put('pls_' + sess, String(n + 1), 900);
+    if (r.err) return r.limit ? free('cap') : free('error: ' + r.err);
+    var list = (r.json.suggestions || []).filter(function (x) { return x.placePrediction; }).slice(0, 5).map(function (x) {
+      var pp = x.placePrediction, sf = pp.structuredFormat || {};
+      return { id: pp.placeId, name: (sf.mainText && sf.mainText.text) || (pp.text && pp.text.text) || '', addr: (pp.text && pp.text.text) || '', sub: (sf.secondaryText && sf.secondaryText.text) || '' };
+    });
+    return { mode: 'google', use: use, left: PLACES_PER_SEARCH - n - 1, list: list };
+  },
+  /** Voyage · the place you tapped: exact pin, address, city, province, country (Place Details, basic fields only). Ends the search session. */
+  lbPlace: function (ss, p) {
+    var key = placesKey_(), use = placesUse_(); if (!key || !p.id) throw new Error('Google Places is not set up.');
+    if (use.det >= PLACES_CAP) throw new Error("This month's Google Places amount is used up; the free search is used until next month.");
+    var url = 'https://places.googleapis.com/v1/places/' + encodeURIComponent(String(p.id)) + (p.session ? '?sessionToken=' + encodeURIComponent(String(p.session)) : '');
+    var r = placesFetch_(url, { method: 'get' }, 'location,formattedAddress,addressComponents');
+    use = placesCount_('det');
+    if (r.err) throw new Error('Google Places: ' + r.err);
+    var c = r.json.addressComponents || [], pick = function (t) { for (var i = 0; i < c.length; i++) if ((c[i].types || []).indexOf(t) >= 0) return c[i]; return null; };
+    var city = pick('locality') || pick('administrative_area_level_2') || pick('sublocality'), pv = pick('administrative_area_level_1'), cc = pick('country');
+    return { lat: r.json.location.latitude, lng: r.json.location.longitude, addr: r.json.formattedAddress || '', city: city ? city.longText : '', prov: pv ? pv.longText : '', cc: cc ? cc.shortText : '', use: use };
+  },
+
   /** Voyage · make the track for one day from its stops: road route per leg (by its transport), then heights along it. Saved to LB_Tracks. */
   lbRoute: function (ss, p) {
     var pts = p.pts || []; if (pts.length < 2) throw new Error('A day needs at least two stops with a pin to make a track.');
@@ -441,6 +480,45 @@ function setupLogbook() {
   Logger.log('Voyage is ready. Google Maps answered: ' + ((r.results && r.results[0] && r.results[0].formatted_address) || r.status));
   return r.status;
 }
+/* ───────── 3.6.0 · Google Places for Voyage ───────── */
+var PLACES_CAP = 9950;        // per month, for suggestions and for place details (Google's free amount is 10,000 each)
+var PLACES_PER_SEARCH = 5;    // suggestion requests per place search
+/** Paste your Google Places key between the quotes, run setPlacesKey, then empty the quotes again (the key is kept privately). */
+var PLACES_KEY_TO_SAVE = '';
+function setPlacesKey() {
+  var k = String(PLACES_KEY_TO_SAVE || '').trim();
+  if (!k) { try { var ui = SpreadsheetApp.getUi(), a = ui.prompt('Google Places key', 'Paste the API key from Google Cloud. It is kept in this script\'s private settings, never in GitHub.', ui.ButtonSet.OK_CANCEL); if (a.getSelectedButton() === ui.Button.OK) k = a.getResponseText().trim(); } catch (e) { /* run from the editor */ } }
+  if (!k) throw new Error('Paste your key between the quotes on the line  var PLACES_KEY_TO_SAVE = \'\';  then run setPlacesKey again.');
+  PropertiesService.getScriptProperties().setProperty('PLACES_KEY', k);
+  var r = placesFetch_('https://places.googleapis.com/v1/places:autocomplete', { method: 'post', contentType: 'application/json', payload: JSON.stringify({ input: 'Kuala Lumpur' }) }, null);
+  placesCount_('ac');
+  if (r.err) { Logger.log('Key saved, but Google Places answered: ' + r.err + '  (check that Places API (New) is enabled and billing is linked)'); return; }
+  Logger.log('Key saved. Testing… Google Places answered OK.'); Logger.log('Voyage now searches with Google Places. Now empty the quotes on the PLACES_KEY_TO_SAVE line.'); placesUsage();
+}
+/** This month's Google Places count. */
+function placesUsage() { var u = placesUse_(); Logger.log('This month (' + u.m + '): ' + u.ac + ' suggestions, ' + u.det + ' place details. Voyage uses Google until ' + PLACES_CAP + ' of either, then the free search until next month.'); return u; }
+function removePlacesKey() { PropertiesService.getScriptProperties().deleteProperty('PLACES_KEY'); Logger.log('Key removed. Voyage uses the free search.'); }
+function placesKey_() { return PropertiesService.getScriptProperties().getProperty('PLACES_KEY') || ''; }
+function placesUse_() {
+  var m = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM'), u = {};
+  try { u = JSON.parse(PropertiesService.getScriptProperties().getProperty('PLACES_USE') || '{}'); } catch (e) { u = {}; }
+  if (u.m !== m) u = { m: m, ac: 0, det: 0 };
+  return { m: m, ac: Number(u.ac) || 0, det: Number(u.det) || 0, cap: PLACES_CAP, on: !!placesKey_() };
+}
+function placesCount_(k) {
+  var lock = LockService.getScriptLock(); try { lock.waitLock(5000); } catch (e) { lock = null; }
+  try { var u = placesUse_(); u[k] = (u[k] || 0) + 1; PropertiesService.getScriptProperties().setProperty('PLACES_USE', JSON.stringify({ m: u.m, ac: u.ac, det: u.det })); return u; }
+  finally { if (lock) lock.releaseLock(); }
+}
+function placesFetch_(url, o, mask) {
+  var h = { 'X-Goog-Api-Key': placesKey_() }; if (mask) h['X-Goog-FieldMask'] = mask;
+  var opt = { muteHttpExceptions: true, headers: h, method: o.method }; if (o.payload) { opt.payload = o.payload; opt.contentType = o.contentType; }
+  var res = UrlFetchApp.fetch(url, opt), code = res.getResponseCode(), j = {};
+  try { j = JSON.parse(res.getContentText() || '{}'); } catch (e) { j = {}; }
+  if (code !== 200) { var msg = (j.error && j.error.message) || ('HTTP ' + code); return { err: msg, limit: code === 429 || /quota|exhausted/i.test(msg) }; }
+  return { json: j };
+}
+
 /** Same as setupLogbook (the module is called Voyage since 3.5.0). */
 function setupVoyage() {
   var st = setupLogbook();

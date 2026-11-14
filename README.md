@@ -1,4 +1,23 @@
-# MansWell · v3.5.3 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.6.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.6.1 · Voyage maps follow the theme
+The road, its glow, the pins, the km on the map, the ROUTE MAP card and the elevation chart use your theme's colour (Ember orange, Ivory maroon, Sapphire gold, Rosé pink, Graphite silver). The dark map itself stays. App files only; Code.gs is the same as 3.6.0.
+
+## 3.6.0 · Google Places in Voyage, new map style
+- **Google Places search** (the same list as the Google Maps app) for stops and Discovery finds once you set a key. Picking a place fills the name, City, Province, Country and the exact pin.
+  - At most 5 Google requests per place search (then pick one or tap "Search again").
+  - Used until 9,950 requests this month (suggestions and place details each), then the free search until the 1st of next month.
+  - This month's count: the "Google Places" bar under the search and on the Journeys page, or run **placesUsage** in Apps Script.
+- Add a stop: City · Province · Country on one line, Arrived · Stayed below; no Day box (a stop belongs to the day you add it on); no paste-a-pin box; no example text in empty boxes (all Voyage forms).
+- Maps in the style of your example: the journey's country lit, neighbours darker, thin province lines, glowing orange road, labelled pins (green start, red end). The journey ROUTE MAP card is ready for Atlas.
+- New columns (made by themselves): LpProv in LB_Stops, FdProv in LB_Finds.
+
+### Updating to 3.6.0
+1. Upload everything inside "Step 1" to GitHub.
+2. Apps Script: replace all of Code.gs and save.
+3. Set the Google Places key: in Code.gs find the line `var PLACES_KEY_TO_SAVE = '';`, paste your key between the quotes, save, choose **setPlacesKey** and press **Run**. The log should say "Google Places answered OK". Then empty the quotes again and save (the key stays saved privately).
+4. Deploy › Manage deployments › edit › New version › Deploy.
+Without a key Voyage keeps the free search.
 
 ## 3.5.3 · better place search in Voyage
 - Google's geocoder only knows addresses and areas, so a viewpoint like "Mom Da Tu Than" came back as its district (Meo Vac) and its name replaced yours. Now:
