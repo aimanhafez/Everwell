@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '3.4.0';
+export const VERSION = '3.5.0';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -17,7 +17,7 @@ export const PALETTE = ['#FF6A00', '#E5484D', '#A3236F', '#E9B949', '#6B7178', '
 export const DB = { settings: null, accounts: [], categories: [], payees: [], recurring: [], txns: [], audit: [], importMap: [], imports: [], sysOk: false,
   lnSettings: [], lnAssets: [], lnValues: [], lnGoals: [], lnBudget: [], lnOk: false, payslips: [], psOk: false,
   ppSettings: [], ppPlaces: [], ppTrips: [], ppStops: [], ppPhotos: [], ppOk: false,
-  lbStops: [], lbTracks: [], lbExp: [], lbBudget: [], lbRates: [], lbResults: [], lbOk: false };
+  lbStops: [], lbTracks: [], lbExp: [], lbBudget: [], lbRates: [], lbResults: [], lbFinds: [], lbOk: false };
 
 /* ───────────── Global variables (Set(...) in the Power App) ───────────── */
 export const G = {
@@ -288,7 +288,7 @@ export async function api(action, payload, conn = CONN.v, opts = {}) {
  * Every save is applied on the phone straight away and put in an "outbox" kept in phone storage.
  * The outbox is sent to Google one batch at a time. Each batch is safe to send twice (rows are keyed),
  * so nothing is lost if the app is closed, offline or interrupted: it is sent again next time. */
-const MAP = { LB_Stops: ['lbStops', 'LpId'], LB_Tracks: ['lbTracks', 'TkKey'], LB_Expenses: ['lbExp', 'ExId'], LB_Budget: ['lbBudget', 'BgKey'], LB_Rates: ['lbRates', 'RtKey'], LB_Results: ['lbResults', 'RsTrip'], PP_Settings: ['ppSettings', 'PsetKey'], PP_Places: ['ppPlaces', 'PlIso'], PP_Trips: ['ppTrips', 'TrId'], PP_Stops: ['ppStops', 'StKey'], PP_Photos: ['ppPhotos', 'PhId'], EW_Payslips: ['payslips', 'PsKey'], LN_Settings: ['lnSettings', 'LsKey'], LN_Assets: ['lnAssets', 'AsId'], LN_Values: ['lnValues', 'VaId'], LN_Goals: ['lnGoals', 'GoId'], LN_Budget: ['lnBudget', 'BuKey'],
+const MAP = { LB_Stops: ['lbStops', 'LpId'], LB_Tracks: ['lbTracks', 'TkKey'], LB_Expenses: ['lbExp', 'ExId'], LB_Budget: ['lbBudget', 'BgKey'], LB_Rates: ['lbRates', 'RtKey'], LB_Results: ['lbResults', 'RsTrip'], LB_Finds: ['lbFinds', 'FdId'], PP_Settings: ['ppSettings', 'PsetKey'], PP_Places: ['ppPlaces', 'PlIso'], PP_Trips: ['ppTrips', 'TrId'], PP_Stops: ['ppStops', 'StKey'], PP_Photos: ['ppPhotos', 'PhId'], EW_Payslips: ['payslips', 'PsKey'], LN_Settings: ['lnSettings', 'LsKey'], LN_Assets: ['lnAssets', 'AsId'], LN_Values: ['lnValues', 'VaId'], LN_Goals: ['lnGoals', 'GoId'], LN_Budget: ['lnBudget', 'BuKey'],
   SYS_ImportMap: ['importMap', 'MapKey'], SYS_Imports: ['imports', 'ImpId'], EW_Accounts: ['accounts', 'AccId'], EW_Categories: ['categories', 'CatId'], EW_Payees: ['payees', 'PyName'], EW_Recurring: ['recurring', 'RcId'], EW_Transactions: ['txns', 'TxnId'] };
 export const SYNC = { outbox: store.get('ew_outbox', []), flushing: false, failed: false, timer: null };
 /** Bumped whenever the data changes, so cached totals (Lens P&L) never show an old category, date or type. */
@@ -321,7 +321,7 @@ let cacheTimer = null;
 const writeCache = () => { cacheTimer = null; store.set('ew_data', { at: Date.now(), settings: DB.settings, accounts: DB.accounts, categories: DB.categories, payees: DB.payees, recurring: DB.recurring, txns: DB.txns, audit: DB.audit.slice(0, 30), importMap: DB.importMap, imports: DB.imports, sysOk: DB.sysOk,
   lens: { settings: DB.lnSettings, assets: DB.lnAssets, values: DB.lnValues, goals: DB.lnGoals, budget: DB.lnBudget }, lnOk: DB.lnOk, payslips: DB.payslips, psOk: DB.psOk,
   passport: { settings: DB.ppSettings, places: DB.ppPlaces, trips: DB.ppTrips, stops: DB.ppStops, photos: DB.ppPhotos }, ppOk: DB.ppOk, srvVer: DB.srvVer,
-  logbook: { stops: DB.lbStops, tracks: DB.lbTracks, expenses: DB.lbExp, budget: DB.lbBudget, rates: DB.lbRates, results: DB.lbResults }, lbOk: DB.lbOk }); };
+  logbook: { stops: DB.lbStops, tracks: DB.lbTracks, expenses: DB.lbExp, budget: DB.lbBudget, rates: DB.lbRates, results: DB.lbResults, finds: DB.lbFinds }, lbOk: DB.lbOk }); };
 function persistCache() { clearTimeout(cacheTimer); cacheTimer = setTimeout(writeCache, 300); }
 /** Write a pending cache save now (the app is being closed / hidden). */
 export function flushCache() { if (cacheTimer) { clearTimeout(cacheTimer); writeCache(); } }
@@ -385,7 +385,7 @@ function applyLoaded(d) {
   // Logbook tabs exist only once the Apps Script is v3.4 or newer
   const lb = d.logbook || null;
   DB.lbOk = !!lb || !!d.lbOk;
-  DB.lbStops = (lb && lb.stops) || []; DB.lbTracks = (lb && lb.tracks) || []; DB.lbExp = (lb && lb.expenses) || []; DB.lbBudget = (lb && lb.budget) || []; DB.lbRates = (lb && lb.rates) || []; DB.lbResults = (lb && lb.results) || [];
+  DB.lbStops = (lb && lb.stops) || []; DB.lbTracks = (lb && lb.tracks) || []; DB.lbExp = (lb && lb.expenses) || []; DB.lbBudget = (lb && lb.budget) || []; DB.lbRates = (lb && lb.rates) || []; DB.lbResults = (lb && lb.results) || []; DB.lbFinds = (lb && lb.finds) || [];
   for (const item of SYNC.outbox) applyLocal(item.p); // changes not yet on Google stay visible
   G.gblCycleDay = (DB.settings && DB.settings.StCycleDay) || 28;
   const l = PLABEL(Today());

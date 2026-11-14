@@ -14,7 +14,11 @@
  *   5. Deploy > New deployment > Web app.  Execute as: Me.  Who has access: Anyone.
  *      Copy the Web app URL (it ends with /exec).
  *
- * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupLogbook()
+ * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
+ *
+ * 3.5.0 · VOYAGE (Logbook renamed): places found as you type (Google Maps), travel time from your arrival times,
+ *   km always from the GPX track, Discovery page (journey badges + what you found). New tab LB_Finds.
+ *   If you already ran setupLogbook() for 3.4.0 there is nothing new to approve: paste, save, deploy a new version.
  *
  * 3.4.0 · LOGBOOK (fourth room): itinerary, expenses (cash in local currency, card in MYR), budget,
  *   results, and a GPX track made from your stops with Google Maps (route + elevation).
@@ -40,7 +44,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.4.0';
+var EW_VERSION = '3.5.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -69,13 +73,14 @@ var TABLES = {
   PP_Stops: { key: 'StKey', cols: { StKey: 's', StTrip: 's', StIso: 's', StDays: 'n', StSeq: 'n', StRoute: 's' } },
   PP_Photos: { key: 'PhId', cols: { PhId: 's', PhTrip: 's', PhFile: 's', PhW: 'n', PhH: 'n', PhTaken: 'd', PhCap: 's', PhSeq: 'n' } },
   PP_Thumbs: { key: 'ThId', cols: { ThId: 's', ThData: 's' } },
-  // MansWell Logbook: the detail of each Atlas journey (linked by its TrId). Travel only.
+  // MansWell Voyage (was Logbook): the detail of each Atlas journey (linked by its TrId). Travel only.
   LB_Stops: { key: 'LpId', cols: { LpId: 's', LpTrip: 's', LpDay: 'n', LpSeq: 'n', LpPlace: 's', LpCity: 's', LpCountry: 's', LpArr: 's', LpStay: 'n', LpMode: 's', LpKm: 'n', LpMin: 'n', LpNote: 's', LpLat: 'n', LpLng: 'n', LpAddr: 's' } },
   LB_Tracks: { key: 'TkKey', cols: { TkKey: 's', TkTrip: 's', TkDay: 'n', TkPoly: 's', TkEle: 's', TkKm: 'n', TkMin: 'n', TkUp: 'n', TkDown: 'n', TkMax: 'n', TkLegs: 's', TkSrc: 's', TkWhen: 't' } },
   LB_Expenses: { key: 'ExId', cols: { ExId: 's', ExTrip: 's', ExDay: 'n', ExCat: 's', ExWhat: 's', ExPay: 's', ExAmt: 'n', ExCur: 's', ExRate: 'n', ExMyr: 'n', ExBill: 'n', ExBillCur: 's', ExSeq: 'n' } },
   LB_Budget: { key: 'BgKey', cols: { BgKey: 's', BgTrip: 's', BgCat: 's', BgAmt: 'n' } },
   LB_Rates: { key: 'RtKey', cols: { RtKey: 's', RtTrip: 's', RtCur: 's', RtRate: 'n', RtDate: 'd' } },
-  LB_Results: { key: 'RsTrip', cols: { RsTrip: 's', RsRoads: 'n', RsScenery: 'n', RsComfort: 'n', RsFood: 'n', RsValue: 'n', RsVerdict: 's', RsBack: 's', RsKmMode: 's' } }
+  LB_Results: { key: 'RsTrip', cols: { RsTrip: 's', RsRoads: 'n', RsScenery: 'n', RsComfort: 'n', RsFood: 'n', RsValue: 'n', RsVerdict: 's', RsBack: 's', RsKmMode: 's', RsBadges: 's' } },
+  LB_Finds: { key: 'FdId', cols: { FdId: 's', FdTrip: 's', FdKind: 's', FdName: 's', FdWhere: 's', FdDay: 'n', FdNote: 's', FdLat: 'n', FdLng: 'n', FdSeq: 'n' } }
 };
 var WRITE_ACTIONS = ['commit', 'startFresh', 'ppPhotoUp', 'ppPhotoDel', 'lbRoute', 'lbGpxSave'];
 
@@ -176,7 +181,7 @@ var ACTIONS = {
       imports: readTable_(ss, 'SYS_Imports'),
       payslips: readTable_(ss, 'EW_Payslips'),
       lens: { settings: readTable_(ss, 'LN_Settings'), assets: readTable_(ss, 'LN_Assets'), values: readTable_(ss, 'LN_Values'), goals: readTable_(ss, 'LN_Goals'), budget: readTable_(ss, 'LN_Budget') },
-      logbook: { stops: readTable_(ss, 'LB_Stops'), tracks: readTable_(ss, 'LB_Tracks'), expenses: readTable_(ss, 'LB_Expenses'), budget: readTable_(ss, 'LB_Budget'), rates: readTable_(ss, 'LB_Rates'), results: readTable_(ss, 'LB_Results') },
+      logbook: { stops: readTable_(ss, 'LB_Stops'), tracks: readTable_(ss, 'LB_Tracks'), expenses: readTable_(ss, 'LB_Expenses'), budget: readTable_(ss, 'LB_Budget'), rates: readTable_(ss, 'LB_Rates'), results: readTable_(ss, 'LB_Results'), finds: readTable_(ss, 'LB_Finds') },
       passport: { settings: readTable_(ss, 'PP_Settings'), places: readTable_(ss, 'PP_Places'), trips: readTable_(ss, 'PP_Trips'), stops: readTable_(ss, 'PP_Stops'), photos: readTable_(ss, 'PP_Photos') },
       serverTime: new Date().toISOString()
     };
@@ -247,12 +252,19 @@ var ACTIONS = {
     return { deleted: ids.length };
   },
 
-  /** Logbook · find a place (Google Maps). Up to 3 matches. */
+  /** Voyage · find a place (Google Maps). Up to 3 matches. */
   lbGeocode: function (ss, p) {
-    var r; try { r = Maps.newGeocoder().geocode(String(p.q || '')); } catch (e) { throw mapsErr_(e); }
-    return (r.results || []).slice(0, 3).map(function (x) { return { lat: x.geometry.location.lat, lng: x.geometry.location.lng, addr: x.formatted_address }; });
+    var g = Maps.newGeocoder().setLanguage('en'), r;
+    if (p.region) g.setRegion(String(p.region).toLowerCase());
+    try { r = g.geocode(String(p.q || '')); } catch (e) { throw mapsErr_(e); }
+    return (r.results || []).slice(0, Number(p.n) || 3).map(function (x) {
+      var c = x.address_components || [], pick = function (t) { for (var i = 0; i < c.length; i++) if ((c[i].types || []).indexOf(t) >= 0) return c[i]; return null; };
+      var city = pick('locality') || pick('administrative_area_level_2') || pick('administrative_area_level_1'), cc = pick('country');
+      return { lat: x.geometry.location.lat, lng: x.geometry.location.lng, addr: x.formatted_address, name: String(x.formatted_address || '').split(',')[0].trim(),
+        city: city ? city.long_name : '', cc: cc ? cc.short_name : '' };
+    });
   },
-  /** Logbook · make the track for one day from its stops: road route per leg (by its transport), then heights along it. Saved to LB_Tracks. */
+  /** Voyage · make the track for one day from its stops: road route per leg (by its transport), then heights along it. Saved to LB_Tracks. */
   lbRoute: function (ss, p) {
     var pts = p.pts || []; if (pts.length < 2) throw new Error('A day needs at least two stops with a pin to make a track.');
     var legs = [], all = [];
@@ -284,7 +296,7 @@ var ACTIONS = {
     ensureTables_(ss); upsertRows_(ss, 'LB_Tracks', [row]);
     return row;
   },
-  /** Logbook · today's rate (how much of a currency 1 MYR buys), from Google Finance in a helper tab. */
+  /** Voyage · today's rate (how much of a currency 1 MYR buys), from Google Finance in a helper tab. */
   lbFx: function (ss, p) {
     var cur = String(p.cur || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3); if (!cur) throw new Error('Choose a currency.');
     var sh = ss.getSheetByName('LB_FX') || ss.insertSheet('LB_FX');
@@ -292,7 +304,7 @@ var ACTIONS = {
     var v = Number(sh.getRange('A1').getValue()); if (!v) throw new Error('No rate found for ' + cur + '. Type it yourself.');
     return { cur: cur, rate: v };
   },
-  /** Logbook · save a .gpx file to Drive, in the journey's folder next to its photos. */
+  /** Voyage · save a .gpx file to Drive, in the journey's folder next to its photos. */
   lbGpxSave: function (ss, p) {
     var f; try { f = ppFolder_(String(p.folder || 'Journeys')).createFile(Utilities.newBlob(String(p.xml || ''), 'application/gpx+xml', String(p.name || 'journey') + '.gpx')); } catch (e) { throw driveErr_(e); }
     return { id: f.getId(), url: f.getUrl ? f.getUrl() : '' };
@@ -395,13 +407,15 @@ function ppFolder_(name) {
 /** Run once from this editor (choose setupLogbook, press Run) so Google asks for Maps permission. */
 function setupLogbook() {
   var r = Maps.newGeocoder().geocode('Kuala Lumpur');
-  Logger.log('Logbook is ready. Google Maps answered: ' + ((r.results && r.results[0] && r.results[0].formatted_address) || r.status));
+  Logger.log('Voyage is ready. Google Maps answered: ' + ((r.results && r.results[0] && r.results[0].formatted_address) || r.status));
   return r.status;
 }
+/** Same as setupLogbook (the module is called Voyage since 3.5.0). */
+function setupVoyage() { return setupLogbook(); }
 function mapsErr_(e) {
   var m = String((e && e.message) || e);
-  if (/permission|authoriz|scope/i.test(m)) return new Error('Google Maps is not approved yet. Open Apps Script, choose setupLogbook and press Run, approve, then try again.');
-  if (/too many times|quota|limit/i.test(m)) return new Error("Google Maps' free daily limit is used up. Try again tomorrow; what's already made is saved.");
+  if (/permission|authoriz|scope/i.test(m)) return new Error('Google Maps is not approved yet. Open Apps Script, choose setupVoyage and press Run, approve, then try again.');
+  if (/too many times|quota|limit/i.test(m)) return new Error("DAILY LIMIT: Google Maps' free daily limit is used up. Try again tomorrow; tracks already made are kept.");
   return e;
 }
 function hav_(a, b) { var R = 6371, r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lng - a.lng) * r, x = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) * Math.sin(dLo / 2); return 2 * R * Math.asin(Math.sqrt(x)); }

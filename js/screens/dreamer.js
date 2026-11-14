@@ -112,7 +112,7 @@ export const scrDreamer = {
           <div class="gear" data-t="mainSettings" role="button" aria-label="Settings" onClick=${() => { panel = true; rerender(); }} dangerouslySetInnerHTML=${{ __html: ic('gear', K.sub, 19) }}></div></div>
         <div class="pill" data-t="mainSync" onClick=${() => syncNow()}><b></b><span>${syncedText()}</span><span dangerouslySetInnerHTML=${{ __html: ic('sync', K.sub, 12) }}></span></div>
         <h1>All your dreams,<br/><span>one door.</span></h1>
-        <div class="lead">Pocket records your money. Lens helps you understand it. Atlas keeps your travels, Logbook every detail of them.</div>
+        <div class="lead">Pocket records your money. Lens helps you understand it. Atlas keeps your travels, Voyage every detail of them.</div>
         <div class="cta" data-t="openPocket" role="button" onClick=${openPocket}><span style="line-height:0" dangerouslySetInnerHTML=${{ __html: ic('signin', K.ctaText || K.onAcc, 18) }}></span>Open Pocket</div>
       </div>
       <div class="list">
@@ -129,9 +129,9 @@ export const scrDreamer = {
           <div class="tile" style="--c:#E2367A" dangerouslySetInnerHTML=${{ __html: ic('plane', '#E2367A', 26) }}></div><span class="lk" dangerouslySetInnerHTML=${{ __html: ic('arrow', K.or, 24) }}></span>
           <h4>Atlas</h4><p>Your odyssey, journeys and wanderlist</p>
         </div>
-        <div class="card" data-t="mod-logbook" role="button" aria-label="Logbook" onClick=${openLogbook}>
+        <div class="card" data-t="mod-logbook" role="button" aria-label="Voyage" onClick=${openLogbook}>
           <div class="tile" style="--c:#6AA8FF" dangerouslySetInnerHTML=${{ __html: ic('book', '#6AA8FF', 26) }}></div><span class="lk" dangerouslySetInnerHTML=${{ __html: ic('arrow', K.or, 24) }}></span>
-          <h4>Logbook</h4><p>Itinerary, GPX track, expenses and results</p>
+          <h4>Voyage</h4><p>Itinerary, GPX track, expenses and discoveries</p>
         </div>
         ${SOON.map(([n, sub, c, g], i) => html`<div class="card soon" data-t=${'mod-soon-' + (i + 1)} role="button" aria-label="Coming soon" onClick=${soon}>
           <div class="blur"><div class="tile" style=${'--c:' + c} dangerouslySetInnerHTML=${{ __html: ic(g, c, 26) }}></div><h4>${n}</h4><p>${sub}</p></div>

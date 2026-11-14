@@ -1,4 +1,4 @@
-// MansWell Logbook · the logic. Travel only: reads the Atlas journeys (PP_Trips, never changes them) and reads/writes the LB_ tabs.
+// MansWell Voyage (was Logbook) · the logic. Travel only: reads the Atlas journeys (PP_Trips, never changes them) and reads/writes the LB_ tabs.
 // Never reads or writes Pocket or Lens. Every Logbook row carries the Atlas journey ID (TrId), so Atlas can read lbTotals() later.
 import { DB } from '../core.js';
 import * as P from '../passport/engine.js';
@@ -17,7 +17,18 @@ export const CAT = Object.fromEntries(CATS.map(c => [c.k, c]));
 export const MIX = { trans: 0.25, stay: 0.27, meal: 0.2, ess: 0.1, souv: 0.08, fun: 0.1 };
 export const MODES = [['bike', 'Bike', '🏍️'], ['car', 'Car', '🚗'], ['grab', 'Grab', '🚕'], ['bus', 'Bus', '🚌'], ['train', 'Train', '🚆'], ['walk', 'Walk', '🚶'], ['boat', 'Boat', '⛴️'], ['flight', 'Flight', '✈️']];
 export const MODE = Object.fromEntries(MODES.map(m => [m[0], { k: m[0], n: m[1], e: m[2] }]));
-export const RATINGS = [['RsRoads', 'Roads'], ['RsScenery', 'Scenery'], ['RsComfort', 'Riding comfort'], ['RsFood', 'Food & hospitality'], ['RsValue', 'Value for money']];
+/** Journey badges: one word per theme, no scores. */
+export const BADGES = [
+  { k: 'roads', n: 'Roads', e: '🛣️', o: ['Epic', 'Twisty', 'Smooth', 'Rough', 'Off-road'] },
+  { k: 'scenery', n: 'Scenery', e: '🏔️', o: ['Breathtaking', 'Beautiful', 'Pleasant', 'Ordinary'] },
+  { k: 'comfort', n: 'Riding comfort', e: '🏍️', o: ['Easy', 'Comfortable', 'Tiring', 'Tough'] },
+  { k: 'food', n: 'Food & hospitality', e: '🍜', o: ['Unforgettable', 'Warm', 'Good', 'Meh'] },
+  { k: 'value', n: 'Value for money', e: '💰', o: ['Great value', 'Fair', 'Pricey'] }];
+/** What you found there. */
+export const FINDS = [['cafe', 'Best cafe', '☕'], ['stay', 'Best stay', '🛏️'], ['meal', 'Best meal', '🍜'], ['street', 'Best street food', '🥢'], ['view', 'Best viewpoint', '🏞️'], ['road', 'Best road or pass', '🛣️'],
+  ['gem', 'Hidden gem', '💎'], ['photo', 'Best photo spot', '📸'], ['buy', 'Must buy', '🎁'], ['people', 'Kindest people', '🤝'], ['tip', 'Tip for next time', '💡'], ['avoid', 'Skip next time', '⚠️']]
+  .map(([k, n, e]) => ({ k, n, e }));
+export const FIND = Object.fromEntries(FINDS.map(f => [f.k, f]));
 export const BACK = [['yes', 'Yes, again'], ['maybe', 'Maybe'], ['once', 'Once was enough']];
 export const EVEREST = 8849;
 export const DAYC = ['#FF8A3D', '#5ED1C9', '#B48CFF', '#E9B949', '#6AA8FF', '#E2367A', '#34C77B', '#FF6B6B', '#C8A2FF', '#7FD4FF'];
@@ -61,7 +72,7 @@ export function orphans() {
   const ids = new Set(DB.ppTrips.map(t => t.TrId)), o = {};
   const add = (tab, list, tk, kk) => { for (const r of DB[list]) if (r[tk] && !ids.has(r[tk])) (o[tab] = o[tab] || []).push(r[kk]); };
   add('LB_Stops', 'lbStops', 'LpTrip', 'LpId'); add('LB_Tracks', 'lbTracks', 'TkTrip', 'TkKey'); add('LB_Expenses', 'lbExp', 'ExTrip', 'ExId');
-  add('LB_Budget', 'lbBudget', 'BgTrip', 'BgKey'); add('LB_Rates', 'lbRates', 'RtTrip', 'RtKey'); add('LB_Results', 'lbResults', 'RsTrip', 'RsTrip');
+  add('LB_Budget', 'lbBudget', 'BgTrip', 'BgKey'); add('LB_Finds', 'lbFinds', 'FdTrip', 'FdId'); add('LB_Rates', 'lbRates', 'RtTrip', 'RtKey'); add('LB_Results', 'lbResults', 'RsTrip', 'RsTrip');
   return o;
 }
 
@@ -95,12 +106,22 @@ export function lineOf(id, day) {
   const p = stops(id, day).filter(hasPin).map(s => [Number(s.LpLat), Number(s.LpLng)]);
   return { pts: p, road: false };
 }
-/** km mode for the journey: 'road' (from the track) or 'typed'. */
-export const kmMode = id => ((result(id) || {}).RsKmMode === 'typed' ? 'typed' : 'road');
-export const typedKm = (id, day) => stops(id, day).slice(1).reduce((s, x) => s + (Number(x.LpKm) || 0), 0);
-export const typedMin = (id, day) => stops(id, day).slice(1).reduce((s, x) => s + (Number(x.LpMin) || 0), 0);
-export function dayKm(id, day) { const tk = track(id, day); return tk && kmMode(id) === 'road' ? Number(tk.TkKm) || 0 : typedKm(id, day); }
-export function dayMin(id, day) { const tk = track(id, day), tm = typedMin(id, day); return tm || (tk ? Number(tk.TkMin) || 0 : 0); }
+/** "09:30" → 570 */
+const hm = t => { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+/** Travel time into stop i: its arrival minus (the previous arrival + how long you stayed there). */
+export function legMin(list, i) {
+  if (i < 1) return null; const a = hm(list[i - 1].LpArr), b = hm(list[i].LpArr); if (a === null || b === null) return null;
+  let m = b - (a + (Number(list[i - 1].LpStay) || 0)); if (m < 0) m += 1440; return m;
+}
+/** km always come from the GPX track. */
+export function dayKm(id, day) { const tk = track(id, day); return tk ? Number(tk.TkKm) || 0 : 0; }
+export function dayMin(id, day) { const l = stops(id, day); let m = 0, any = false; for (let i = 1; i < l.length; i++) { const v = legMin(l, i); if (v !== null) { m += v; any = true; } } return any ? m : 0; }
+/** A leg that can't be right (faster than 130 km/h on the road, or very far for its mode): a pin is probably wrong. */
+export function oddLeg(list, i, lg) {
+  if (!lg || !lg.km || i < 1) return false; const mode = list[i].LpMode; if (mode === 'flight') return false;
+  const m = legMin(list, i); if (m) return lg.km / (m / 60) > (mode === 'walk' ? 12 : 130);
+  return lg.km > (mode === 'walk' ? 40 : 700);
+}
 /** Climb, descent, highest and steepest for a day (from the made track). */
 export function meters(id, day) {
   const tk = track(id, day); if (!tk) return null;
@@ -154,25 +175,26 @@ export function actualTier(spent, nDays) {
 
 /* ───────── results ───────── */
 export const result = id => DB.lbResults.find(r => r.RsTrip === id) || null;
-export const blankResult = id => ({ RsTrip: id, RsRoads: 0, RsScenery: 0, RsComfort: 0, RsFood: 0, RsValue: 0, RsVerdict: '', RsBack: '', RsKmMode: '' });
-export function overall(id) { const r = result(id); if (!r) return 0; const v = RATINGS.map(([k]) => Number(r[k]) || 0).filter(x => x > 0); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0; }
-export const isRated = id => RATINGS.some(([k]) => Number((result(id) || {})[k]) > 0);
+export const blankResult = id => ({ RsTrip: id, RsRoads: 0, RsScenery: 0, RsComfort: 0, RsFood: 0, RsValue: 0, RsVerdict: '', RsBack: '', RsKmMode: '', RsBadges: '' });
+export const badges = id => { try { return JSON.parse((result(id) || {}).RsBadges || '{}') || {}; } catch (e) { return {}; } };
+export const finds = id => DB.lbFinds.filter(f => f.FdTrip === id).sort((a, b) => FINDS.findIndex(x => x.k === a.FdKind) - FINDS.findIndex(x => x.k === b.FdKind) || (a.FdSeq || 0) - (b.FdSeq || 0));
+export const hasDiscovery = id => Object.keys(badges(id)).length > 0 || finds(id).length > 0 || !!(result(id) || {}).RsVerdict;
 
 /** One set of totals per journey. Atlas reads this later (lbTotals is the connection). */
 export function lbTotals(id) {
   const t = journey(id); if (!t) return null;
   const ds = days(t).map(d => d.n), st = stops(id), sp = spend(id), bg = budget(id);
-  let km = 0, kmRoad = 0, kmTyped = 0, min = 0, up = 0, hi = 0, tracks = 0;
+  let km = 0, min = 0, up = 0, hi = 0, tracks = 0;
   for (const d of ds) {
-    km += dayKm(id, d); kmTyped += typedKm(id, d); min += dayMin(id, d);
-    const tk = track(id, d); if (tk) { tracks++; kmRoad += Number(tk.TkKm) || 0; up += Number(tk.TkUp) || 0; hi = Math.max(hi, Number(tk.TkMax) || 0); }
+    km += dayKm(id, d); min += dayMin(id, d);
+    const tk = track(id, d); if (tk) { tracks++; up += Number(tk.TkUp) || 0; hi = Math.max(hi, Number(tk.TkMax) || 0); }
   }
   const r = result(id) || {};
-  return { trip: id, name: t.TrName, days: ds.length, stops: st.length, tracks, km, kmRoad, kmTyped, min, climb: up, highest: hi, spent: sp.tot, cash: sp.cash, card: sp.card,
-    budget: bg.tot, overall: overall(id), back: r.RsBack || '', tier: actualTier(sp.tot, ds.length),
-    filled: { itin: st.length > 0, exp: sp.n > 0, rated: isRated(id) } };
+  return { trip: id, name: t.TrName, days: ds.length, stops: st.length, tracks, km, min, climb: up, highest: hi, spent: sp.tot, cash: sp.cash, card: sp.card,
+    budget: bg.tot, badges: badges(id), finds: finds(id).length, verdict: r.RsVerdict || '', back: r.RsBack || '', tier: actualTier(sp.tot, ds.length),
+    filled: { itin: st.length > 0, exp: sp.n > 0, disc: hasDiscovery(id) } };
 }
-export const completeness = id => { const f = lbTotals(id).filled; return (f.itin + f.exp + f.rated) / 3; };
+export const completeness = id => { const f = lbTotals(id).filled; return (f.itin + f.exp + f.disc) / 3; };
 
 /* ───────── GPX ───────── */
 const xe = s => String(s ?? '').replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[c]);
@@ -197,6 +219,6 @@ export function gpx(id, onlyDay) {
       trk += `<trk><name>${xe(t.TrName + ' · Day ' + d.n)}</name><type>${ln.road ? 'route' : 'straight'}</type><trkseg>\n` + ln.pts.map((p, i) => `<trkpt lat="${p[0].toFixed(6)}" lon="${p[1].toFixed(6)}">${ele[i] !== null ? `<ele>${ele[i]}</ele>` : ''}</trkpt>`).join('\n') + '\n</trkseg></trk>\n'; nT++;
     }
   }
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="MansWell Logbook" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${xe(t.TrName)}</name><time>${new Date().toISOString()}</time></metadata>\n${wpt}${trk}</gpx>\n`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="MansWell Voyage" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${xe(t.TrName)}</name><time>${new Date().toISOString()}</time></metadata>\n${wpt}${trk}</gpx>\n`;
   return { xml, name: (t.TrName || 'journey').replace(/[\\/:*?"<>|]/g, ' ').trim() + (onlyDay ? ' · Day ' + onlyDay : ''), wpts: nW, trks: nT };
 }

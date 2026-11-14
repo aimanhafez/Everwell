@@ -1,4 +1,15 @@
-# MansWell · v3.4.0 (Pocket + Payslip + Lens + Atlas + Logbook)
+# MansWell · v3.5.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.5.0 · Voyage (Logbook renamed)
+- **Itinerary**: type a place and pick it from Google Maps; the city, country and pin fill in by themselves. Travel time is worked out from your times (arrived − left the last place); no km or time to type. Km always come from the GPX track (no road/typed choice). Today · On the road · Highest sit above the start. Legs show just transport and km; a leg that can't be right (too fast, too far) shows "⚠ check pins". Every stop pinned → Make GPX track runs straight away. Google's daily limit shows a clear message.
+- **Discovery** (was Results): five journey badges (Roads, Scenery, Riding comfort, Food & hospitality, Value for money; a word each, no scores, no overall), what you found (best cafe, stay, meal, street food, viewpoint, road or pass, hidden gem, photo spot, must buy, kindest people, tip for next time, skip next time), verdict, would you go back, GPX file.
+- Moved out for Atlas later: route map, elevation meter, the numbers.
+- New tab LB_Finds (made by itself), new column RsBadges in LB_Results.
+
+### Updating to 3.5.0
+1. Upload everything inside "Step 1" to GitHub (same names overwrite).
+2. Apps Script: replace all of Code.gs, save, then Deploy › Manage deployments › edit › New version › Deploy. Nothing new to approve if you already ran setupLogbook (otherwise run setupVoyage once).
+
 
 ## 3.4.0 · Logbook (fourth room)
 Every Atlas journey in full. Journeys are made in Atlas only; every Logbook row carries the journey ID (TrId). Logbook never reads or writes Pocket or Lens.

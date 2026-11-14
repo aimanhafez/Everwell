@@ -1,4 +1,4 @@
-// MansWell Logbook · UI kit: the shell (header, four tabs), the journey switcher, and the sheets the tabs share
+// MansWell Voyage (was Logbook) · UI kit: the shell (header, four tabs), the journey switcher, and the sheets the tabs share
 // (a stop, the pin check + making the track, an expense, the journey rate, the budget) and the full route map.
 import { html, K, DB, NAV, I, Brand, Navigate, rerender, save, Notify, guard, G, store, api, applySaved } from '../core.js';
 import { syncNow, PasswordDialog } from '../shared.js';
@@ -47,6 +47,8 @@ export const css = () => atlasCss() + `
 .lbpin{padding:10px 0;border-top:1px solid ${K.sep}}.lbpin:first-child{border-top:0;padding-top:2px}.lbpin .h{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center}
 .lbpin .t{font-size:13.5px;font-weight:600;color:${K.text}}.lbpin .s{font-size:11px;color:${K.sub};margin-top:2px}.lbok{font-size:10px;font-weight:700;color:#34C77B}.lbwarn{font-size:10px;font-weight:700;color:${K.gold};cursor:pointer}.lbbad{font-size:10px;font-weight:700;color:${K.red}}
 .lbch{margin:8px 0 0 36px;display:flex;flex-direction:column;gap:5px}.lbch div{font-size:11.5px;padding:7px 9px;border-radius:9px;background:${K.field};color:${K.sub};cursor:pointer}.lbch div.on{color:${K.text};box-shadow:inset 0 0 0 1.5px ${oa(.55)}}
+.lbbadges{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.lbbadges span{font-size:12px;font-weight:700;padding:6px 10px;border-radius:99px;background:rgba(255,255,255,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.lbbg{padding:10px 0;border-top:1px solid ${K.sep}}.lbbg:first-child{border-top:0;padding-top:2px}.lbbg .t{font-size:13.5px;font-weight:600;color:${K.text}}
 .lbfull{position:absolute;inset:0;z-index:65;background:#000;display:flex;flex-direction:column}.lbfull .top{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 10px;color:#fff;font-size:14px;font-weight:600}.lbfull .top span{cursor:pointer;padding:4px 6px}
 .lbfull .mp{flex:1;position:relative;overflow:hidden;touch-action:none}.lbfull .mp svg{position:absolute;inset:0;height:100%!important}
 .lbfull .zb{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px}.lbfull .zb span{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:rgba(20,22,26,.85);color:#fff;font-size:19px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
@@ -65,12 +67,12 @@ export function cur() {
 export const setCur = id => { G.lbTrip = id; store.set('lb_trip', id); };
 
 /* ───────── shell ───────── */
-const TABS = [['Logbook', 'Journeys', 'scrLbJourneys'], ['Route', 'Itinerary', 'scrLbItinerary'], ['Wallet', 'Expenses', 'scrLbExpenses'], ['Medal', 'Results', 'scrLbResults']];
+const TABS = [['Logbook', 'Journeys', 'scrLbJourneys'], ['Route', 'Itinerary', 'scrLbItinerary'], ['Wallet', 'Expenses', 'scrLbExpenses'], ['Compass', 'Discovery', 'scrLbResults']];
 export const goHome = () => { NAV.stack = []; Navigate('scrDreamer'); };
 export const go = scr => { NAV.stack = []; Navigate(scr); };
 function Header() {
   return html`
-    ${Brand(18, 18, 276, 44, false, false, 'Logbook', goHome)}
+    ${Brand(18, 18, 276, 44, false, false, 'Voyage', goHome)}
     ${I(298, 20, 36, 36, 'Grid', K.sub, { pad: 9, onClick: goHome, label: 'MansWell' })}
     ${I(338, 20, 36, 36, 'Reset', K.sub, { pad: 9, onClick: () => syncNow(), label: 'Refresh' })}`;
 }
@@ -79,7 +81,7 @@ function Nav(active) {
   return html`<div class="navbar-glass"></div>
     ${active >= 0 ? html`<div class="abs" style=${`left:${w * active + w / 2 - 11}px;bottom:75px;width:22px;height:3px;border-radius:2px;background:${K.or};box-shadow:0 0 12px ${oa(0.55)}`}></div>`: null}
     ${TABS.map(([ic, lb, scr], i) => html`
-      ${I(Math.round(w * i + w / 2 - 13), { b: 41 }, 26, 26, ic, i === active ? K.or : K.mute, { pad: 4, onClick: () => go(scr), label: 'Logbook ' + lb })}
+      ${I(Math.round(w * i + w / 2 - 13), { b: 41 }, 26, 26, ic, i === active ? K.or : K.mute, { pad: 4, onClick: () => go(scr), label: 'Voyage ' + lb })}
       <div class="abs" style=${`left:${w * i}px;bottom:25px;width:${w}px;height:14px;text-align:center;font-size:10px;letter-spacing:.3px;font-weight:${i === active ? 600 : 400};color:${i === active ? K.or : K.mute};cursor:pointer`} onClick=${() => go(scr)}>${lb}</div>`)}`;
 }
 export function Page(l, active, kids, id) {
@@ -102,17 +104,21 @@ function Confirm(l) {
 }
 
 /* ───────── saving ───────── */
-const ready = () => DB.lbOk && P.srvAtLeast('3.4.0');
+const ready = () => DB.lbOk && P.srvAtLeast('3.5.0');
 export function canWrite() {
   if (ready()) return true;
-  Notify('Logbook needs the MansWell 3.4 Apps Script to save. Update Code.gs and deploy a new version (see README).', 'error');
+  Notify('Voyage needs the MansWell 3.5 Apps Script to save. Update Code.gs and deploy a new version (see README).', 'error');
   return false;
 }
-export const lbsave = (ch, action, detail) => guard(async () => { if (!canWrite()) return; await save({ ...ch, log: [{ AuAction: 'Logbook · ' + action, AuRef: 'LOGBOOK', AuDetail: detail || '' }] }); });
-const UpdateNote = () => ready() ? null : html`<div class="lwarn" data-t="lbOldGs">Logbook can show your Atlas journeys, but it can't save yet. Paste the new Code.gs (MansWell 3.4), run setupLogbook once, then Deploy › New version. The README has the steps.</div>`;
+export const lbsave = (ch, action, detail) => guard(async () => { if (!canWrite()) return; await save({ ...ch, log: [{ AuAction: 'Voyage · ' + action, AuRef: 'VOYAGE', AuDetail: detail || '' }] }); });
+const UpdateNote = () => ready() ? null : html`<div class="lwarn" data-t="lbOldGs">Voyage can show your Atlas journeys, but it can't save yet. Paste the new Code.gs (MansWell 3.5), then Deploy › New version (run setupVoyage once if you never ran setupLogbook). The README has the steps.</div>`;
 /** Calls the Apps Script directly (find a place, make a track, today's rate, save a file). */
-export async function call(action, p) {
-  try { return await api(action, p, undefined, { quiet: true }); } catch (e) { Notify(e.message || String(e), 'error'); return null; }
+export async function call(action, p, quiet) {
+  try { return await api(action, p, undefined, { quiet: true }); } catch (e) {
+    const m = String(e.message || e);
+    if (/DAILY LIMIT/.test(m)) { G.lbLimit = new Date().toISOString().slice(0, 10); Notify(m.replace(/^.*DAILY LIMIT:\s*/, ''), 'error'); rerender(); return null; }
+    if (!quiet) Notify(m, 'error'); return null;
+  }
 }
 
 /* ───────── small pieces ───────── */
@@ -124,7 +130,7 @@ function openSwitch(l) {
   openSheet(l, { title: 'Choose a journey', body: () => html`<div>${L.journeys().map(t => html`<div class="pcr" onClick=${() => { setCur(t.TrId); closeSheet(l); }} data-t=${'lbPick-' + t.TrId}>
     <div style="display:flex;gap:2px">${P.isosOf(t.TrId).slice(0, 1).map(iso => Flag(iso, 18))}</div><div><div class="t">${t.TrName}</div><div class="s">${P.range(t.TrStart, t.TrEnd)}</div></div>
     ${cur() && cur().TrId === t.TrId ? html`<span class="lor">✓</span>` : html`<span></span>`}</div>`)}
-    <div class="lnote" style="margin-top:10px">Journeys are added, renamed and re-dated in Atlas. Logbook follows.</div></div>` });
+    <div class="lnote" style="margin-top:10px">Journeys are added, renamed and re-dated in Atlas. Voyage follows.</div></div>` });
 }
 export function Empty(title, msg) {
   return html`<div class="lc" data-t="lbEmpty"><b style=${`font-size:16px;color:${K.text}`}>${title}</b><div class="lnote" style="margin-top:6px">${msg}</div>
@@ -140,12 +146,38 @@ export function download(name, text, type) {
   a.href = url; a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
 }
 
+/* ───────── find a place with Google Maps, as you type ───────── */
+const SUG = { t: null, n: 0 };
+/** f: { place, city, country, pin, sug, look } — fills city, country and the pin when you pick a match. */
+export function PlaceField(f, o = {}) {
+  const look = v => {
+    clearTimeout(SUG.t); f.sug = []; f.look = false;
+    if (String(v).trim().length < 3) return rerender();
+    SUG.t = setTimeout(async () => {
+      const tok = ++SUG.n; f.look = true; rerender();
+      const cn = (P.BY[f.country] || {}).name || '';
+      const res = await call('lbGeocode', { q: v + (cn && !String(v).toLowerCase().includes(cn.toLowerCase()) ? ', ' + cn : ''), region: f.country || '', n: 5 }, true);
+      if (tok !== SUG.n) return; f.look = false; f.sug = res || []; rerender();
+    }, 750);
+  };
+  const pick = x => { f.place = x.name || f.place; if (x.city) f.city = x.city; if (x.cc && P.BY[x.cc]) f.country = x.cc; f.pin = { lat: x.lat, lng: x.lng, addr: x.addr }; f.sug = []; f.look = false; clearTimeout(SUG.t); SUG.n++; rerender(); };
+  return html`<div>
+    <input class="lin" placeholder=${o.ph || 'Start typing, e.g. Ma Pi Leng Pass'} value=${f.place} onInput=${e => { f.place = e.target.value; f.pin = null; look(f.place); }} data-t=${o.id || 'sPlace'} autocomplete="off" />
+    ${f.look ? html`<div class="lsub" style="margin:6px 2px 0" data-t="sugLook">Looking on Google Maps…</div>` : null}
+    ${f.sug && f.sug.length ? html`<div class="psug" data-t="sug">${f.sug.map((x, i) => html`<div class="pcr" style="grid-template-columns:22px 1fr" onClick=${() => pick(x)} data-t=${'sug-' + i}>
+      <span style=${`color:${K.or}`}>📍</span><div><div class="t" style="font-size:13.5px">${x.name}</div><div class="s">${x.addr}</div></div></div>`)}</div>` : null}
+    ${f.pin ? html`<div class="lnote" style="margin-top:6px" data-t="sPinned"><span class="lor">📍</span> ${f.pin.addr} · ${f.pin.lat.toFixed(3)}, ${f.pin.lng.toFixed(3)}</div>`
+      : o.noHint ? null : html`<div class="lnote" style="margin-top:6px">Pick a match to fill the city and pin the place. Not listed? Type it anyway, it's searched again when you make the track.</div>`}
+  </div>`;
+}
+
 /* ───────── a stop ───────── */
 export function openStop(l, id, day, s) {
   const t = L.journey(id), list = L.stops(id, day), idx = s ? list.findIndex(x => x.LpId === s.LpId) : list.length, isos = P.isosOf(id);
   const prev = list[idx - 1] || list[list.length - 1];
   const f = { place: s ? s.LpPlace : '', city: s ? s.LpCity : '', country: s ? s.LpCountry : (prev && prev.LpCountry) || isos.find(x => x !== P.homeIso()) || isos[0] || '',
-    arr: s ? s.LpArr : '', stay: s && s.LpStay ? L.dur(s.LpStay) : '', mode: s ? s.LpMode || 'bike' : (prev && prev.LpMode) || 'bike', km: s && s.LpKm ? String(s.LpKm) : '', min: s && s.LpMin ? L.dur(s.LpMin) : '', note: s ? s.LpNote : '', day };
+    pin: s && L.hasPin(s) ? { lat: Number(s.LpLat), lng: Number(s.LpLng), addr: s.LpAddr || 'Saved pin' } : null, sug: [], look: false,
+    arr: s ? s.LpArr : '', stay: s && s.LpStay ? L.dur(s.LpStay) : '', mode: s ? s.LpMode || 'bike' : (prev && prev.LpMode) || 'bike', note: s ? s.LpNote : '', day };
   const first = () => (s ? idx === 0 && Number(f.day) === Number(s.LpDay) : list.length === 0);
   const move = dir => {
     const j = idx + dir; if (j < 0 || j >= list.length) return;
@@ -153,32 +185,28 @@ export function openStop(l, id, day, s) {
     lbsave({ up: { LB_Stops: [{ ...a, LpSeq: b.LpSeq }, { ...b, LpSeq: a.LpSeq }] } }, 'Stop moved', a.LpPlace); closeSheet(l);
   };
   openSheet(l, { title: (s ? 'Edit stop · ' : 'Add a stop · ') + 'Day ' + day, body: () => html`<div data-t="stopForm">
-    <div class="llab" style="margin-top:4px">Place</div><input class="lin" placeholder="Ma Pi Leng Pass" value=${f.place} onInput=${e => { f.place = e.target.value; }} data-t="sPlace" />
+    <div class="llab" style="margin-top:4px">Place</div>${PlaceField(f)}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div><div class="llab">City / area</div><input class="lin" placeholder="Dong Van" value=${f.city} onInput=${e => { f.city = e.target.value; }} data-t="sCity" /></div>
+      <div><div class="llab">City / area</div><input class="lin" placeholder="filled from Google" value=${f.city} onInput=${e => { f.city = e.target.value; }} data-t="sCity" /></div>
       <div><div class="llab">Country</div><select class="lin" value=${f.country} onChange=${e => { f.country = e.target.value; }} data-t="sCountry">
         ${[...new Set([...isos, f.country].filter(Boolean))].map(iso => html`<option value=${iso}>${(P.BY[iso] || {}).name || iso}</option>`)}</select></div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
       <div><div class="llab">Day</div><select class="lin" value=${String(f.day)} onChange=${e => { f.day = Number(e.target.value); rerender(); }} data-t="sDay">${L.days(t).map(d => html`<option value=${String(d.n)}>Day ${d.n}</option>`)}</select></div>
-      <div><div class="llab">Arrived</div><input class="lin" type="time" value=${f.arr} onInput=${e => { f.arr = e.target.value; }} data-t="sArr" /></div>
-      <div><div class="llab">Stayed</div><input class="lin" placeholder="1h 30m" value=${f.stay} onInput=${e => { f.stay = e.target.value; }} data-t="sStay" /></div></div>
-    ${first() ? html`<div class="lnote" style="margin-top:10px">This is where the day starts, so there's no way in to fill.</div>` : html`
+      <div><div class="llab">${first() ? 'Left at' : 'Arrived'}</div><input class="lin" type="time" value=${f.arr} onInput=${e => { f.arr = e.target.value; }} data-t="sArr" /></div>
+      <div><div class="llab">Stayed</div><input class="lin" placeholder="25m" value=${f.stay} onInput=${e => { f.stay = e.target.value; }} data-t="sStay" /></div></div>
+    ${first() ? html`<div class="lnote" style="margin-top:10px">This is where the day starts.</div>` : html`
       <div class="llab">Got there by</div><div class="lbmode">${L.MODES.map(([k, n, e]) => html`<span class=${f.mode === k ? 'on' : ''} onClick=${() => { f.mode = k; rerender(); }} data-t=${'sMode-' + k}><i>${e}</i>${n}</span>`)}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><div class="llab">Distance · km</div><input class="lin" inputmode="decimal" placeholder="88" value=${f.km} onInput=${e => { f.km = e.target.value; }} data-t="sKm" /></div>
-        <div><div class="llab">Travel time</div><input class="lin" placeholder="2h 40m" value=${f.min} onInput=${e => { f.min = e.target.value; }} data-t="sMin" /></div></div>`}
+      <div class="lnote" style="margin-top:8px">Travel time is worked out from your times (arrived here − left the last place). Distance comes from the GPX track.</div>`}
     <div class="llab">Note · optional</div><input class="lin" placeholder="Fog cleared at the top" value=${f.note} onInput=${e => { f.note = e.target.value; }} data-t="sNote" />
     ${s ? html`<div style="display:flex;gap:8px;margin-top:12px"><button class="lbtn" style="flex:1" disabled=${idx === 0} onClick=${() => move(-1)} data-t="sUp">▲ Earlier</button><button class="lbtn" style="flex:1" disabled=${idx === list.length - 1} onClick=${() => move(1)} data-t="sDown">▼ Later</button></div>` : null}
   </div>`,
   saveLabel: s ? 'Save stop' : 'Add stop',
   onSave: () => {
     const place = f.place.trim(); if (!place) return Notify('Type the place.', 'error');
-    const km = num(f.km); if (f.km && (km < 0 || km > 20000)) return Notify('Check the distance.', 'error');
     const moved = s && Number(f.day) !== Number(s.LpDay), target = L.stops(id, f.day);
-    const same = s && place === s.LpPlace && f.city.trim() === s.LpCity && f.country === s.LpCountry;
     const row = { LpId: s ? s.LpId : newId('LP'), LpTrip: id, LpDay: Number(f.day), LpSeq: s && !moved ? s.LpSeq : (target.reduce((m, x) => Math.max(m, x.LpSeq || 0), 0) + 1), LpPlace: place, LpCity: f.city.trim(), LpCountry: f.country,
-      LpArr: f.arr, LpStay: L.parseDur(f.stay), LpMode: f.mode, LpKm: km, LpMin: L.parseDur(f.min), LpNote: f.note.trim(),
-      LpLat: same ? s.LpLat : 0, LpLng: same ? s.LpLng : 0, LpAddr: same ? s.LpAddr : '' }; // a changed place needs a new pin
+      LpArr: f.arr, LpStay: L.parseDur(f.stay), LpMode: f.mode, LpKm: 0, LpMin: 0, LpNote: f.note.trim(),
+      LpLat: f.pin ? Math.round(f.pin.lat * 1e6) / 1e6 : 0, LpLng: f.pin ? Math.round(f.pin.lng * 1e6) / 1e6 : 0, LpAddr: f.pin ? f.pin.addr : '' };
     lbsave({ up: { LB_Stops: [row] } }, s ? 'Stop edited' : 'Stop added', t.TrName + ' · Day ' + f.day + ' · ' + place);
     if (moved) (G.lbDayOf = G.lbDayOf || {})[id] = Number(f.day);
     closeSheet(l);
@@ -186,18 +214,32 @@ export function openStop(l, id, day, s) {
   extra: s ? () => html`<button class="lbtn" style="padding:13px 14px;color:${K.red}" data-t="sDel" onClick=${() => confirmAsk(l, 'Delete this stop?', s.LpPlace + ' is removed from Day ' + day + '. Make the track again afterwards.', 'Delete', () => { lbsave({ del: { LB_Stops: [s.LpId] } }, 'Stop deleted', s.LpPlace); closeSheet(l); })}>Delete</button>` : null });
 }
 
-/* ───────── pin check → make the track ───────── */
+/* ───────── make the track (pins first when some are missing) ───────── */
+const today = () => new Date().toISOString().slice(0, 10);
+export const limitHit = () => G.lbLimit === today();
+export const LimitNote = () => limitHit() ? html`<div class="lwarn" data-t="lbLimit">Google Maps' free daily limit is used up for today, so tracks and place search can't be made until tomorrow. Tracks already made are kept.</div>` : null;
+async function makeTrack(id, day, upd) {
+  const changed = upd.filter(u => { const o = DB.lbStops.find(x => x.LpId === u.LpId) || {}; return u.LpLat !== Number(o.LpLat) || u.LpLng !== Number(o.LpLng); });
+  if (changed.length) await save({ up: { LB_Stops: changed }, log: [{ AuAction: 'Voyage · Pins saved', AuRef: 'VOYAGE', AuDetail: changed.length + ' stop(s)' }] });
+  G.lbMaking = id + '|' + day; rerender();
+  const row = await call('lbRoute', { trip: id, day, sig: L.sigOf(upd), pts: upd.map(u => ({ lat: u.LpLat, lng: u.LpLng, mode: u.LpMode })) });
+  G.lbMaking = ''; if (row) applySaved({ LB_Tracks: [row] }); rerender();
+  return !!row;
+}
 const qOf = s => [s.LpPlace, s.LpCity, (P.BY[s.LpCountry] || {}).name].filter(Boolean).join(', ');
-export function openPins(l, id, day) {
+/** Make GPX track: straight away when every stop has a pin; otherwise check the missing ones first. focus: open those rows (a leg that looks wrong). */
+export function openPins(l, id, day, focus) {
   const list = L.stops(id, day);
-  const f = { busy: false, rows: list.map(s => ({ s, q: qOf(s), res: L.hasPin(s) ? [{ lat: Number(s.LpLat), lng: Number(s.LpLng), addr: s.LpAddr || 'Saved pin' }] : [], pick: L.hasPin(s) ? 0 : -1, st: L.hasPin(s) ? 'have' : 'wait', open: false, man: '' })) };
-  const find = async r => { r.st = 'look'; rerender(); const res = await call('lbGeocode', { q: r.q }); r.res = res || []; r.pick = r.res.length ? 0 : -1; r.st = !res ? 'err' : r.res.length ? (r.res.length > 1 ? 'many' : 'sure') : 'none'; rerender(); };
+  if (limitHit()) return Notify("Google Maps' free daily limit is used up for today. Try again tomorrow.", 'error');
+  if (!focus && list.length > 1 && list.every(L.hasPin)) return guard(async () => { if (canWrite()) await makeTrack(id, day, list.map(s => ({ ...s, LpLat: Number(s.LpLat), LpLng: Number(s.LpLng) }))); });
+  const f = { busy: false, rows: list.map((s, i) => ({ s, q: qOf(s), res: L.hasPin(s) ? [{ lat: Number(s.LpLat), lng: Number(s.LpLng), addr: s.LpAddr || 'Saved pin' }] : [], pick: L.hasPin(s) ? 0 : -1, st: L.hasPin(s) ? 'have' : 'wait', open: !!(focus && focus.includes(i)), man: '' })) };
+  const find = async r => { r.st = 'look'; rerender(); const res = await call('lbGeocode', { q: r.q, region: r.s.LpCountry || '' }); r.res = res || []; r.pick = r.res.length ? 0 : -1; r.st = !res ? 'err' : r.res.length ? (r.res.length > 1 ? 'many' : 'sure') : 'none'; rerender(); };
   (async () => { for (const r of f.rows) if (r.st === 'wait') await find(r); })();
   const pinOf = r => (r.pick >= 0 && r.res[r.pick] ? r.res[r.pick] : null);
   openSheet(l, { title: 'Places found · Day ' + day, body: () => {
     const ok = f.rows.filter(pinOf).length;
-    return html`<div data-t="pinCheck">
-      <div class="lnote" style="margin:2px 0 10px" data-t="pinCount">${ok} of ${f.rows.length} found. Pins are saved with each stop, so this only happens once.</div>
+    return html`<div data-t="pinCheck">${LimitNote()}
+      <div class="lnote" style="margin:2px 0 10px" data-t="pinCount">${ok} of ${f.rows.length} found. Tap a place to search again or type its coordinates.</div>
       <div class="lfx" style="padding:8px 12px">${f.rows.map((r, i) => {
         const p = pinOf(r), b = i === 0 ? 's' : i === f.rows.length - 1 ? 'e' : '';
         const tag = r.st === 'look' || r.st === 'wait' ? html`<span class="lsub" style="margin:0">finding…</span>` : r.st === 'have' ? html`<span class="lbok">✓ saved</span>` : r.st === 'sure' ? html`<span class="lbok">✓ sure</span>`
@@ -207,26 +249,48 @@ export function openPins(l, id, day) {
           <div onClick=${() => { r.open = !r.open; rerender(); }} style="cursor:pointer">${tag}</div></div>
           ${r.open ? html`<div class="lbch">${r.res.map((x, k) => html`<div class=${r.pick === k ? 'on' : ''} onClick=${() => { r.pick = k; r.st = 'sure'; r.open = false; rerender(); }} data-t=${'pinOpt-' + i + '-' + k}>${x.addr} · ${x.lat.toFixed(3)}, ${x.lng.toFixed(3)}</div>`)}
             <div style="display:flex;gap:6px;background:none;padding:0"><input class="lin" style="height:34px;font-size:12.5px" value=${r.q} onInput=${e => { r.q = e.target.value; }} data-t=${'pinQ-' + i} /><button class="lbtn" onClick=${() => find(r)} data-t=${'pinFind-' + i}>Search</button></div>
-            <div style="display:flex;gap:6px;background:none;padding:0"><input class="lin" style="height:34px;font-size:12.5px" placeholder="or type 23.20, 105.37" value=${r.man} onInput=${e => { r.man = e.target.value; }} data-t=${'pinMan-' + i} />
+            <div style="display:flex;gap:6px;background:none;padding:0"><input class="lin" style="height:34px;font-size:12.5px" placeholder="or paste from Google Maps: 23.20, 105.37" value=${r.man} onInput=${e => { r.man = e.target.value; }} data-t=${'pinMan-' + i} />
               <button class="lbtn" data-t=${'pinSet-' + i} onClick=${() => { const m = r.man.match(/(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/); if (!m || Math.abs(m[1]) > 90 || Math.abs(m[2]) > 180) return Notify('Type it as latitude, longitude, e.g. 23.20, 105.37', 'error'); r.res = [{ lat: Number(m[1]), lng: Number(m[2]), addr: 'Typed pin' }, ...r.res]; r.pick = 0; r.st = 'man'; r.open = false; rerender(); }}>Use</button></div></div>` : null}
         </div>`; })}</div>
       <div class="lnote" style="margin-top:10px">Each leg follows its transport: bike, car, Grab → roads · walk → footpaths · bus, train → transit or roads · flight, boat → a straight line.</div>
-      ${f.busy ? html`<div class="pprog" style="margin:10px 0 0" data-t="pinBusy">Making the track with Google Maps…</div>` : null}
+      ${G.lbMaking ? html`<div class="pprog" style="margin:10px 0 0" data-t="pinBusy">Making the track with Google Maps…</div>` : null}
     </div>`; },
   saveLabel: 'Make GPX track',
   onSave: () => guard(async () => {
-    if (f.busy || !canWrite()) return;
+    if (G.lbMaking || !canWrite()) return;
     const rows = f.rows.filter(pinOf); if (rows.length < 2) return Notify('A day needs at least two stops with a pin to make a track.', 'error');
     if (rows.length < f.rows.length) return Notify('Some stops have no pin yet. Search again or type the coordinates.', 'error');
     const upd = f.rows.map(r => { const p = pinOf(r); return { ...r.s, LpLat: Math.round(p.lat * 1e6) / 1e6, LpLng: Math.round(p.lng * 1e6) / 1e6, LpAddr: p.addr }; });
-    const changed = upd.filter((u, i) => u.LpLat !== Number(f.rows[i].s.LpLat) || u.LpLng !== Number(f.rows[i].s.LpLng));
-    if (changed.length) await save({ up: { LB_Stops: changed }, log: [{ AuAction: 'Logbook · Pins saved', AuRef: 'LOGBOOK', AuDetail: changed.length + ' stop(s)' }] });
-    f.busy = true; rerender();
-    const row = await call('lbRoute', { trip: id, day, sig: L.sigOf(upd), pts: upd.map(u => ({ lat: u.LpLat, lng: u.LpLng, mode: u.LpMode })) });
-    f.busy = false;
-    if (!row) return rerender();
-    applySaved({ LB_Tracks: [row] }); closeSheet(l);
+    if (await makeTrack(id, day, upd)) closeSheet(l);
   }) });
+}
+
+/* ───────── Discovery: badges and finds ───────── */
+export function setBadge(id, k, v) {
+  if (!canWrite()) return;
+  const r = L.result(id) || L.blankResult(id), b = L.badges(id); if (b[k] === v) delete b[k]; else b[k] = v;
+  lbsave({ up: { LB_Results: [{ ...r, RsBadges: JSON.stringify(b) }] } }, 'Badge', (L.journey(id) || {}).TrName + ' · ' + k + ' ' + (b[k] || 'cleared'));
+}
+export function openFind(l, id, fd, kind) {
+  const t = L.journey(id), isos = P.isosOf(id);
+  const f = { kind: fd ? fd.FdKind : kind || 'cafe', place: fd ? fd.FdName : '', city: fd ? fd.FdWhere : '', country: isos.find(x => x !== P.homeIso()) || isos[0] || '',
+    pin: fd && (Number(fd.FdLat) || Number(fd.FdLng)) ? { lat: Number(fd.FdLat), lng: Number(fd.FdLng), addr: fd.FdWhere } : null, sug: [], look: false, day: fd ? Number(fd.FdDay) : 0, note: fd ? fd.FdNote : '' };
+  openSheet(l, { title: fd ? 'Edit find' : 'Add a find', body: () => html`<div data-t="findForm">
+    <div class="llab" style="margin-top:4px">What it is</div><div class="lbcat" style="grid-template-columns:repeat(3,1fr)">${L.FINDS.map(x => html`<div class=${f.kind === x.k ? 'on' : ''} style=${'--c:' + K.or} onClick=${() => { f.kind = x.k; rerender(); }} data-t=${'fKind-' + x.k}><i>${x.e}</i>${x.n}</div>`)}</div>
+    <div class="llab">${['tip', 'avoid'].includes(f.kind) ? 'In a few words' : 'Name'}</div>${['tip', 'avoid', 'people'].includes(f.kind) ? html`<input class="lin" placeholder=${f.kind === 'tip' ? 'Bring a rain cover' : f.kind === 'avoid' ? 'Night riding on the pass' : 'The family at the homestay'} value=${f.place} onInput=${e => { f.place = e.target.value; }} data-t="fName" />` : PlaceField(f, { id: 'fName', ph: 'Start typing, e.g. Café Cũ', noHint: true })}
+    <div style="display:grid;grid-template-columns:1fr 104px;gap:10px">
+      <div><div class="llab">Where</div><input class="lin" placeholder="Dong Van" value=${f.city} onInput=${e => { f.city = e.target.value; }} data-t="fWhere" /></div>
+      <div><div class="llab">Day</div><select class="lin" value=${String(f.day)} onChange=${e => { f.day = Number(e.target.value); }} data-t="fDay"><option value="0">—</option>${L.days(t).map(d => html`<option value=${String(d.n)}>Day ${d.n}</option>`)}</select></div></div>
+    <div class="llab">Why · optional</div><input class="lin" placeholder="Egg coffee with a view of the valley" value=${f.note} onInput=${e => { f.note = e.target.value; }} data-t="fNote" />
+  </div>`,
+  onSave: () => {
+    const name = f.place.trim(); if (!name) return Notify('Type what you found.', 'error');
+    const seq = fd ? fd.FdSeq : L.finds(id).filter(x => x.FdKind === f.kind).reduce((m, x) => Math.max(m, x.FdSeq || 0), 0) + 1;
+    lbsave({ up: { LB_Finds: [{ FdId: fd ? fd.FdId : newId('FD'), FdTrip: id, FdKind: f.kind, FdName: name, FdWhere: f.city.trim(), FdDay: Number(f.day) || 0, FdNote: f.note.trim(),
+      FdLat: f.pin ? Math.round(f.pin.lat * 1e6) / 1e6 : 0, FdLng: f.pin ? Math.round(f.pin.lng * 1e6) / 1e6 : 0, FdSeq: seq }] } }, fd ? 'Find edited' : 'Find added', t.TrName + ' · ' + L.FIND[f.kind].n + ' · ' + name);
+    closeSheet(l);
+  },
+  extra: fd ? () => html`<button class="lbtn" style="padding:13px 14px;color:${K.red}" data-t="fDel" onClick=${() => confirmAsk(l, 'Delete this find?', fd.FdName, 'Delete', () => { lbsave({ del: { LB_Finds: [fd.FdId] } }, 'Find deleted', fd.FdName); closeSheet(l); })}>Delete</button>` : null });
 }
 
 /* ───────── journey rate ───────── */
