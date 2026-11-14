@@ -1,7 +1,7 @@
 # MansWell · v3.6.1 (Pocket + Payslip + Lens + Atlas + Voyage)
 
 ## 3.6.1 · Voyage maps follow the theme
-The road, its glow, the pins, the km on the map, the ROUTE MAP card and the elevation chart use your theme's colour (Ember orange, Ivory maroon, Sapphire gold, Rosé pink, Graphite silver). The dark map itself stays. App files only; Code.gs is the same as 3.6.0.
+The road, its glow, the pins, the km on the map, the ROUTE MAP card and the elevation chart use your theme's colour (Ember orange, Ivory maroon, Sapphire gold, Rosé pink, Graphite silver). The dark map itself stays. Code.gs only changes its version label to 3.6.1 (nothing else), so all files show the same version.
 
 ## 3.6.0 · Google Places in Voyage, new map style
 - **Google Places search** (the same list as the Google Maps app) for stops and Discovery finds once you set a key. Picking a place fills the name, City, Province, Country and the exact pin.

@@ -16,6 +16,8 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.6.1 · Voyage maps follow the theme colour (app files). Same server code as 3.6.0.
+ *
  * 3.6.0 · Voyage searches places with Google Places (the same list as the Google Maps app) when you set a key:
  *   paste it on the PLACES_KEY_TO_SAVE line below, run setPlacesKey(), then empty the line again. Used until 9,950 requests
  *   this month (suggestions and place details each), at most 5 suggestion requests per search, then the free search.
@@ -55,7 +57,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.6.0';
+var EW_VERSION = '3.6.1';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
