@@ -16,9 +16,9 @@ import { scrLensAssets } from './lens/assets.js';
 import { scrLensPlan } from './lens/plan.js';
 import { scrLensBudget } from './lens/budget.js';
 import { scrLensSettings } from './lens/settings.js';
-import { scrPpOverview, scrPpWorld, scrPpJourneys, scrPpTrip, scrPpWishlist, scrPpMemories } from './passport/screens.js';
+import { scrPpOverview, scrPpJourneys, scrPpTrip, scrPpWishlist } from './passport/screens.js';
 
-Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, scrImport, scrDreamer, connect, scrPayslip, scrYearClose, scrLensPnl, scrLensAssets, scrLensPlan, scrLensBudget, scrLensSettings, scrPpOverview, scrPpWorld, scrPpJourneys, scrPpTrip, scrPpWishlist, scrPpMemories });
+Object.assign(NAV.screens, { scrHome, scrAccounts, scrAccountDetail, scrAccountEdit, scrTransactions, scrTxnDetail, scrTxnEdit, scrTransfer, scrSplit, scrRecurring, scrCategories, scrMore, scrSetup, scrAnalysis, scrActivity, scrImport, scrDreamer, connect, scrPayslip, scrYearClose, scrLensPnl, scrLensAssets, scrLensPlan, scrLensBudget, scrLensSettings, scrPpOverview, scrPpJourneys, scrPpTrip, scrPpWishlist });
 
 const stage = document.getElementById('stage');
 mount(stage);

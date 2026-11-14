@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '3.2.2';
+export const VERSION = '3.3.0';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -319,7 +319,7 @@ function persistOutbox() { store.set('ew_outbox', SYNC.outbox); syncState(); }
 let cacheTimer = null;
 const writeCache = () => { cacheTimer = null; store.set('ew_data', { at: Date.now(), settings: DB.settings, accounts: DB.accounts, categories: DB.categories, payees: DB.payees, recurring: DB.recurring, txns: DB.txns, audit: DB.audit.slice(0, 30), importMap: DB.importMap, imports: DB.imports, sysOk: DB.sysOk,
   lens: { settings: DB.lnSettings, assets: DB.lnAssets, values: DB.lnValues, goals: DB.lnGoals, budget: DB.lnBudget }, lnOk: DB.lnOk, payslips: DB.payslips, psOk: DB.psOk,
-  passport: { settings: DB.ppSettings, places: DB.ppPlaces, trips: DB.ppTrips, stops: DB.ppStops, photos: DB.ppPhotos }, ppOk: DB.ppOk }); };
+  passport: { settings: DB.ppSettings, places: DB.ppPlaces, trips: DB.ppTrips, stops: DB.ppStops, photos: DB.ppPhotos }, ppOk: DB.ppOk, srvVer: DB.srvVer }); };
 function persistCache() { clearTimeout(cacheTimer); cacheTimer = setTimeout(writeCache, 300); }
 /** Write a pending cache save now (the app is being closed / hidden). */
 export function flushCache() { if (cacheTimer) { clearTimeout(cacheTimer); writeCache(); } }
@@ -377,6 +377,7 @@ function applyLoaded(d) {
   DB.lnGoals = (ln && ln.goals) || []; DB.lnBudget = (ln && ln.budget) || [];
   // Passport tabs exist only once the Apps Script is v3.2 or newer
   const pp = d.passport || null;
+  DB.srvVer = String(d.version || d.srvVer || '');
   DB.ppOk = !!pp || !!d.ppOk;
   DB.ppSettings = (pp && pp.settings) || []; DB.ppPlaces = (pp && pp.places) || []; DB.ppTrips = (pp && pp.trips) || []; DB.ppStops = (pp && pp.stops) || []; DB.ppPhotos = (pp && pp.photos) || [];
   for (const item of SYNC.outbox) applyLocal(item.p); // changes not yet on Google stay visible
@@ -458,7 +459,7 @@ function showScreen(name) {
   const s = NAV.screens[name];
   if (s && s.onVisible) s.onVisible(loc(name));
   rerender();
-  requestAnimationFrame(() => document.querySelectorAll('#stage .scroll').forEach(el => { el.scrollTop = 0; }));
+  requestAnimationFrame(() => document.querySelectorAll('#stage .scroll, #stage .lz').forEach(el => { el.scrollTop = 0; }));
 }
 export function current() { return NAV.stack[NAV.stack.length - 1]; }
 

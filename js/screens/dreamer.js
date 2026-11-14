@@ -75,7 +75,7 @@ function Settings() {
           <div class="tt"><b>${t.name}</b><span>${t.note}</span></div><span class="ck">${on ? '✓' : ''}</span></div>`; })}</div>
       <div class="row2" onClick=${() => { panel = false; Navigate('scrMore'); }} data-t="mainPocketSettings"><div><b>Pocket settings</b><span>Accounts, categories, tracking period, backup</span></div><em>›</em></div>
       <div class="row2" onClick=${() => { panel = false; NAV.stack = []; Navigate('scrLensSettings'); }} data-t="mainLensSettings"><div><b>Lens settings</b><span>Opening balances, savings rule, status levels</span></div><em>›</em></div>
-      <div class="row2" onClick=${() => { panel = false; G.ppOpenSettings = true; NAV.stack = []; Navigate('scrPpOverview'); }} data-t="mainPassportSettings"><div><b>Passport settings</b><span>Home country, where your photos are kept</span></div><em>›</em></div>
+      <div class="row2" onClick=${() => { panel = false; G.ppOpenSettings = true; NAV.stack = []; Navigate('scrPpOverview'); }} data-t="mainPassportSettings"><div><b>Atlas settings</b><span>Home country, where your photos are kept</span></div><em>›</em></div>
     </div></div>`;
 }
 const setCss = () => `.mset{position:fixed;inset:0;z-index:70}.mset .dimx{position:absolute;inset:0;background:rgba(0,0,0,.55)}
@@ -110,7 +110,7 @@ export const scrDreamer = {
           <div class="gear" data-t="mainSettings" role="button" aria-label="Settings" onClick=${() => { panel = true; rerender(); }} dangerouslySetInnerHTML=${{ __html: ic('gear', K.sub, 19) }}></div></div>
         <div class="pill" data-t="mainSync" onClick=${() => syncNow()}><b></b><span>${syncedText()}</span><span dangerouslySetInnerHTML=${{ __html: ic('sync', K.sub, 12) }}></span></div>
         <h1>All your dreams,<br/><span>one door.</span></h1>
-        <div class="lead">Pocket records your money. Lens helps you understand it. Passport keeps your travels.</div>
+        <div class="lead">Pocket records your money. Lens helps you understand it. Atlas keeps your travels.</div>
         <div class="cta" data-t="openPocket" role="button" onClick=${openPocket}><span style="line-height:0" dangerouslySetInnerHTML=${{ __html: ic('signin', K.ctaText || K.onAcc, 18) }}></span>Open Pocket</div>
       </div>
       <div class="list">
@@ -123,9 +123,9 @@ export const scrDreamer = {
           <div class="tile" style="--c:#3DDC84" dangerouslySetInnerHTML=${{ __html: ic('aperture', '#3DDC84', 26) }}></div><span class="lk" dangerouslySetInnerHTML=${{ __html: ic('arrow', K.or, 24) }}></span>
           <h4>Lens</h4><p>P&L, savings & assets, plan and budget</p>
         </div>
-        <div class="card" data-t="mod-passport" role="button" aria-label="Passport" onClick=${openPassport}>
+        <div class="card" data-t="mod-passport" role="button" aria-label="Atlas" onClick=${openPassport}>
           <div class="tile" style="--c:#E2367A" dangerouslySetInnerHTML=${{ __html: ic('plane', '#E2367A', 26) }}></div><span class="lk" dangerouslySetInnerHTML=${{ __html: ic('arrow', K.or, 24) }}></span>
-          <h4>Passport</h4><p>Countries, journeys, wishlist and memories</p>
+          <h4>Atlas</h4><p>Your odyssey, journeys and wanderlist</p>
         </div>
         ${SOON.map(([n, sub, c, g], i) => html`<div class="card soon" data-t=${'mod-soon-' + (i + 1)} role="button" aria-label="Coming soon" onClick=${soon}>
           <div class="blur"><div class="tile" style=${'--c:' + c} dangerouslySetInnerHTML=${{ __html: ic(g, c, 26) }}></div><h4>${n}</h4><p>${sub}</p></div>

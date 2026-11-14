@@ -1,5 +1,5 @@
 // MansWell Passport · the travel logic. Travel only: reads and writes the PP_ tabs, never Pocket or Lens.
-// One rule for status everywhere: Visited = a trip includes it, or you marked it visited before Passport.
+// One rule for status everywhere: Visited = a trip includes it, or you marked it visited before Atlas.
 // Wishlist = you wished for it and it isn't visited. Not yet = everything else. So a country can never be both.
 import { DB, Today } from '../core.js';
 import { COUNTRY_ROWS } from './countries.js';
@@ -86,11 +86,12 @@ export function stats() {
 export function firstVisits() {
   return visitedList().map(c => ({ c, at: firstVisit(c.iso) || '9999' })).sort((a, b) => a.at.localeCompare(b.at) || a.c.name.localeCompare(b.c.name));
 }
-const MS = [['first', 'First Country', 'Your first destination abroad', 1], ['explorer', 'Explorer', '5 countries visited', 5], ['wanderer', 'World Wanderer', '10 countries visited', 10], ['global', 'Global Explorer', '25 countries visited', 25]];
+const MS = [['first', 'First Light', 'Your first country', 1], ['wayfarer', 'Wayfarer', '5 countries', 5], ['nomad', 'Nomad Soul', '10 countries', 10], ['carto', 'Cartographer', '25 countries', 25]];
 export function milestones() {
   const fv = firstVisits().filter(x => !x.c.ex), s = stats();
   const out = MS.map(([id, name, desc, need]) => ({ id, name, desc, need, have: Math.min(fv.length, need), done: fv.length >= need, by: fv.length >= need ? fv[need - 1].c : null }));
-  out.push({ id: 'continental', name: 'Continental Traveller', desc: 'All seven continents', need: 7, have: s.conts, done: s.conts >= 7, by: null, next: CONTINENTS.filter(c => !s.contSet.has(c))[0] || '' });
+  out.push({ id: 'seven', name: 'Seven Horizons', desc: 'Every continent', need: 7, have: s.conts, done: s.conts >= 7, by: null, next: CONTINENTS.filter(c => !s.contSet.has(c))[0] || '' });
+  out.push({ id: 'bearer', name: 'Atlas Bearer', desc: '50 countries', need: 50, have: Math.min(fv.length, 50), done: fv.length >= 50, by: fv.length >= 50 ? fv[49].c : null });
   return out;
 }
 
@@ -105,3 +106,39 @@ export function search(q, f = {}) {
   return COUNTRIES.filter(c => (!k || fold(c.name).includes(k) || c.iso.toLowerCase() === k || c.iso3.toLowerCase() === k || fold(c.cap).includes(k))
     && (!f.cont || c.cont === f.cont) && (!f.st || status(c.iso) === f.st));
 }
+
+/* ───────── Wanderlist: tiers and "I'm going" ───────── */
+export const TIER_LETTERS = ['S', 'A', 'B', 'C', 'D'];
+export const TIER_COLOR = { S: '#E9B949', A: '#FF8A3D', B: '#B48CFF', C: '#5ED1C9', D: '#8A9099' };
+export const TIER_BUDGET = { A: 'RM6,500 – 10,000', B: 'RM4,000 – 6,500', C: 'RM1,500 – 4,000', D: 'Below RM1,500' };
+export const TIER_SHORT = { S: 'RM10k+', A: '6.5k–10k', B: '4k–6.5k', C: '1.5k–4k', D: '< 1.5k' };
+export const S_LEVELS = { S1: 'Above RM20,000', S2: 'RM15,000 – 20,000', S3: 'RM10,000 – 15,000' };
+export const LENGTHS = { 1: '21–30 days', 2: '13–20 days', 3: '6–12 days', 4: 'Below 5 days' };
+export const LEN_SHORT = { 1: '21–30 d', 2: '13–20 d', 3: '6–12 d', 4: '≤ 5 d' };
+export const isTier = c => /^(S[1-3]|[ABCD][1-4])$/.test(String(c || ''));
+/** "B2" → "13–20 days · RM4,000 – 6,500"; "S2" → "RM15,000 – 20,000" */
+export const tierText = c => !isTier(c) ? '' : c[0] === 'S' ? S_LEVELS[c] : LENGTHS[c[1]] + ' · ' + TIER_BUDGET[c[0]];
+export const tierRank = c => (isTier(c) ? TIER_LETTERS.indexOf(c[0]) * 10 + Number(c[1]) : 999);
+export const isGoing = p => !!p && p.PlGo === 'going';
+export const going = () => wishlist().filter(isGoing).sort((a, b) => (a.PlGoYear || 9999) - (b.PlGoYear || 9999) || (a.PlSeq || 0) - (b.PlSeq || 0));
+export const dreaming = () => wishlist().filter(p => !isGoing(p));
+
+/* ───────── route: places per country ───────── */
+export const splitPlaces = t => String(t || '').split(/\s*(?:,|→|->|;|\n)\s*/).map(s => s.trim()).filter(Boolean);
+/** Each country of a trip with its places. Older trips kept one route for the whole trip: it goes with the first country. */
+export function routeOf(t) {
+  const st = stopsOf(t.TrId), any = st.some(s => s.StRoute);
+  return st.map((s, i) => ({ iso: s.StIso, days: s.StDays, places: splitPlaces(any ? s.StRoute : i === 0 ? t.TrRoute : '') }));
+}
+
+/* ───────── facts under the map ───────── */
+export function facts() {
+  const ts = trips().filter(t => t.TrStart <= Today());
+  const cnt = {}; for (const t of ts) for (const iso of new Set(isosOf(t.TrId))) if (iso !== homeIso()) cnt[iso] = (cnt[iso] || 0) + 1;
+  const top = Object.entries(cnt).sort((a, b) => b[1] - a[1] || BY[a[0]].name.localeCompare(BY[b[0]].name))[0];
+  const longest = ts.slice().sort((a, b) => daysOf(b) - daysOf(a))[0];
+  const fv = firstVisits().filter(x => x.at !== '9999'), newest = fv[fv.length - 1];
+  return { returned: top && top[1] > 1 ? { iso: top[0], n: top[1] } : null, longest: longest || null, newest: newest ? { iso: newest.c.iso, at: newest.at } : null };
+}
+/** Is the Apps Script new enough for a feature? */
+export const srvAtLeast = v => { const a = String(DB.srvVer || '0').split('.').map(Number), b = v.split('.').map(Number); for (let i = 0; i < 3; i++) { if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) > (b[i] || 0); } return true; };

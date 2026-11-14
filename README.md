@@ -1,3 +1,17 @@
+# MansWell · v3.3.0 (Pocket + Payslip + Lens + Atlas)
+
+## 3.3.0 · Atlas (Passport renamed)
+- Three pages: **Odyssey · Journeys · Wanderlist**. Overview, World and Memories are folded into Odyssey.
+- **Odyssey**: the card follows your theme. Search a country → the map flies to it and fills it in full; mark it Visited or add it to your Wanderlist from the card. Facts (most returned, longest journey, newest stamp), Journeys, Wanderlist (only places you're going), **Borderless** stamps with flags, and Milestones: First Light · Wayfarer · Nomad Soul · Cartographer · Seven Horizons · Atlas Bearer.
+- **Journeys**: slim Days / With / Countries strip; places per country in numbered boxes; **Memories** shows 9 photos (See all for the rest); Moments as headline cards.
+- **Wanderlist**: two steps, Dreaming → **Going** (year + planned days). Each place has a **Tier** (S1–S3, A1–D4) set by budget then length. Sort by My order, Priority, Tier or Continent.
+- Also: every page now opens at the top.
+
+### Updating to 3.3.0
+1. GitHub: upload Step 1 (the app files). Flags are unchanged.
+2. Apps Script: paste the new Code.gs, Save, then **Deploy › Manage deployments › Edit › New version**. New columns (PlTier, PlGo, PlGoYear, PlGoDays, StRoute) are added to your Sheet by themselves. Until you do this, Atlas shows a reminder and can't save tiers, "going" or route places.
+3. Your journeys, photos and wishes carry over. Older wishes start in Dreaming with no tier; an older journey's route shows under its first country.
+
 # MansWell · v3.2.0 (Pocket + Payslip + Lens + Passport)
 
 ## 3.2.0 · Passport (travel)

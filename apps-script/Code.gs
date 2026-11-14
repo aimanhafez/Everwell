@@ -16,6 +16,9 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport()
  *
+ * 3.3.0 · ATLAS (Passport renamed): Wanderlist tiers and "I'm going", route places per country.
+ *   New columns only (PP_Places, PP_Stops); they are added to your Sheet by themselves.
+ *
  * 3.2.1 · PASSPORT PHOTOS: run setupPassport() once from this editor and approve Google Drive.
  *   Google only asks for Drive permission when you run something here yourself, never from the app.
  *
@@ -33,7 +36,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.2.1';
+var EW_VERSION = '3.3.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -57,9 +60,9 @@ var TABLES = {
   LN_Budget: { key: 'BuKey', cols: { BuKey: 's', BuYear: 'n', BuItem: 's', BuAmt: 'n', BuType: 's' } },
   // MansWell Passport (travel): its own tabs, never linked to money.
   PP_Settings: { key: 'PsetKey', cols: { PsetKey: 's', PsetVal: 's' } },
-  PP_Places: { key: 'PlIso', cols: { PlIso: 's', PlStatus: 's', PlPri: 's', PlYear: 'n', PlWhy: 's', PlSee: 's', PlNote: 's', PlSeq: 'n', PlPhoto: 's', PlAdded: 'd', PlFirst: 's' } },
+  PP_Places: { key: 'PlIso', cols: { PlIso: 's', PlStatus: 's', PlPri: 's', PlYear: 'n', PlWhy: 's', PlSee: 's', PlNote: 's', PlSeq: 'n', PlPhoto: 's', PlAdded: 'd', PlFirst: 's', PlTier: 's', PlGo: 's', PlGoYear: 'n', PlGoDays: 'n' } },
   PP_Trips: { key: 'TrId', cols: { TrId: 's', TrName: 's', TrStart: 'd', TrEnd: 'd', TrWith: 's', TrDesc: 's', TrMoments: 's', TrNotes: 's', TrRoute: 's', TrCover: 's', TrAdded: 't' } },
-  PP_Stops: { key: 'StKey', cols: { StKey: 's', StTrip: 's', StIso: 's', StDays: 'n', StSeq: 'n' } },
+  PP_Stops: { key: 'StKey', cols: { StKey: 's', StTrip: 's', StIso: 's', StDays: 'n', StSeq: 'n', StRoute: 's' } },
   PP_Photos: { key: 'PhId', cols: { PhId: 's', PhTrip: 's', PhFile: 's', PhW: 'n', PhH: 'n', PhTaken: 'd', PhCap: 's', PhSeq: 'n' } },
   PP_Thumbs: { key: 'ThId', cols: { ThId: 's', ThData: 's' } }
 };
