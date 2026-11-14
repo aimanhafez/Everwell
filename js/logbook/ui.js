@@ -156,21 +156,29 @@ export function PlaceField(f, o = {}) {
     SUG.t = setTimeout(async () => {
       const tok = ++SUG.n; f.look = true; rerender();
       const cn = (P.BY[f.country] || {}).name || '';
-      const res = await call('lbGeocode', { q: v + (cn && !String(v).toLowerCase().includes(cn.toLowerCase()) ? ', ' + cn : ''), region: f.country || '', n: 5 }, true);
+      const res = await call('lbGeocode', { q: String(v).trim(), country: cn, region: f.country || '', near: o.near || null, n: 6 }, true);
       if (tok !== SUG.n) return; f.look = false; f.sug = res || []; rerender();
     }, 750);
   };
-  const pick = x => { f.place = x.name || f.place; if (x.city) f.city = x.city; if (x.cc && P.BY[x.cc]) f.country = x.cc; f.pin = { lat: x.lat, lng: x.lng, addr: x.addr }; f.sug = []; f.look = false; clearTimeout(SUG.t); SUG.n++; rerender(); };
+  // the name you typed stays: a match only gives the pin, city and country
+  const pick = x => { if (!f.place.trim()) f.place = x.name; if (x.city) f.city = x.city; if (x.cc && P.BY[x.cc]) f.country = x.cc; f.pin = { lat: x.lat, lng: x.lng, addr: x.addr, area: !!x.area }; f.sug = []; f.look = false; clearTimeout(SUG.t); SUG.n++; rerender(); };
+  const useCoord = () => { const m = String(f.coord || '').match(/(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/); if (!m || Math.abs(m[1]) > 90 || Math.abs(m[2]) > 180) return Notify('Paste it as latitude, longitude, e.g. 23.2296, 105.4113', 'error'); f.pin = { lat: Number(m[1]), lng: Number(m[2]), addr: 'Pasted pin' }; f.coord = ''; f.sug = []; rerender(); };
   return html`<div>
     <input class="lin" placeholder=${o.ph || 'Start typing, e.g. Ma Pi Leng Pass'} value=${f.place} onInput=${e => { f.place = e.target.value; f.pin = null; look(f.place); }} data-t=${o.id || 'sPlace'} autocomplete="off" />
     ${f.look ? html`<div class="lsub" style="margin:6px 2px 0" data-t="sugLook">Looking on Google Maps…</div>` : null}
     ${f.sug && f.sug.length ? html`<div class="psug" data-t="sug">${f.sug.map((x, i) => html`<div class="pcr" style="grid-template-columns:22px 1fr" onClick=${() => pick(x)} data-t=${'sug-' + i}>
-      <span style=${`color:${K.or}`}>📍</span><div><div class="t" style="font-size:13.5px">${x.name}</div><div class="s">${x.addr}</div></div></div>`)}</div>` : null}
-    ${f.pin ? html`<div class="lnote" style="margin-top:6px" data-t="sPinned"><span class="lor">📍</span> ${f.pin.addr} · ${f.pin.lat.toFixed(3)}, ${f.pin.lng.toFixed(3)}</div>`
-      : o.noHint ? null : html`<div class="lnote" style="margin-top:6px">Pick a match to fill the city and pin the place. Not listed? Type it anyway, it's searched again when you make the track.</div>`}
+      <span style=${`color:${x.area ? K.mute : K.or}`}>📍</span><div><div class="t" style="font-size:13.5px">${x.name}${x.area ? html` <span class="lbtag" style="margin:0 0 0 4px">AREA</span>` : null}</div><div class="s">${x.addr}</div></div></div>`)}</div>` : null}
+    ${f.pin ? html`<div class="lnote" style="margin-top:6px" data-t="sPinned"><span class="lor">📍</span> ${f.pin.area ? html`Pinned at the area <b>${f.pin.addr.split(',')[0]}</b>, not the exact spot.` : f.pin.addr} · ${f.pin.lat.toFixed(3)}, ${f.pin.lng.toFixed(3)}</div>`
+      : o.noHint ? null : html`<div class="lnote" style="margin-top:6px">Pick a match to pin it and fill the city; the name you typed stays. Not listed? Paste the spot from Google Maps below.</div>`}
+    ${!f.pin || f.pin.area ? html`<div style="display:flex;gap:6px;margin-top:6px"><input class="lin" style="height:36px;font-size:12.5px" placeholder="or paste from Google Maps: 23.2296, 105.4113" value=${f.coord || ''} onInput=${e => { f.coord = e.target.value; }} data-t=${(o.id || 'sPlace') + 'Coord'} /><button class="lbtn" onClick=${useCoord} data-t=${(o.id || 'sPlace') + 'CoordUse'}>Use</button></div>` : null}
   </div>`;
 }
 
+/** Where to search around: the stop before this one, else any pinned stop of the day, else of the journey. */
+function nearOf(id, day, idx) {
+  const l = L.stops(id, day), pin = s => (s && L.hasPin(s) ? { lat: Number(s.LpLat), lng: Number(s.LpLng) } : null);
+  return pin(l[idx - 1]) || pin(l.find(L.hasPin)) || pin(L.stops(id).find(L.hasPin)) || null;
+}
 /* ───────── a stop ───────── */
 export function openStop(l, id, day, s) {
   const t = L.journey(id), list = L.stops(id, day), idx = s ? list.findIndex(x => x.LpId === s.LpId) : list.length, isos = P.isosOf(id);
@@ -185,7 +193,7 @@ export function openStop(l, id, day, s) {
     lbsave({ up: { LB_Stops: [{ ...a, LpSeq: b.LpSeq }, { ...b, LpSeq: a.LpSeq }] } }, 'Stop moved', a.LpPlace); closeSheet(l);
   };
   openSheet(l, { title: (s ? 'Edit stop · ' : 'Add a stop · ') + 'Day ' + day, body: () => html`<div data-t="stopForm">
-    <div class="llab" style="margin-top:4px">Place</div>${PlaceField(f)}
+    <div class="llab" style="margin-top:4px">Place</div>${PlaceField(f, { near: nearOf(id, day, idx) })}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div><div class="llab">City / area</div><input class="lin" placeholder="filled from Google" value=${f.city} onInput=${e => { f.city = e.target.value; }} data-t="sCity" /></div>
       <div><div class="llab">Country</div><select class="lin" value=${f.country} onChange=${e => { f.country = e.target.value; }} data-t="sCountry">
@@ -228,14 +236,15 @@ async function makeTrack(id, day, upd) {
   rerender();
   return !!row;
 }
-const qOf = s => [s.LpPlace, s.LpCity, (P.BY[s.LpCountry] || {}).name].filter(Boolean).join(', ');
+const qOf = s => [s.LpPlace, s.LpCity].filter(Boolean).join(', ');
 /** Make GPX track: straight away when every stop has a pin; otherwise check the missing ones first. focus: open those rows (a leg that looks wrong). */
 export function openPins(l, id, day, focus) {
   const list = L.stops(id, day);
   if (limitHit()) return Notify("Google Maps' free daily limit is used up for today. Try again tomorrow.", 'error');
   if (!focus && list.length > 1 && list.every(L.hasPin)) return guard(async () => { if (canWrite()) await makeTrack(id, day, list.map(s => ({ ...s, LpLat: Number(s.LpLat), LpLng: Number(s.LpLng) }))); });
   const f = { busy: false, rows: list.map((s, i) => ({ s, q: qOf(s), res: L.hasPin(s) ? [{ lat: Number(s.LpLat), lng: Number(s.LpLng), addr: s.LpAddr || 'Saved pin' }] : [], pick: L.hasPin(s) ? 0 : -1, st: L.hasPin(s) ? 'have' : 'wait', open: !!(focus && focus.includes(i)), man: '' })) };
-  const find = async r => { r.st = 'look'; rerender(); const res = await call('lbGeocode', { q: r.q, region: r.s.LpCountry || '' }); r.res = res || []; r.pick = r.res.length ? 0 : -1; r.st = !res ? 'err' : r.res.length ? (r.res.length > 1 ? 'many' : 'sure') : 'none'; rerender(); };
+  const find = async r => { r.st = 'look'; rerender(); const i = f.rows.indexOf(r), pv = f.rows[i - 1] && f.rows[i - 1].pick >= 0 ? f.rows[i - 1].res[f.rows[i - 1].pick] : null;
+    const res = await call('lbGeocode', { q: r.q, country: (P.BY[r.s.LpCountry] || {}).name || '', region: r.s.LpCountry || '', near: pv ? { lat: pv.lat, lng: pv.lng } : null }); r.res = res || []; r.pick = r.res.length ? 0 : -1; r.st = !res ? 'err' : r.res.length ? (r.res.length > 1 ? 'many' : 'sure') : 'none'; rerender(); };
   (async () => { for (const r of f.rows) if (r.st === 'wait') await find(r); })();
   const pinOf = r => (r.pick >= 0 && r.res[r.pick] ? r.res[r.pick] : null);
   openSheet(l, { title: 'Places found · Day ' + day, body: () => {
@@ -279,7 +288,7 @@ export function openFind(l, id, fd, kind) {
     pin: fd && (Number(fd.FdLat) || Number(fd.FdLng)) ? { lat: Number(fd.FdLat), lng: Number(fd.FdLng), addr: fd.FdWhere } : null, sug: [], look: false, day: fd ? Number(fd.FdDay) : 0, note: fd ? fd.FdNote : '' };
   openSheet(l, { title: fd ? 'Edit find' : 'Add a find', body: () => html`<div data-t="findForm">
     <div class="llab" style="margin-top:4px">What it is</div><div class="lbcat" style="grid-template-columns:repeat(3,1fr)">${L.FINDS.map(x => html`<div class=${f.kind === x.k ? 'on' : ''} style=${'--c:' + K.or} onClick=${() => { f.kind = x.k; rerender(); }} data-t=${'fKind-' + x.k}><i>${x.e}</i>${x.n}</div>`)}</div>
-    <div class="llab">${['tip', 'avoid'].includes(f.kind) ? 'In a few words' : 'Name'}</div>${['tip', 'avoid', 'people'].includes(f.kind) ? html`<input class="lin" placeholder=${f.kind === 'tip' ? 'Bring a rain cover' : f.kind === 'avoid' ? 'Night riding on the pass' : 'The family at the homestay'} value=${f.place} onInput=${e => { f.place = e.target.value; }} data-t="fName" />` : PlaceField(f, { id: 'fName', ph: 'Start typing, e.g. Café Cũ', noHint: true })}
+    <div class="llab">${['tip', 'avoid'].includes(f.kind) ? 'In a few words' : 'Name'}</div>${['tip', 'avoid', 'people'].includes(f.kind) ? html`<input class="lin" placeholder=${f.kind === 'tip' ? 'Bring a rain cover' : f.kind === 'avoid' ? 'Night riding on the pass' : 'The family at the homestay'} value=${f.place} onInput=${e => { f.place = e.target.value; }} data-t="fName" />` : PlaceField(f, { id: 'fName', ph: 'Start typing, e.g. Café Cũ', noHint: true, near: f.day ? nearOf(id, f.day, 99) : nearOf(id, 1, 0) })}
     <div style="display:grid;grid-template-columns:1fr 104px;gap:10px">
       <div><div class="llab">Where</div><input class="lin" placeholder="Dong Van" value=${f.city} onInput=${e => { f.city = e.target.value; }} data-t="fWhere" /></div>
       <div><div class="llab">Day</div><select class="lin" value=${String(f.day)} onChange=${e => { f.day = Number(e.target.value); }} data-t="fDay"><option value="0">—</option>${L.days(t).map(d => html`<option value=${String(d.n)}>Day ${d.n}</option>`)}</select></div></div>

@@ -1,4 +1,13 @@
-# MansWell · v3.5.2 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.5.3 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.5.3 · better place search in Voyage
+- Google's geocoder only knows addresses and areas, so a viewpoint like "Mom Da Tu Than" came back as its district (Meo Vac) and its name replaced yours. Now:
+  - named places (viewpoints, homestays, cafes, passes) are also looked up in OpenStreetMap (Photon), shown first;
+  - the search looks near your previous stop;
+  - a match that is only an area is marked AREA and says "not the exact spot";
+  - the name you typed always stays; a match only gives the pin, city and country;
+  - not found? Paste the coordinates from Google Maps (long-press the spot → copy) under the place box.
+- To update: upload Step 1, replace Code.gs, then in Apps Script choose **setupVoyage** and press **Run** once (approve "connect to an external service"), then Deploy › New version.
 
 ## 3.5.2 · fix: "on the road" too long
 When a stop's arrival was earlier than the time you left the stop before (arrived + stayed), the gap was counted as running over midnight (+24 h). Now that leg is left out of "on the road" and shows "⚠ times don't add up" so you can fix the times. The start's time is when you left, so its "stayed" is not used (the field is hidden for the start). App files only; Code.gs unchanged from 3.5.1.

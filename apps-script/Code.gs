@@ -16,6 +16,9 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.5.3 · Voyage place search also looks up named places (viewpoints, homestays, cafes) from OpenStreetMap, searches near
+ *   your last stop, and never replaces the name you typed. Run setupVoyage() once (it now needs "connect to an external service").
+ *
  * 3.5.1 · fix: Voyage heights were missing on long days (the route sent to Google's elevation service was too long).
  *   Make track again on those days to get the elevation.
  *
@@ -47,7 +50,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.5.1';
+var EW_VERSION = '3.5.3';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -257,15 +260,39 @@ var ACTIONS = {
 
   /** Voyage · find a place (Google Maps). Up to 3 matches. */
   lbGeocode: function (ss, p) {
+    var q = String(p.q || '').trim(), cn = String(p.country || ''), region = String(p.region || '').toUpperCase(), n = Number(p.n) || 3, near = p.near || null, out = [];
+    if (!q) return out;
+    // 1 · named places (viewpoints, homestays, cafes, passes) from OpenStreetMap via Photon. Google's geocoder only knows addresses
+    //     and areas, so a small place like a viewpoint came back as its district.
+    try {
+      var url = 'https://photon.komoot.io/api/?limit=8&q=' + encodeURIComponent(q) + (near && near.lat ? '&lat=' + Number(near.lat).toFixed(3) + '&lon=' + Number(near.lng).toFixed(3) : '');
+      var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, headers: { 'User-Agent': 'MansWell-Voyage/3.5 (personal travel log)' } });
+      if (res.getResponseCode() === 200) (JSON.parse(res.getContentText()).features || []).forEach(function (f) {
+        var pr = f.properties || {}, cc = String(pr.countrycode || '').toUpperCase();
+        if (!pr.name || (region && cc && cc !== region)) return;
+        var city = pr.city || pr.county || pr.district || pr.state || '';
+        out.push({ name: pr.name, lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], addr: [pr.name, city, pr.state !== city ? pr.state : '', pr.country].filter(function (x) { return x; }).join(', '),
+          city: city, cc: cc, area: ['city', 'town', 'village', 'county', 'state', 'district', 'country', 'suburb'].indexOf(String(pr.type || '')) >= 0, src: 'osm' });
+      });
+    } catch (e) { /* not approved yet or Photon unreachable: Google alone below */ }
+    // 2 · Google Maps (addresses, towns, well-known places), near the last stop when known
     var g = Maps.newGeocoder().setLanguage('en'), r;
-    if (p.region) g.setRegion(String(p.region).toLowerCase());
-    try { r = g.geocode(String(p.q || '')); } catch (e) { throw mapsErr_(e); }
-    return (r.results || []).slice(0, Number(p.n) || 3).map(function (x) {
-      var c = x.address_components || [], pick = function (t) { for (var i = 0; i < c.length; i++) if ((c[i].types || []).indexOf(t) >= 0) return c[i]; return null; };
+    if (region) g.setRegion(region.toLowerCase());
+    if (near && near.lat) g.setBounds(near.lat - 0.75, near.lng - 0.75, near.lat + 0.75, near.lng + 0.75);
+    try { r = g.geocode(q + (cn && q.toLowerCase().indexOf(cn.toLowerCase()) < 0 ? ', ' + cn : '')); } catch (e) { if (!out.length) throw mapsErr_(e); r = { results: [] }; }
+    var AREA = ['locality', 'political', 'administrative_area_level_1', 'administrative_area_level_2', 'administrative_area_level_3', 'sublocality', 'country', 'route', 'postal_code'];
+    var EXACT = ['point_of_interest', 'establishment', 'natural_feature', 'tourist_attraction', 'premise', 'lodging', 'park'];
+    (r.results || []).forEach(function (x) {
+      var c = x.address_components || [], t = x.types || [], pick = function (k) { for (var i = 0; i < c.length; i++) if ((c[i].types || []).indexOf(k) >= 0) return c[i]; return null; };
       var city = pick('locality') || pick('administrative_area_level_2') || pick('administrative_area_level_1'), cc = pick('country');
-      return { lat: x.geometry.location.lat, lng: x.geometry.location.lng, addr: x.formatted_address, name: String(x.formatted_address || '').split(',')[0].trim(),
-        city: city ? city.long_name : '', cc: cc ? cc.short_name : '' };
+      var exact = t.some(function (k) { return EXACT.indexOf(k) >= 0; }), area = !!x.partial_match || (!exact && t.some(function (k) { return AREA.indexOf(k) >= 0; }));
+      out.push({ lat: x.geometry.location.lat, lng: x.geometry.location.lng, addr: x.formatted_address, name: String(x.formatted_address || '').split(',')[0].trim(),
+        city: city ? city.long_name : '', cc: cc ? cc.short_name : '', area: area, src: 'google' });
     });
+    // exact places first, areas last; drop near-duplicates
+    var seen = [], list = out.filter(function (x) { return !x.area; }).concat(out.filter(function (x) { return x.area; })).filter(function (x) {
+      if (seen.some(function (y) { return Math.abs(y.lat - x.lat) < 0.002 && Math.abs(y.lng - x.lng) < 0.002; })) return false; seen.push(x); return true; });
+    return list.slice(0, n);
   },
   /** Voyage · make the track for one day from its stops: road route per leg (by its transport), then heights along it. Saved to LB_Tracks. */
   lbRoute: function (ss, p) {
@@ -415,7 +442,12 @@ function setupLogbook() {
   return r.status;
 }
 /** Same as setupLogbook (the module is called Voyage since 3.5.0). */
-function setupVoyage() { return setupLogbook(); }
+function setupVoyage() {
+  var st = setupLogbook();
+  var r = UrlFetchApp.fetch('https://photon.komoot.io/api/?limit=1&q=Kuala%20Lumpur', { muteHttpExceptions: true });
+  Logger.log('Place search (OpenStreetMap) answered: ' + r.getResponseCode());
+  return st;
+}
 function mapsErr_(e) {
   var m = String((e && e.message) || e);
   if (/permission|authoriz|scope/i.test(m)) return new Error('Google Maps is not approved yet. Open Apps Script, choose setupVoyage and press Run, approve, then try again.');
