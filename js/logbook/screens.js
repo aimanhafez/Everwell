@@ -2,7 +2,7 @@
 // Expenses (cash in local currency, card in MYR, budget vs actual) and Discovery (journey badges, what you found, verdict, GPX).
 // The route map, elevation meter and the numbers moved out: they go to Atlas (the summary) later.
 import { html, K, G, rerender, Notify } from '../core.js';
-import { Page, Sect, Switcher, Empty, Ring, cur, setCur, go, openStop, openPins, openExpense, openRate, openBudget, confirmAsk, lbsave, call, download, LimitNote, Stars, openFind, PlacesBar, Ico, Tile,
+import { Page, Sect, Switcher, Empty, Ring, cur, setCur, go, openStop, openPins, openExpense, openRate, openBudget, confirmAsk, lbsave, call, download, LimitNote, Stars, openFind, PlacesBar, Ico, Tile, makeAll, saveDay,
   canWrite, Seg, Flag, plural, oa, L } from './ui.js';
 import { RouteMap, Profile } from './map.js';
 
@@ -46,13 +46,39 @@ function Stops(l, t, d, list, tk) {
         ${odd ? html`<span class="lbwarn" style="margin-left:auto;font-size:10.5px" onClick=${() => openPins(l, t.TrId, d, [i - 1, i])} data-t=${'legOdd-' + i}>⚠ check pins ›</span>` : null}
         ${L.timeClash(list, i) ? html`<span class="lbwarn" style="margin-left:auto;font-size:10.5px" onClick=${() => openStop(l, t.TrId, d, list[i - 1])} data-t=${'legTime-' + i}>⚠ times don't add up ›</span>` : null}</div>` : null}
       <div class="lbst" onClick=${() => openStop(l, t.TrId, d, s)} data-t=${'stop-' + i}><div class=${'b ' + badge(i, list.length)}>${i === 0 ? 'S' : i === list.length - 1 && list.length > 1 ? 'E' : i}</div>
-        <div style="min-width:0"><div class="t">${s.LpPlace}${L.hasPin(s) ? html` <span style=${`color:${K.or};font-size:11px`}>●</span>` : null}</div><div class="s">${[s.LpCity, s.LpArr ? (i === 0 ? 'start ' : 'arrive ') + s.LpArr : '', s.LpNote].filter(Boolean).join(' · ')}</div></div>
+        <div style="min-width:0"><div class="t">${s.LpPlace}${L.hasPin(s) ? html` <span style=${`color:${K.or};font-size:11px`}>●</span>` : null}${s.LpBorder === 'y' ? html`<span class="lbpay spl" data-t=${'border-' + i}>BORDER</span>` : null}</div><div class="s">${[s.LpCity, s.LpArr ? (i === 0 ? 'start ' : 'arrive ') + s.LpArr : '', s.LpNote].filter(Boolean).join(' · ')}</div></div>
         <div class="r">${i === 0 ? html`<b>START</b>` : i === list.length - 1 ? html`<b>END</b>` : null}</div></div>`; })}
     ${!list.length ? html`<div class="lnote" data-t="lbRest">No stops on Day ${d}. A day with no stops is a rest day.</div>` : null}
     ${making ? html`<div class="pprog" style="margin:12px 0 0" data-t="lbMaking">Making the track with Google Maps…</div>` : null}
     <div style="display:flex;gap:8px;margin-top:12px"><button class="lbtn" style="flex:1" onClick=${() => canWrite() && openStop(l, t.TrId, d, null)} data-t="lbAddStop">+ Add a stop</button>
       ${list.length > 1 ? html`<button class="lbtn o on" style="flex:1" disabled=${making} onClick=${() => canWrite() && openPins(l, t.TrId, d)} data-t="lbMake">${tk ? 'Make track again' : 'Make GPX track'}</button>` : null}</div>
   </div>`;
+}
+function DayStory(l, id, d) {
+  const r = L.dayRow(id, d) || {};
+  return html`${Sect('Day story')}<div class="lc" data-t="lbStory"><textarea class="lin" rows="3" value=${r.DyStory || ''} onChange=${e => saveDay(id, d, 'DyStory', e.target.value.trim())} data-t="dStory"></textarea>
+    <div class="pfr" style="margin-top:8px">${L.MOODS.map(([k, n]) => html`<span class=${'pchip' + (r.DyMood === k ? ' on' : '')} style="padding:6px 10px" onClick=${() => saveDay(id, d, 'DyMood', r.DyMood === k ? '' : k)} data-t=${'mood-' + k}>${n}</span>`)}</div></div>`;
+}
+function NightStop(l, t, d, list) {
+  const id = t.TrId, end = list[list.length - 1], stays = L.dayItems(id, d).filter(x => x.e.ExCat === 'stay');
+  return html`${Sect('Night stop')}<div class="lc" data-t="lbNight"><div class="lbex" style="cursor:default">${Tile('bed', 34)}<div style="min-width:0"><div class="t">${end.LpPlace}</div><div class="s">${[end.LpCity, end.LpProv].filter(Boolean).join(' · ') || 'where Day ' + d + ' ends'}</div></div><div></div></div>
+    ${stays.length ? stays.map(x => html`<div class="lr" style="padding:6px 0;cursor:pointer" onClick=${() => openExpense(l, id, x.e)} data-t=${'nightExp-' + x.e.ExId}><span class="t" style="font-size:12.5px">${x.e.ExWhat}${x.n ? ' · ' + x.k + '/' + x.n : ''}</span><span class="r"><b>${L.RM2(x.share)}</b></span></div>`)
+      : html`<div class="lnote" style="margin-top:4px">No accommodation expense on Day ${d}. <span class="lor" style="cursor:pointer;font-weight:600" onClick=${() => canWrite() && openExpense(l, id, null, { day: d, cat: 'stay' })} data-t="nightAdd">Add one ›</span></div>`}</div>`;
+}
+function Borders(id) {
+  const b = L.borders(id); if (!b.length) return null;
+  return html`${Sect('Borders')}<div class="lc" data-t="lbBorders">${b.map(x => html`<div class="lbex" style="cursor:default">${Tile('flag', 34)}<div style="min-width:0"><div class="t">${x.s.LpPlace}</div><div class="s">Day ${x.day}${x.s.LpArr ? ' · ' + x.s.LpArr : ''}</div></div>
+    <div class="r"><b class="lor">${x.from && x.from !== x.to ? x.from + ' → ' + x.to : x.to}</b></div></div>`)}</div>`;
+}
+function WholeJourney(l, t) {
+  const id = t.TrId, rows = L.days(t).map(x => ({ n: x.n, st: L.stops(id, x.n).length, km: L.dayKm(id, x.n), min: L.dayMin(id, x.n), up: Number((L.track(id, x.n) || {}).TkUp) || 0, tk: !!L.track(id, x.n), stale: L.isStale(id, x.n) }));
+  const need = rows.filter(r => r.st > 1 && (!r.tk || r.stale)).length, busy = G.lbAll;
+  return html`${Sect('Whole journey')}<div class="lc lbwj" data-t="lbWhole"><div class="hh"><span>DAY</span><span>KM</span><span>ON THE ROAD</span><span>CLIMB</span></div>
+    ${rows.map(r => html`<div class="rw" onClick=${() => setDay(t, r.n)} data-t=${'wj-' + r.n}><span>Day ${r.n}${r.st > 1 && (!r.tk || r.stale) ? html`<i>•</i>` : null}</span><b>${r.tk ? L.n0(r.km) : '—'}</b><b>${r.min ? L.dur(r.min) : '—'}</b><b>${r.up ? '↑ ' + L.n0(r.up) : '—'}</b></div>`)}
+    <div class="rw tot"><span>Total</span><b>${L.n0(rows.reduce((s, r) => s + r.km, 0))}</b><b>${L.dur(rows.reduce((s, r) => s + r.min, 0))}</b><b>↑ ${L.n0(rows.reduce((s, r) => s + r.up, 0))}</b></div>
+    ${busy ? html`<div class="pprog" style="margin:10px 0 0" data-t="lbAllBusy">Making track ${busy.i} of ${busy.n}…</div>`
+      : html`<button class="lbtn o on" style="width:100%;margin-top:10px" disabled=${!need} onClick=${() => makeAll(l, id)} data-t="lbMakeAll">${need ? 'Make all tracks · ' + plural(need, 'day') : 'All tracks made'}</button>`}
+    ${l.allMsg ? html`<div class="lnote" style="margin-top:8px" data-t="lbAllMsg">${l.allMsg}</div>` : null}</div>`;
 }
 export const scrLbItinerary = {
   view(l) {
@@ -67,6 +93,8 @@ export const scrLbItinerary = {
       <div class="pstrip" data-t="lbDaySum" style="margin-top:0"><div><span>Today</span><b data-t="lbDayKm">${tk ? L.n0(mt.km) + ' km' : '—'}</b></div><div><span>On the road</span><b data-t="lbDayMin">${min ? L.dur(min) : '—'}</b></div><div><span>Highest</span><b data-t="lbDayHi">${tk && mt.max ? L.n0(mt.max) + ' m' : '—'}</b></div></div>
       ${Stops(l, t, d, list, tk)}
       ${stale ? html`<div class="lwarn" data-t="lbStale">The stops changed after this track was made. Tap “Make track again”.</div>` : null}
+      ${DayStory(l, id, d)}
+      ${list.length ? NightStop(l, t, d, list) : null}
       ${tk ? html`
         ${Sect('On the map', 'Day GPX', () => { const g = L.gpx(id, d); download(g.name + '.gpx', g.xml, 'application/gpx+xml'); }, 'lbDayGpx')}
         <div class="lbmap" style="margin:0 12px 12px;background:#07080B" data-t="lbDayMap">${RouteMap({ id, days: [d], w: 366, h: 240, key: 'dayMap' }).svg}</div>
@@ -76,6 +104,8 @@ export const scrLbItinerary = {
             <div class="lbm"><div><span>Route km</span><b data-t="mKm">${L.n0(mt.km)}</b></div><div><span>Climb</span><b data-t="mUp">↑ ${L.n0(mt.up)}</b></div><div><span>Descent</span><b>↓ ${L.n0(mt.down)}</b></div><div><span>Steepest</span><b>${mt.steep.toFixed(0)}%</b></div></div>
             <div class="lnote" style="margin-top:8px">Drag along the profile to read any point.</div></div>` : html`<div class="lwarn" data-t="lbNoEle">No heights for this day yet, so no elevation or climb. Tap “Make track again” to read them.</div>`}` : list.length > 1 ? html`
         <div class="lnote" style="margin:0 18px 14px">Make the GPX track to get the day's km, map and heights. Google follows the roads by each leg's transport.</div>` : null}
+      ${Borders(id)}
+      ${WholeJourney(l, t)}
     `, 'scrLbItinerary');
   }
 };
@@ -108,43 +138,43 @@ function SpendCard(sp) {
     <div class="lbdg">${Donut(sp)}<div class="lbdl">${L.CATS.map((c, i) => html`<div data-t=${'cat-' + c.k}><i style=${'background:' + css3(cols[i])}></i>${c.n}</div>`)}</div></div>
     ${top.length ? html`<div class="lbdt">${top.map(x => html`<div><b><i style=${'background:' + css3(cols[x.i])}></i>${x.c.n}</b><span>${L.RM(x.v)} <em>${Math.round(x.v / sp.tot * 100)}%</em></span></div>`)}</div>` : null}</div>`;
 }
+function Gauge(p) {
+  const W = 128, cx = 64, cy = 70, R = 50, pt = f => [cx + R * Math.cos(Math.PI * (1 - f)), cy - R * Math.sin(Math.PI * (1 - f))];
+  const arc = (f, col) => { const [x0, y0] = pt(0), [x1, y1] = pt(Math.max(0.001, Math.min(1, f))); return html`<path d=${`M${x0},${y0}A${R},${R} 0 0 1 ${x1},${y1}`} fill="none" stroke=${col} stroke-width="12" stroke-linecap="round" />`; };
+  return html`<svg viewBox=${`0 0 ${W} 84`} width=${W} height="84" data-t="lbGauge">${arc(1, K.field)}${arc(p, p > 1 ? K.red : K.or)}
+    <text x=${cx} y=${cy - 8} text-anchor="middle" font-size="22" font-weight="800" fill=${K.text}>${Math.round(p * 100)}%</text><text x=${cx} y=${cy + 8} text-anchor="middle" font-size="9" letter-spacing="1" fill=${K.sub}>OF BUDGET</text></svg>`;
+}
 function BudgetCard(l, t, sp, bg) {
   const id = t.TrId, tier = L.tierOf(id);
   if (!bg.tot) return html`<div class="lc" data-t="lbNoBudget"><b style=${`color:${K.text}`}>No budget yet</b><div class="lnote" style="margin-top:4px">Set one before you go and see each category over or under after.${tier ? ' Your Wanderlist tier ' + tier + ' suggests ' + L.RM(L.tierBudget(tier)) + '.' : ''}</div>
     <button class="lbtn o on" style="margin-top:10px" onClick=${() => canWrite() && openBudget(l, id)} data-t="lbSetBudget">Set a budget</button></div>`;
-  const diff = sp.tot - bg.tot, mx = Math.max(...L.CATS.map(c => Math.max(sp.by[c.k], bg.by[c.k])), 1), cols = shades();
-  return html`<div class="lc" data-t="lbBudget"><span class="lcap">Budget vs actual · MYR</span>
-    <div style=${`font-size:19px;font-weight:700;margin-top:4px;color:${K.text}`}>${L.RM(sp.tot)} <span style=${`font-size:13px;font-weight:500;color:${K.sub}`}>of ${L.RM(bg.tot)} budget</span></div>
-    <div class=${diff > 0 ? 'lbov' : 'lbun'} style="font-size:12.5px;font-weight:600;margin-top:2px" data-t="lbBudRes">${L.RM(Math.abs(diff))} ${diff > 0 ? 'over' : 'under'}${tier ? html`<span style=${`color:${K.sub};font-weight:500`}> · Wanderlist tier ${tier}</span>` : null}</div>
-    <div style="margin-top:8px">${L.CATS.map((c, i) => { const a = sp.by[c.k], b = bg.by[c.k], dv = a - b; return html`<div class="lbbar" data-t=${'bud-' + c.k}><span>${c.n}</span>
-      <div class="tr"><i style=${`width:${(a / mx * 100).toFixed(1)}%;background:${css3(cols[i])}`}></i>${b ? html`<u style=${`left:${(b / mx * 100).toFixed(1)}%`}></u>` : null}</div>
-      <div class="v"><b>${L.n0(a)}</b><span class=${dv > 0 ? 'lbov' : 'lbun'}>${b || a ? (dv > 0 ? '+' : '−') + L.n0(Math.abs(dv)) : ''}</span></div></div>`; })}</div>
-    <div class="lnote" style="margin-top:6px">The line is the budget. <span class="lor" style="cursor:pointer;font-weight:600" onClick=${() => canWrite() && openBudget(l, id)} data-t="lbEditBudget">Edit budget ›</span></div></div>`;
+  const diff = sp.tot - bg.tot, cols = shades(), scale = 1.5; // the budget mark sits at two thirds; anything 50% or more over fills the bar
+  return html`<div class="lbbva" data-t="lbBudget"><div class="top">${Gauge(sp.tot / bg.tot)}<div style="min-width:0"><div class="k">BUDGET VS ACTUAL</div>
+      <div class="big">${L.RM(sp.tot)} <span>of ${L.RM(bg.tot)}</span></div>
+      <span class=${'lbpill ' + (diff > 0 ? 'over' : 'ok')} data-t="lbBudRes">${diff > 0 ? L.RM(diff) + ' over budget' : L.RM(-diff) + ' left · on track'}</span>${tier ? html`<div class="tier">Wanderlist tier ${tier}</div>` : null}</div></div>
+    ${L.CATS.map((c, i) => { const a = sp.by[c.k], b = bg.by[c.k], dv = a - b, p = b ? a / b : 0, col = 'rgb(' + cols[i].join(',') + ')'; return html`<div class="cr" data-t=${'bud-' + c.k}>${Tile(c.i, 30)}<div style="min-width:0">
+      <div class="hd2"><b>${c.n}</b><span><b>${L.RM(a)}</b> / ${b ? L.RM(b) : '—'}</span></div>
+      <div class="trk"><i style=${`width:${Math.min(100, (b ? p : a ? 1 : 0) / scale * 100).toFixed(1)}%;background:linear-gradient(90deg,${col},${K.or})`}></i>${b ? html`<u style=${`left:${(100 / scale).toFixed(1)}%`}></u>` : null}</div>
+      <div class="ft"><span>${b ? Math.round(p * 100) + '% used' : 'no budget'}</span>${b || a ? html`<em class=${dv > 0 ? 'lbov' : 'lbun'}>${dv > 0 ? '+' + L.RM(dv) + ' over' : L.RM(-dv) + ' left'}</em>` : null}</div></div></div>`; })}
+    <div class="ftr"><span><i></i> mark = budget</span><span class="lor" style="cursor:pointer;font-weight:700" onClick=${() => canWrite() && openBudget(l, id)} data-t="lbEditBudget">Edit budget ›</span></div></div>`;
 }
 function ExRow(l, id, e, x) {
-  const c = L.CAT[e.ExCat] || L.CATS[0], cc = L.cardCost(e, id), sp = L.span(e), share = x && x.n;
+  const c = L.CAT[e.ExCat] || L.CATS[0], cc = L.cardCost(e, id), share = x && x.n, myr = L.myrPaid(e.ExPay), at = e.ExStop ? (L.stops(id).find(s => s.LpId === e.ExStop) || {}).LpPlace : '';
   return html`<div class="lbex" onClick=${() => openExpense(l, id, e)} data-t=${'exp-' + e.ExId}>
-    ${Tile(c.i, 34)}<div style="min-width:0"><div class="t">${e.ExWhat}${share ? html`<span class="lbpay spl" data-t=${'expShare-' + e.ExId}>${x.k}/${x.n}</span>` : sp ? html`<span class="lbpay spl">DAY ${sp.from}–${sp.to}</span>` : null}${L.isNon(e) ? html`<span class="lbpay non">NON-GROUND</span>` : null}</div>
-      <div class="s">${c.n} · ${e.ExPay === 'card' ? 'card' : 'cash'}${share ? ' · ' + L.RM2(e.ExMyr) + ' over ' + x.n + ' days' : sp ? ' · ' + L.RM2(e.ExMyr / sp.n) + ' a day' : ''}</div></div>
-    <div class="r">${share ? html`<b>${L.RM2(x.share)}</b><span>share</span>` : e.ExPay === 'card' ? html`<b>${L.RM2(e.ExMyr)}</b><span>${e.ExBill ? L.money(e.ExBill, e.ExBillCur) + ' on bill' + (cc !== null ? ' · ' + (cc >= 0 ? '+' : '') + cc.toFixed(1) + '%' : '') : ''}</span>`
+    ${Tile(c.i, 34)}<div style="min-width:0"><div class="t">${e.ExWhat}${share ? html`<span class="lbpay spl" data-t=${'expShare-' + e.ExId}>${x.k}/${x.n}</span>` : null}${L.isNon(e) ? html`<span class="lbpay non">NON-GROUND</span>` : null}</div>
+      <div class="s">${[c.n, L.payName(e.ExPay), at, e.ExNote].filter(Boolean).join(' · ')}</div></div>
+    <div class="r">${share ? html`<b>${L.RM2(x.share)}</b><span>share</span>` : myr ? html`<b>${L.RM2(e.ExMyr)}</b><span>${e.ExBill ? L.money(e.ExBill, e.ExBillCur) + ' on bill' + (cc !== null ? ' · ' + (cc >= 0 ? '+' : '') + cc.toFixed(1) + '%' : '') : ''}</span>`
       : e.ExCur === 'MYR' ? html`<b>${L.RM2(e.ExMyr)}</b>` : html`<b>${L.money(e.ExAmt, e.ExCur)}</b><span>${L.RM2(e.ExMyr)}</span>`}</div></div>`;
 }
 export const scrLbExpenses = {
   view(l) {
     const t = cur(); if (!t) return Page(l, 2, Empty('No journeys yet', 'Add a journey in Atlas first.'), 'scrLbExpenses');
     const id = t.TrId, sp = L.spend(id), bg = L.budget(id), all = L.expenses(id), ds = L.days(t);
-    const sel = l.exDay === undefined ? 'all' : l.exDay;
+    const sel = typeof l.exDay === 'number' && l.exDay <= ds.length ? l.exDay : 0;
     const curs = L.cursOf(id).length ? L.cursOf(id) : [L.mainCur(id)].filter(c => c !== 'MYR');
-    let body;
-    if (sel === 'all') {
-      const groups = []; for (const e of all) { const s0 = L.span(e), d = s0 ? s0.from : Number(e.ExDay), g = groups.find(x => x.d === d); if (g) g.list.push(e); else groups.push({ d, list: [e] }); }
-      groups.sort((a, b) => a.d - b.d);
-      body = groups.map(g => html`${Sect(g.d ? 'Day ' + g.d : 'Before the trip', L.RM(g.list.reduce((s, e) => s + L.myrOf(e), 0)))}<div class="lc" data-t=${'expDay-' + g.d}>${g.list.map(e => ExRow(l, id, e, null))}</div>`);
-    } else {
-      const items = sel === 0 ? all.filter(e => Number(e.ExDay) === 0 && !L.span(e)).map(e => ({ e, share: L.myrOf(e), k: 0, n: 0 })) : L.dayItems(id, sel);
-      body = items.length ? html`${Sect(sel ? 'Day ' + sel : 'Before the trip', L.RM(items.reduce((s, x) => s + x.share, 0)))}<div class="lc" data-t=${'expDay-' + sel}>${items.map(x => ExRow(l, id, x.e, x))}</div>`
-        : html`<div class="lnote" style="margin:4px 18px 14px" data-t="lbNoExp">Nothing on ${sel ? 'Day ' + sel : 'before the trip'} yet.</div>`;
-    }
+    const items = sel === 0 ? all.filter(e => Number(e.ExDay) === 0 && !L.span(e)).map(e => ({ e, share: L.myrOf(e), k: 0, n: 0 })) : L.dayItems(id, sel);
+    const body = items.length ? html`${Sect(sel ? 'Day ' + sel : 'Before the trip', L.RM(items.reduce((s, x) => s + x.share, 0)))}<div class="lc" data-t=${'expDay-' + sel}>${items.map(x => ExRow(l, id, x.e, x))}</div>`
+      : html`<div class="lnote" style="margin:4px 18px 14px" data-t="lbNoExp">Nothing ${sel ? 'on Day ' + sel : 'before the trip'} yet.</div>`;
     const gp = sp.tot ? Math.round(sp.ground / sp.tot * 100) : 0;
     return Page(l, 2, html`
       ${Switcher(l, t)}
@@ -157,9 +187,9 @@ export const scrLbExpenses = {
         <span class="t">Journey rate · ${c}</span><span class="r">${r ? html`RM 1 = ${L.money(r, c)} <span class="lor">›</span>` : html`<span class="lor" style="font-weight:600">Set the rate ›</span>`}</span></div>`; })}
         ${!curs.length ? html`<div class="lsub" style="margin:0">Cash is in MYR for this journey.</div>` : null}</div>
       ${BudgetCard(l, t, sp, bg)}
-      <div class="lbday" data-t="exDays">${[['all', 'All'], [0, 'Before'], ...ds.map(d => [d.n, 'Day ' + d.n])].map(([k, n]) => html`<span class=${sel === k ? 'on' : ''} onClick=${() => { l.exDay = k; rerender(); }} data-t=${'exD-' + k}>${n}</span>`)}</div>
-      <div style="margin:0 12px 10px"><button class="lbtnf" style="width:100%" onClick=${() => canWrite() && openExpense(l, id, null, { day: typeof sel === 'number' ? sel : dayOf(t) })} data-t="lbAddExp">+ Add an expense</button></div>
-      ${!all.length ? html`<div class="lnote" style="margin:4px 18px 14px" data-t="lbNoExp">No expenses yet. Cash goes in the country’s currency, card in the RM your bank charged.</div>` : body}
+      <div class="lbday" data-t="exDays">${[[0, 'Before'], ...ds.map(d => [d.n, 'Day ' + d.n])].map(([k, n]) => html`<span class=${sel === k ? 'on' : ''} onClick=${() => { l.exDay = k; rerender(); }} data-t=${'exD-' + k}>${n}</span>`)}</div>
+      <div style="margin:0 12px 10px"><button class="lbtnf" style="width:100%" onClick=${() => canWrite() && openExpense(l, id, null, { day: sel })} data-t="lbAddExp">+ Add an expense</button></div>
+      ${body}
     `, 'scrLbExpenses');
   }
 };

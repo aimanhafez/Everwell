@@ -16,6 +16,9 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.8.0 · Voyage: day story and mood (LB_Days), border crossings (LpBorder), expense note, place and e-wallet
+ *   (ExNote, ExStop). New tab and columns are added by themselves.
+ *
  * 3.7.0 · Voyage: an expense can be spread over days (ExFrom–ExTo) and is Ground or Non-ground (ExGround); Discovery has
  *   your own overall rating (RsOverall) and star ratings again. New columns are added by themselves.
  *
@@ -60,7 +63,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.7.0';
+var EW_VERSION = '3.8.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -90,12 +93,13 @@ var TABLES = {
   PP_Photos: { key: 'PhId', cols: { PhId: 's', PhTrip: 's', PhFile: 's', PhW: 'n', PhH: 'n', PhTaken: 'd', PhCap: 's', PhSeq: 'n' } },
   PP_Thumbs: { key: 'ThId', cols: { ThId: 's', ThData: 's' } },
   // MansWell Voyage (was Logbook): the detail of each Atlas journey (linked by its TrId). Travel only.
-  LB_Stops: { key: 'LpId', cols: { LpId: 's', LpTrip: 's', LpDay: 'n', LpSeq: 'n', LpPlace: 's', LpCity: 's', LpCountry: 's', LpArr: 's', LpStay: 'n', LpMode: 's', LpKm: 'n', LpMin: 'n', LpNote: 's', LpLat: 'n', LpLng: 'n', LpAddr: 's', LpProv: 's' } },
+  LB_Stops: { key: 'LpId', cols: { LpId: 's', LpTrip: 's', LpDay: 'n', LpSeq: 'n', LpPlace: 's', LpCity: 's', LpCountry: 's', LpArr: 's', LpStay: 'n', LpMode: 's', LpKm: 'n', LpMin: 'n', LpNote: 's', LpLat: 'n', LpLng: 'n', LpAddr: 's', LpProv: 's', LpBorder: 's' } },
   LB_Tracks: { key: 'TkKey', cols: { TkKey: 's', TkTrip: 's', TkDay: 'n', TkPoly: 's', TkEle: 's', TkKm: 'n', TkMin: 'n', TkUp: 'n', TkDown: 'n', TkMax: 'n', TkLegs: 's', TkSrc: 's', TkWhen: 't' } },
-  LB_Expenses: { key: 'ExId', cols: { ExId: 's', ExTrip: 's', ExDay: 'n', ExCat: 's', ExWhat: 's', ExPay: 's', ExAmt: 'n', ExCur: 's', ExRate: 'n', ExMyr: 'n', ExBill: 'n', ExBillCur: 's', ExSeq: 'n', ExGround: 's', ExFrom: 'n', ExTo: 'n' } },
+  LB_Expenses: { key: 'ExId', cols: { ExId: 's', ExTrip: 's', ExDay: 'n', ExCat: 's', ExWhat: 's', ExPay: 's', ExAmt: 'n', ExCur: 's', ExRate: 'n', ExMyr: 'n', ExBill: 'n', ExBillCur: 's', ExSeq: 'n', ExGround: 's', ExFrom: 'n', ExTo: 'n', ExNote: 's', ExStop: 's' } },
   LB_Budget: { key: 'BgKey', cols: { BgKey: 's', BgTrip: 's', BgCat: 's', BgAmt: 'n' } },
   LB_Rates: { key: 'RtKey', cols: { RtKey: 's', RtTrip: 's', RtCur: 's', RtRate: 'n', RtDate: 'd' } },
   LB_Results: { key: 'RsTrip', cols: { RsTrip: 's', RsRoads: 'n', RsScenery: 'n', RsComfort: 'n', RsFood: 'n', RsValue: 'n', RsVerdict: 's', RsBack: 's', RsKmMode: 's', RsBadges: 's', RsOverall: 'n' } },
+  LB_Days: { key: 'DyKey', cols: { DyKey: 's', DyTrip: 's', DyDay: 'n', DyStory: 's', DyMood: 's' } },
   LB_Finds: { key: 'FdId', cols: { FdId: 's', FdTrip: 's', FdKind: 's', FdName: 's', FdWhere: 's', FdDay: 'n', FdNote: 's', FdLat: 'n', FdLng: 'n', FdSeq: 'n', FdProv: 's' } }
 };
 var WRITE_ACTIONS = ['commit', 'startFresh', 'ppPhotoUp', 'ppPhotoDel', 'lbRoute', 'lbGpxSave'];
@@ -197,7 +201,7 @@ var ACTIONS = {
       imports: readTable_(ss, 'SYS_Imports'),
       payslips: readTable_(ss, 'EW_Payslips'),
       lens: { settings: readTable_(ss, 'LN_Settings'), assets: readTable_(ss, 'LN_Assets'), values: readTable_(ss, 'LN_Values'), goals: readTable_(ss, 'LN_Goals'), budget: readTable_(ss, 'LN_Budget') },
-      logbook: { stops: readTable_(ss, 'LB_Stops'), tracks: readTable_(ss, 'LB_Tracks'), expenses: readTable_(ss, 'LB_Expenses'), budget: readTable_(ss, 'LB_Budget'), rates: readTable_(ss, 'LB_Rates'), results: readTable_(ss, 'LB_Results'), finds: readTable_(ss, 'LB_Finds'), places: placesUse_() },
+      logbook: { stops: readTable_(ss, 'LB_Stops'), tracks: readTable_(ss, 'LB_Tracks'), expenses: readTable_(ss, 'LB_Expenses'), budget: readTable_(ss, 'LB_Budget'), rates: readTable_(ss, 'LB_Rates'), results: readTable_(ss, 'LB_Results'), finds: readTable_(ss, 'LB_Finds'), days: readTable_(ss, 'LB_Days'), places: placesUse_() },
       passport: { settings: readTable_(ss, 'PP_Settings'), places: readTable_(ss, 'PP_Places'), trips: readTable_(ss, 'PP_Trips'), stops: readTable_(ss, 'PP_Stops'), photos: readTable_(ss, 'PP_Photos') },
       serverTime: new Date().toISOString()
     };

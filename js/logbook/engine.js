@@ -73,7 +73,7 @@ export function orphans() {
   const ids = new Set(DB.ppTrips.map(t => t.TrId)), o = {};
   const add = (tab, list, tk, kk) => { for (const r of DB[list]) if (r[tk] && !ids.has(r[tk])) (o[tab] = o[tab] || []).push(r[kk]); };
   add('LB_Stops', 'lbStops', 'LpTrip', 'LpId'); add('LB_Tracks', 'lbTracks', 'TkTrip', 'TkKey'); add('LB_Expenses', 'lbExp', 'ExTrip', 'ExId');
-  add('LB_Budget', 'lbBudget', 'BgTrip', 'BgKey'); add('LB_Finds', 'lbFinds', 'FdTrip', 'FdId'); add('LB_Rates', 'lbRates', 'RtTrip', 'RtKey'); add('LB_Results', 'lbResults', 'RsTrip', 'RsTrip');
+  add('LB_Budget', 'lbBudget', 'BgTrip', 'BgKey'); add('LB_Finds', 'lbFinds', 'FdTrip', 'FdId'); add('LB_Days', 'lbDays', 'DyTrip', 'DyKey'); add('LB_Rates', 'lbRates', 'RtTrip', 'RtKey'); add('LB_Results', 'lbResults', 'RsTrip', 'RsTrip');
   return o;
 }
 
@@ -148,14 +148,26 @@ export const expenses = id => DB.lbExp.filter(e => e.ExTrip === id).sort((a, b) 
 export const myrOf = e => Number(e.ExMyr) || 0;
 /** Card: what the card really cost compared to your cash rate (percent), or null. */
 export function cardCost(e, id) {
-  if (e.ExPay !== 'card' || !Number(e.ExBill) || !Number(e.ExMyr)) return null;
+  if (!myrPaid(e.ExPay) || !Number(e.ExBill) || !Number(e.ExMyr)) return null;
   const r = rate(id || e.ExTrip, e.ExBillCur); if (!r) return null;
   return (Number(e.ExMyr) / (Number(e.ExBill) / r) - 1) * 100;
 }
 export function spend(id) {
   const by = Object.fromEntries(CATS.map(c => [c.k, 0])); let tot = 0, cash = 0, card = 0, ground = 0, non = 0;
-  for (const e of expenses(id)) { const v = myrOf(e); tot += v; by[e.ExCat] = (by[e.ExCat] || 0) + v; if (e.ExPay === 'card') card += v; else cash += v; if (isNon(e)) non += v; else ground += v; }
+  for (const e of expenses(id)) { const v = myrOf(e); tot += v; by[e.ExCat] = (by[e.ExCat] || 0) + v; if (myrPaid(e.ExPay)) card += v; else cash += v; if (isNon(e)) non += v; else ground += v; }
   return { tot, by, cash, card, ground, non, n: expenses(id).length };
+}
+/** Card and e-wallet are charged in MYR; cash is in the country's currency. */
+export const myrPaid = p => p === 'card' || p === 'ewallet';
+export const PAYS = [['cash', 'Cash'], ['card', 'Card'], ['ewallet', 'E-wallet']];
+export const payName = p => (p === 'card' ? 'card' : p === 'ewallet' ? 'e-wallet' : 'cash');
+/* ───────── day story, mood, borders ───────── */
+export const MOODS = [['great', 'Great day'], ['good', 'Good'], ['tiring', 'Tiring'], ['rainy', 'Rainy'], ['tough', 'Tough']];
+export const dayRow = (id, day) => DB.lbDays.find(d => d.DyKey === id + '|' + day) || null;
+/** Border crossings of the journey: stops marked as one, with the country before and after. */
+export function borders(id) {
+  const out = []; for (const t of days(journey(id) || {})) { const l = stops(id, t.n); l.forEach((s, i) => { if (s.LpBorder === 'y') { const prev = i ? l[i - 1] : (stops(id).filter(x => x.LpDay < t.n).pop() || null); out.push({ s, day: t.n, from: prev ? prev.LpCountry : '', to: s.LpCountry }); } }); }
+  return out;
 }
 /** Ground cost = spent on the ground during the trip; non-ground = flights, visa, insurance and the like. */
 export const isNon = e => e.ExGround === 'non';

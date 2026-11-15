@@ -74,6 +74,18 @@ export const css = () => atlasCss() + routeCardCss() + `
 .lbadd{display:inline-flex!important;align-items:center;gap:5px}
 .lbgx{display:flex;align-items:center;gap:10px;margin:0 12px 12px;border-radius:14px;background:${K.surface || K.card};box-shadow:inset 0 0 0 1px ${K.hair || K.line};padding:9px 10px}.lbgx .f{font:800 9px Inter,system-ui;color:${K.or};width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:${oa(.13)};flex:none}
 .lbgx .t{flex:1;min-width:0;font-size:12.5px;font-weight:600;color:${K.text};overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lbgx .t span{display:block;font-size:10.5px;color:${K.sub};font-weight:400}.lbgx button{padding:8px 11px!important;font-size:12px!important;flex:none;width:auto!important}
+.lbbva{margin:0 12px 12px;border-radius:18px;padding:14px;background:linear-gradient(160deg,${oa(.09)},${K.surface || K.card} 60%);box-shadow:inset 0 0 0 1px ${oa(.28)}}
+.lbbva .top{display:grid;grid-template-columns:128px 1fr;gap:12px;align-items:center;margin-bottom:6px}.lbbva .k{font-size:10px;font-weight:800;letter-spacing:1.4px;color:${K.sub}}
+.lbbva .big{font-size:21px;font-weight:800;margin-top:4px;color:${K.text};white-space:nowrap}.lbbva .big span{font-size:13px;color:${K.sub};font-weight:500}.lbbva .tier{font-size:10.5px;color:${K.sub};margin-top:5px}
+.lbpill{display:inline-block;font-size:11px;font-weight:700;padding:4px 9px;border-radius:99px;margin-top:7px}.lbpill.over{color:${K.red};background:rgba(229,72,77,.13)}.lbpill.ok{color:#34C77B;background:rgba(52,199,123,.13)}
+.lbbva .cr{display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:center;padding:9px 0;border-top:1px solid ${K.sep}}
+.lbbva .hd2{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12.5px;color:${K.text}}.lbbva .hd2>span{font-size:11px;color:${K.sub};white-space:nowrap}.lbbva .hd2 b{font-size:12.5px;color:${K.text}}
+.lbbva .trk{position:relative;height:9px;border-radius:6px;background:${K.field};margin-top:6px}.lbbva .trk i{position:absolute;left:0;top:0;bottom:0;border-radius:6px}.lbbva .trk u{position:absolute;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:${K.text};border-radius:2px}
+.lbbva .ft{display:flex;justify-content:space-between;font-size:10.5px;color:${K.sub};margin-top:5px}.lbbva .ft em{font-style:normal;font-weight:700}
+.lbbva .ftr{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:${K.sub};margin-top:8px;padding-top:8px;border-top:1px solid ${K.sep}}.lbbva .ftr i{display:inline-block;width:2px;height:11px;background:${K.text};vertical-align:-1px;margin-right:4px}
+.lbwj .hh,.lbwj .rw{display:grid;grid-template-columns:1.1fr .8fr 1.1fr .9fr;gap:6px;align-items:center}.lbwj .hh{font-size:9px;font-weight:800;letter-spacing:1px;color:${K.sub};padding-bottom:6px;border-bottom:1px solid ${K.sep}}.lbwj .hh span:not(:first-child),.lbwj .rw b{text-align:right}
+.lbwj .rw{padding:7px 0;border-top:1px solid ${K.sep};font-size:12.5px;color:${K.text};cursor:pointer}.lbwj .rw:nth-child(2){border-top:0}.lbwj .rw b{font-weight:600}.lbwj .rw i{font-style:normal;color:${K.or};margin-left:4px}.lbwj .rw.tot{font-weight:800;cursor:default}.lbwj .rw.tot b{font-weight:800}
+textarea.lin{min-height:70px;resize:vertical;padding-top:10px;line-height:1.45}
 .lbfull{position:absolute;inset:0;z-index:65;background:#000;display:flex;flex-direction:column}.lbfull .top{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 10px;color:#fff;font-size:14px;font-weight:600}.lbfull .top span{cursor:pointer;padding:4px 6px}
 .lbfull .mp{flex:1;position:relative;overflow:hidden;touch-action:none}.lbfull .mp svg{position:absolute;inset:0;height:100%!important}
 .lbfull .zb{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px}.lbfull .zb span{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:rgba(20,22,26,.85);color:#fff;font-size:19px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
@@ -241,7 +253,7 @@ function CityRow(f, isos, k) {
 export function openStop(l, id, day, s) {
   const t = L.journey(id), list = L.stops(id, day), idx = s ? list.findIndex(x => x.LpId === s.LpId) : list.length, isos = P.isosOf(id);
   const prev = list[idx - 1] || list[list.length - 1];
-  const f = { place: s ? s.LpPlace : '', city: s ? s.LpCity : '', prov: s ? s.LpProv || '' : '', country: s ? s.LpCountry : (prev && prev.LpCountry) || isos.find(x => x !== P.homeIso()) || isos[0] || '',
+  const f = { border: !!(s && s.LpBorder === 'y'), place: s ? s.LpPlace : '', city: s ? s.LpCity : '', prov: s ? s.LpProv || '' : '', country: s ? s.LpCountry : (prev && prev.LpCountry) || isos.find(x => x !== P.homeIso()) || isos[0] || '',
     pin: s && L.hasPin(s) ? { lat: Number(s.LpLat), lng: Number(s.LpLng), addr: s.LpAddr || 'Saved pin' } : null, sug: [], look: false,
     arr: s ? s.LpArr : '', stay: s && s.LpStay ? L.dur(s.LpStay) : '', mode: s ? s.LpMode || 'bike' : (prev && prev.LpMode) || 'bike', note: s ? s.LpNote : '', day };
   const first = () => (s ? idx === 0 : list.length === 0);
@@ -259,6 +271,7 @@ export function openStop(l, id, day, s) {
     ${first() ? html`<div class="lnote" style="margin-top:10px">This is where the day starts.</div>` : html`
       <div class="llab">Got there by</div><div class="lbmode">${L.MODES.map(([k, n, ic]) => html`<span class=${f.mode === k ? 'on' : ''} onClick=${() => { f.mode = k; rerender(); }} data-t=${'sMode-' + k}><i>${Ico(ic, 19, f.mode === k ? K.or : K.sub)}</i>${n}</span>`)}</div>
       <div class="lnote" style="margin-top:8px">Travel time is worked out from your times (arrived here − left the last place). Distance comes from the GPX track.</div>`}
+    <div class="lbspl" style="margin-top:12px" data-t="sBorderRow"><div class="h" onClick=${() => { f.border = !f.border; rerender(); }}><span>${Ico('flag', 16)} Border crossing here</span><span class=${'lsw' + (f.border ? ' on' : '')} data-t="sBorder"><i></i></span></div></div>
     <div class="llab">Note · optional</div><input class="lin" value=${f.note} onInput=${e => { f.note = e.target.value; }} data-t="sNote" />
     ${s ? html`<div style="display:flex;gap:8px;margin-top:12px"><button class="lbtn" style="flex:1" disabled=${idx === 0} onClick=${() => move(-1)} data-t="sUp">▲ Earlier</button><button class="lbtn" style="flex:1" disabled=${idx === list.length - 1} onClick=${() => move(1)} data-t="sDown">▼ Later</button></div>` : null}
   </div>`,
@@ -267,7 +280,7 @@ export function openStop(l, id, day, s) {
     const place = f.place.trim(); if (!place) return Notify('Type the place.', 'error');
     const row = { LpId: s ? s.LpId : newId('LP'), LpTrip: id, LpDay: Number(day), LpSeq: s ? s.LpSeq : (list.reduce((m, x) => Math.max(m, x.LpSeq || 0), 0) + 1), LpPlace: place, LpCity: f.city.trim(), LpProv: (f.prov || '').trim(), LpCountry: f.country,
       LpArr: f.arr, LpStay: L.parseDur(f.stay), LpMode: f.mode, LpKm: 0, LpMin: 0, LpNote: f.note.trim(),
-      LpLat: f.pin ? Math.round(f.pin.lat * 1e6) / 1e6 : 0, LpLng: f.pin ? Math.round(f.pin.lng * 1e6) / 1e6 : 0, LpAddr: f.pin ? f.pin.addr : '' };
+      LpBorder: f.border ? 'y' : '', LpLat: f.pin ? Math.round(f.pin.lat * 1e6) / 1e6 : 0, LpLng: f.pin ? Math.round(f.pin.lng * 1e6) / 1e6 : 0, LpAddr: f.pin ? f.pin.addr : '' };
     lbsave({ up: { LB_Stops: [row] } }, s ? 'Stop edited' : 'Stop added', t.TrName + ' · Day ' + day + ' · ' + place);
     closeSheet(l);
   },
@@ -361,11 +374,24 @@ export function openFind(l, id, fd, kind) {
   extra: fd ? () => html`<button class="lbtn" style="padding:13px 14px;color:${K.red}" data-t="fDel" onClick=${() => confirmAsk(l, 'Delete this find?', fd.FdName, 'Delete', () => { lbsave({ del: { LB_Finds: [fd.FdId] } }, 'Find deleted', fd.FdName); closeSheet(l); })}>Delete</button>` : null });
 }
 
+/** Make every day's track that is missing or out of date, one day after another (days whose stops all have pins). */
+export async function makeAll(l, id) {
+  if (!canWrite() || G.lbAll) return;
+  if (limitHit()) return Notify("Google Maps' free daily limit is used up for today. Try again tomorrow.", 'error');
+  const todo = L.days(L.journey(id)).map(d => d.n).filter(d => L.stops(id, d).length > 1 && (!L.track(id, d) || L.isStale(id, d)));
+  const ready = todo.filter(d => L.stops(id, d).every(L.hasPin)), skip = todo.filter(d => !ready.includes(d));
+  let made = 0; G.lbAll = { n: ready.length, i: 0 }; rerender();
+  for (const d of ready) { G.lbAll.i++; rerender(); const ok = await makeTrack(id, d, L.stops(id, d).map(s => ({ ...s, LpLat: Number(s.LpLat), LpLng: Number(s.LpLng) }))); if (!ok) break; made++; }
+  G.lbAll = null;
+  l.allMsg = (made ? plural(made, 'track') + ' made.' : todo.length ? '' : 'Every day with stops already has its track.') + (skip.length ? ' Day ' + skip.join(', ') + ': some stops have no pin, open the day and tap Make GPX track.' : '');
+  rerender();
+}
+export const saveDay = (id, day, k, v) => { if (!canWrite()) return; const r = L.dayRow(id, day) || { DyKey: id + '|' + day, DyTrip: id, DyDay: day, DyStory: '', DyMood: '' }; lbsave({ up: { LB_Days: [{ ...r, [k]: v }] } }, 'Day story', (L.journey(id) || {}).TrName + ' · Day ' + day); };
 /* ───────── journey rate ───────── */
 export async function todayRate(cur) { const r = await call('lbFx', { cur }); return r && r.rate ? Math.round(r.rate * 10000) / 10000 : 0; }
 export function openRate(l, id, curr) {
   const t = L.journey(id), old = L.rate(id, curr), f = { v: old ? String(old) : '', busy: false };
-  const cash = L.expenses(id).filter(e => e.ExPay !== 'card' && e.ExCur === curr);
+  const cash = L.expenses(id).filter(e => !L.myrPaid(e.ExPay) && e.ExCur === curr);
   openSheet(l, { title: 'Journey rate · ' + curr, body: () => html`<div data-t="rateForm">
     <div class="llab" style="margin-top:4px">RM 1 =  ${L.sym(curr)} …</div><input class="lin" inputmode="decimal" value=${f.v} onInput=${e => { f.v = e.target.value; }} data-t="rateV" />
     <button class="lbtn" style="margin-top:8px" disabled=${f.busy} data-t="rateToday" onClick=${async () => { f.busy = true; rerender(); const r = await todayRate(curr); f.busy = false; if (r) f.v = String(r); rerender(); }}>${f.busy ? 'Asking Google…' : "Get today's rate"}</button>
@@ -384,11 +410,11 @@ export function openExpense(l, id, e, preset = {}) {
   const sp0 = e ? L.span(e) : null;
   const f = { cat: e ? e.ExCat : preset.cat || 'meal', what: e ? e.ExWhat : '', day: e ? Number(e.ExDay) : preset.day ?? 1, pay: e ? e.ExPay || 'cash' : 'cash',
     ground: e && e.ExGround === 'non' ? 'non' : 'ground', spread: !!sp0, from: sp0 ? sp0.from : 0, to: sp0 ? sp0.to : 0,
-    cur: e && e.ExPay !== 'card' ? e.ExCur : mc, amt: e ? String(e.ExAmt) : '', bill: e && Number(e.ExBill) ? String(e.ExBill) : '', billCur: (e && e.ExBillCur) || mc, rate: '', busy: false };
+    cur: e && !L.myrPaid(e.ExPay) ? e.ExCur : mc, note: e ? e.ExNote || '' : '', stop: e ? e.ExStop || '' : '', amt: e ? String(e.ExAmt) : '', bill: e && Number(e.ExBill) ? String(e.ExBill) : '', billCur: (e && e.ExBillCur) || mc, rate: '', busy: false };
   const rateOf = c => (c === 'MYR' ? 1 : L.rate(id, c) || num(f.rate));
   openSheet(l, { title: e ? 'Edit expense' : 'Add an expense', body: () => {
-    const a = num(f.amt), r = rateOf(f.cur), myr = f.pay === 'card' ? a : r ? a / r : 0, haveRate = f.cur === 'MYR' || L.rate(id, f.cur) > 0;
-    const b = num(f.bill), cr = L.rate(id, f.billCur), cost = f.pay === 'card' && a && b && cr ? (a / (b / cr) - 1) * 100 : null, nDays = L.days(t).length > 1 ? L.days(t).length : 0;
+    const a = num(f.amt), r = rateOf(f.cur), myr = L.myrPaid(f.pay) ? a : r ? a / r : 0, haveRate = f.cur === 'MYR' || L.rate(id, f.cur) > 0;
+    const b = num(f.bill), cr = L.rate(id, f.billCur), cost = L.myrPaid(f.pay) && a && b && cr ? (a / (b / cr) - 1) * 100 : null, nDays = L.days(t).length > 1 ? L.days(t).length : 0;
     return html`<div data-t="expForm">
       <div class="llab" style="margin-top:4px">Category</div><div class="lbcat">${L.CATS.map(c => html`<div class=${f.cat === c.k ? 'on' : ''} style=${'--c:' + K.or} onClick=${() => { f.cat = c.k; rerender(); }} data-t=${'eCat-' + c.k}><i>${Ico(c.i, 20)}</i>${c.n}</div>`)}</div>
       <div style="display:grid;grid-template-columns:1fr 104px;gap:10px">
@@ -400,8 +426,8 @@ export function openExpense(l, id, e, preset = {}) {
         ${f.spread ? html`<div class="lbg2" style="margin-top:6px"><div><div class="llab" style="margin-top:0">From</div><select class="lin" value=${String(f.from)} onChange=${ev => { f.from = Number(ev.target.value); if (f.to <= f.from) f.to = Math.min(nDays, f.from + 1); rerender(); }} data-t="eFrom">${L.days(t).slice(0, -1).map(d => html`<option value=${String(d.n)}>Day ${d.n}</option>`)}</select></div>
           <div><div class="llab" style="margin-top:0">To</div><select class="lin" value=${String(f.to)} onChange=${ev => { f.to = Number(ev.target.value); rerender(); }} data-t="eTo">${L.days(t).filter(d => d.n > f.from).map(d => html`<option value=${String(d.n)}>Day ${d.n}</option>`)}</select></div></div>
           <div class="lnote" style="margin-top:6px" data-t="eSpreadNote">${myr ? html`${L.RM2(myr)} ÷ ${f.to - f.from + 1} days = <b class="lor">${L.RM2(myr / (f.to - f.from + 1))} a day</b>, shown in each day.` : 'The amount is shared equally over these days.'}</div>` : null}</div>` : null}
-      <div class="llab">Paid by</div>${Seg([['cash', 'Cash'], ['card', 'Card']], f.pay, k => { f.pay = k; rerender(); }, 'ePay')}
-      <div class="lnote" style="margin-top:6px">${f.pay === 'cash' ? "Cash: type it in the country's currency." : 'Card: type the RM your bank charged.'}</div>
+      <div class="llab">Paid by</div>${Seg(L.PAYS, f.pay, k => { f.pay = k; rerender(); }, 'ePay')}
+      <div class="lnote" style="margin-top:6px">${f.pay === 'cash' ? "Cash: type it in the country's currency." : f.pay === 'ewallet' ? 'E-wallet: type the RM it took from your wallet.' : 'Card: type the RM your bank charged.'}</div>
       ${f.pay === 'cash' ? html`
         <div style="display:grid;grid-template-columns:104px 1fr;gap:10px">
           <div><div class="llab">Currency</div><select class="lin" value=${f.cur} onChange=${ev => { f.cur = ev.target.value; rerender(); }} data-t="eCur">${[...curs, 'MYR'].map(c => html`<option value=${c}>${c}</option>`)}</select></div>
@@ -416,6 +442,8 @@ export function openExpense(l, id, e, preset = {}) {
           <div><div class="llab">Bill in</div><select class="lin" value=${f.billCur} onChange=${ev => { f.billCur = ev.target.value; rerender(); }} data-t="eBillCur">${curs.map(c => html`<option value=${c}>${c}</option>`)}</select></div>
           <div><div class="llab">On the bill · optional</div><input class="lin" inputmode="decimal" value=${f.bill} onInput=${ev => { f.bill = ev.target.value; rerender(); }} data-t="eBill" /></div></div>
         ${a && b ? html`<div class="lnote" style="margin-top:8px" data-t="eCardRate">Card rate worked out RM 1 = ${L.money(b / a, f.billCur)}${cr ? html` · your cash rate ${L.money(cr, f.billCur)} · <b class=${cost > 0 ? 'lbov' : 'lbun'}>${cost >= 0 ? '+' : ''}${cost.toFixed(1)}% card cost</b>` : ' · set the journey rate to see the card cost'}</div>` : null}`}
+      ${f.day > 0 && L.stops(id, f.day).length ? html`<div class="llab">Place · optional</div><select class="lin" value=${f.stop} onChange=${ev => { f.stop = ev.target.value; }} data-t="eStop"><option value="">—</option>${L.stops(id, f.day).map(x => html`<option value=${x.LpId}>${x.LpPlace}</option>`)}</select>` : null}
+      <div class="llab">Note · optional</div><input class="lin" value=${f.note} onInput=${ev => { f.note = ev.target.value; }} data-t="eNote" />
     </div>`; },
   onSave: () => {
     const a = num(f.amt); if (!(a > 0)) return Notify('Type the amount.', 'error');
@@ -424,10 +452,10 @@ export function openExpense(l, id, e, preset = {}) {
       r = L.rate(id, f.cur);
       if (!r) { r = num(f.rate); if (!(r > 0)) return Notify('Set the journey rate for ' + f.cur + ' first.', 'error'); up.LB_Rates = [{ RtKey: id + '|' + f.cur, RtTrip: id, RtCur: f.cur, RtRate: r, RtDate: new Date().toISOString().slice(0, 10) }]; }
     }
-    const card = f.pay === 'card', b = card ? num(f.bill) : 0, seq = e ? e.ExSeq : L.expenses(id).filter(x => Number(x.ExDay) === Number(f.day)).reduce((m, x) => Math.max(m, x.ExSeq || 0), 0) + 1;
+    const card = L.myrPaid(f.pay), b = card ? num(f.bill) : 0, seq = e ? e.ExSeq : L.expenses(id).filter(x => Number(x.ExDay) === Number(f.day)).reduce((m, x) => Math.max(m, x.ExSeq || 0), 0) + 1;
     up.LB_Expenses = [{ ExId: e ? e.ExId : newId('EX'), ExTrip: id, ExDay: Number(f.day), ExCat: f.cat, ExWhat: f.what.trim() || L.CAT[f.cat].n, ExPay: f.pay, ExAmt: a, ExCur: card ? 'MYR' : f.cur,
       ExRate: card ? (b ? Math.round(b / a * 10000) / 10000 : 0) : r, ExMyr: Math.round((card ? a : a / r) * 100) / 100, ExBill: b, ExBillCur: card && b ? f.billCur : '', ExSeq: seq,
-      ExGround: f.ground === 'non' ? 'non' : 'ground', ExFrom: f.spread ? f.from : 0, ExTo: f.spread ? f.to : 0 }];
+      ExGround: f.ground === 'non' ? 'non' : 'ground', ExFrom: f.spread ? f.from : 0, ExTo: f.spread ? f.to : 0, ExNote: f.note.trim(), ExStop: f.day > 0 && L.stops(id, f.day).some(x => x.LpId === f.stop) ? f.stop : '' }];
     lbsave({ up }, e ? 'Expense edited' : 'Expense added', t.TrName + ' · ' + up.LB_Expenses[0].ExWhat + ' · ' + L.RM2(up.LB_Expenses[0].ExMyr));
     closeSheet(l);
   },

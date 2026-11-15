@@ -1,4 +1,10 @@
-# MansWell · v3.7.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.8.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.8.0 · Voyage: budget card, day filter, itinerary extras
+- Expenses: day filter only (Before · Day 1 · Day 2…, no All); a spread item shows just its share (2/6 · RM 50); **Budget vs actual** redesigned (gauge, RM spent / RM budget per category, % used, RM left or over); expense input adds **E-wallet** (in MYR), **Place** (a stop of that day) and **Note**.
+- Itinerary: **Day story** with a mood, **Night stop** (the day's last stop and its accommodation expense), **Border crossing** on a stop and a Borders list, **Whole journey** table (km, on the road, climb per day) with **Make all tracks**.
+- New tab LB_Days and columns LpBorder, ExNote, ExStop are added by themselves.
+- To update: upload Step 1, replace Code.gs (3.8.0), Deploy › New version.
 
 ## 3.7.0 · Voyage: expenses, map labels, Discovery
 - Expenses: an item can be **spread over days** (e.g. Day 1–6: each day shows its share); each item is **Ground** or **Non-ground** (flights, visa, insurance); donut in the style of your example (theme shades, % on the ring, top 3); only Budget and Left at the top; **day slicer** (All · Before · Day 1…); line icons.
