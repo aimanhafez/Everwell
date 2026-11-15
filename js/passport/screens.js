@@ -1,6 +1,8 @@
 // MansWell Atlas (was Passport) · three pages: Odyssey (your world: search + map, journeys, going, stamps, milestones),
 // Journeys (+ one journey) and Wanderlist (dreaming → going, with tiers).
-import { html, K, DB, G, rerender, Today, Notify } from '../core.js';
+import { html, K, DB, G, rerender, Today, Notify, NAV, Navigate, store } from '../core.js';
+import * as S from './summary.js';
+import * as I from './insights.js';
 import { Page, Sect, Cap, Flag, WorldMap, Legend, focusMap, openCountry, openWish, openGoing, openTrip, openTripEdit, deleteTrip, openPick, openPhoto,
   confirmAsk, psave, canWrite, plural, tripLine, go, openSheet, closeSheet, TierBadge, WISHC, P, PH } from './ui.js';
 
@@ -45,7 +47,6 @@ export const scrPpOverview = {
         <div class="big" data-t="ppCount">${countries(s.n)}</div>
         <div class="sub"><b data-t="ppPct">${s.pct.toFixed(1)}%</b> of ${P.WORLD_N} countries · <b data-t="ppConts">${s.conts} of 7</b> continents${s.extra ? html` · +${plural(s.extra, 'place')}` : null}</div>
         <div class="bar"><i style=${`width:${Math.max(s.n ? 1.5 : 0, s.pct)}%`}></i></div>
-        <div class="g3"><div><span class="lcap">Journeys</span><b data-t="ppTrips">${s.trips}</b></div><div><span class="lcap">Wanderlist</span><b data-t="ppWish">${s.wish}</b></div><div><span class="lcap">Days away</span><b data-t="ppDays">${s.days}</b></div></div>
       </div>
       ${empty ? html`<div class="lc" data-t="ppWelcome"><b style=${`font-size:16px;color:${K.text}`}>Start your Atlas</b>
         <div class="lnote" style="margin-top:6px">Search a country below to mark where you've been, add a journey you've taken, or start your Wanderlist.</div>
@@ -54,17 +55,14 @@ export const scrPpOverview = {
       ${sug.length ? html`<div class="psug" style="margin:6px 12px 0" data-t="oSug">${sug.map(c => html`<div class="pcr" onClick=${() => pick(c.iso)} data-t=${'oPick-' + c.iso}>${Flag(c.iso, 18)}<div><div class="t" style="font-size:13.5px">${c.name}</div><div class="s">${[c.cap, c.cont].filter(Boolean).join(' · ')}</div></div>${StPillSm(c.iso)}</div>`)}</div>` : q.trim() && !l.sel ? html`<div class="lsub" style="margin:8px 18px 0">No country matches “${q}”.</div>` : null}
       <div class="lc" style="padding:8px;margin-top:10px">${WorldMap('odyssey', { live: true, h: 200, sel: l.sel, onPick: iso => pick(iso) })}<div style="padding:0 4px">${Legend(s)}</div></div>
       ${l.sel && P.BY[l.sel] ? PickCard(l, l.sel) : null}
-      ${fx.returned || fx.longest || fx.newest ? html`<div class="pfacts" data-t="oFacts">
-        <div><span>Most returned</span><b>${fx.returned ? html`${P.BY[fx.returned.iso].name} ×${fx.returned.n}` : '—'}</b></div>
-        <div><span>Longest journey</span><b>${fx.longest ? html`${fx.longest.TrName} · ${P.daysOf(fx.longest)}d` : '—'}</b></div>
-        <div><span>Newest stamp</span><b>${fx.newest ? html`${P.BY[fx.newest.iso].name} · ${P.fmtMon(fx.newest.at)}` : '—'}</b></div></div>` : null}
-      ${ts.length ? html`${Sect('Journeys', 'All', () => go('scrPpJourneys'), 'ovAllTrips')}
-        <div class="lc">${ts.slice(0, 3).map(t => html`<div class="phl" onClick=${() => openTrip(t.TrId)} data-t=${'ovTrip-' + t.TrId}><div class="im" style=${coverBg(t)}></div><div><div class="t">${t.TrName}</div><div class="s">${tripLine(t)}</div></div><span style="display:flex;gap:3px">${tripFlags(t.TrId, 12).slice(0, 3)}</span></div>`)}</div>` : null}
-      ${gw.length ? html`${Sect('Wanderlist', 'Going', () => go('scrPpWishlist'), 'ovWish')}
-        <div class="lc" data-t="ovGoing">${gw.map(p => html`<div class="pgo" onClick=${() => openCountry(l, p.PlIso)} data-t=${'ovGo-' + p.PlIso}>${Flag(p.PlIso, 20)}<div><div class="t">${P.BY[p.PlIso].name}</div><div class="s">${p.PlGoYear} · ${plural(p.PlGoDays, 'day')}</div></div><span class="pgoing">GOING</span></div>`)}</div>` : null}
+      <style>${S.css()}</style>
+      ${S.StatCards()}
       ${fv.length ? html`${Sect('Borderless', plural(fv.length, 'stamp'))}
         <div class="lc" data-t="oStamps"><div class="pstamps">${shownSt.map(x => Stamp(l, x))}${fv.length < 8 ? html`<div class="pstp lock" style="--r:0deg"><div><b>+</b><span>NEXT ONE</span></div></div>` : null}</div>
           ${fv.length > 8 ? html`<div class="lsub" style="text-align:center;margin-top:10px"><span class="lor" style="cursor:pointer;font-weight:600" onClick=${() => { l.allSt = !l.allSt; rerender(); }} data-t="oAllSt">${l.allSt ? 'Show fewer' : '+' + (fv.length - 8) + ' more · show all'}</span></div>` : null}</div>` : null}
+      ${S.Favourites()}
+      ${S.MostSpent(id => openTrip(id))}
+      ${S.Badges()}
       ${Sect('Milestones', ms.filter(m => m.done).length + ' of ' + ms.length)}
       <div class="lc" data-t="oMs">${ms.map((m, i) => html`<div class="lr" style=${i ? '' : 'border-top:0;padding-top:2px'} data-t=${'ms-' + m.id}>
           <div class="lib" style=${m.done ? `background:${K.or};color:${K.onAcc}` : `background:${K.field};color:${K.mute};box-shadow:inset 0 0 0 1.5px ${K.line2}`}><b style="font-size:11.5px">${m.need}</b></div>
@@ -84,6 +82,8 @@ export const scrPpJourneys = {
     const byYear = []; for (const t of list) { const y = P.yearOf(t.TrStart); let g = byYear.find(x => x.y === y); if (!g) byYear.push(g = { y, ts: [] }); g.ts.push(t); }
     const sel = (v, set, opts, all0, id) => html`<select class=${'pchip' + (v ? ' on' : '')} style="border:0;font-family:inherit;-webkit-appearance:none;appearance:none" onChange=${e => { set(e.target.value); rerender(); }} data-t=${id}><option value="">${all0}</option>${opts.map(([k, t]) => html`<option value=${k} selected=${String(k) === String(v)}>${t}</option>`)}</select>`;
     return Page(l, 1, html`
+      <style>${S.css()}</style>
+      ${S.CountryTable()}
       ${Sect('Journeys', '+ New journey', () => openTripEdit(l, null), 'jNew')}
       ${all.length ? html`<div class="pchips">${sel(l.yr, v => { l.yr = v; }, yrs.map(y => [y, String(y)]), 'All years ▾', 'jYear')}${sel(l.ctry, v => { l.ctry = v; }, ctry.map(i => [i, P.BY[i].name]), 'Country ▾', 'jCtry')}${sel(l.with, v => { l.with = v; }, P.WITH.map(w => [w, w]), 'Who with ▾', 'jWith')}</div>` : null}
       ${!all.length ? html`<div class="lc lempty" data-t="jEmpty">No journeys yet. Add the first one: name, countries, dates and who you went with. Photos come after.<div style="margin-top:12px"><button class="lbtn o on" onClick=${() => openTripEdit(l, null)}>+ Add a journey</button></div></div>`
@@ -128,13 +128,19 @@ export const scrPpTrip = {
         <div class="hd" onClick=${() => openCountry(l, r.iso)}>${Flag(r.iso, 16)}<b>${P.BY[r.iso].name}</b>${r.days ? html`<span>· ${plural(r.days, 'day')}</span>` : null}${isNew(r.iso) ? html`<em>NEW</em>` : null}</div>
         ${r.places.length ? html`<div class="pstops">${r.places.map((pl, i) => html`${i ? html`<i class="lk2"></i>` : null}<span class="pst2" data-t=${'tPlace-' + r.iso + '-' + i}><i>${i + 1}</i>${pl}</span>`)}</div>` : null}</div>`)}
       ${t.TrDesc ? html`<div class="lc">${Cap('The story')}<div style=${`font-size:14px;line-height:1.55;margin-top:7px;color:${K.text};white-space:pre-wrap`}>${t.TrDesc}</div></div>` : null}
+      <style>${S.css()}</style>
+      ${S.JourneyNumbers(t.TrId)}
+      ${S.JourneyRoute(t.TrId)}
+      ${S.DailySpending(t.TrId)}
+      ${S.ExpenseSplit(t.TrId)}
+      ${I.journey(t.TrId).has ? null : html`<div class="lc" data-t="tVoyageHint"><b style=${`color:${K.text}`}>The rest comes from Voyage</b><div class="lnote" style="margin-top:4px">Add this journey's itinerary, expenses and score in Voyage to see the route map, daily spending and expenses here.</div>
+        <button class="lbtn o on" style="margin-top:10px" onClick=${() => { G.lbTrip = t.TrId; store.set('lb_trip', t.TrId); NAV.stack = []; Navigate('scrLbItinerary'); }} data-t="tToVoyage">Open in Voyage</button></div>`}
+      ${t.TrNotes ? html`<div class="lc">${Cap('My notes')}<div class="lnote" style="margin-top:6px;white-space:pre-wrap;font-size:12.5px">${t.TrNotes}</div></div>` : null}
       ${Sect('Memories', photos.length > 9 ? (l.allPh ? 'Show 9' : 'See all ' + photos.length) : plural(photos.length, 'photo'), photos.length > 9 ? () => { l.allPh = !l.allPh; rerender(); } : null, 'tSeeAll')}
       ${l.up ? html`<div class="pprog" data-t="tUp">${l.up}</div>` : null}
       <div class="pgal" data-t="tGal">${shown.map((p, i) => { const last = !l.allPh && i === 8 && more > 0; return html`<div class=${(cv === p.PhId ? 'cv' : '') + (last ? ' more' : '')} data-m=${'+' + more} style=${PH.bg(p.PhId, p.PhId)} onClick=${() => { if (last) { l.allPh = true; rerender(); } else openPhoto(l, p); }} data-t=${'ph-' + p.PhId}></div>`; })}
         ${photos.length < 9 || l.allPh ? html`<label class="add" data-t="tAddPh">${DB.ppOk ? html`<span>+ Add<br/>photos</span><input class="pfile" type="file" accept="image/*" multiple onChange=${add} data-t="tFile" />` : html`<span style="font-size:10.5px">Update the Apps Script to add photos</span>`}</label>` : null}</div>
       ${photos.length >= 9 && !l.allPh && DB.ppOk ? html`<div style="margin:-4px 12px 12px"><label class="lbtn" style="width:100%;padding:10px" data-t="tAddPh2">+ Add photos<input class="pfile" type="file" accept="image/*" multiple onChange=${add} data-t="tFile2" /></label></div>` : null}
-      ${moments.length ? html`${Sect('Moments', plural(moments.length, 'highlight'))}<div class="pmoms" data-t="tMoments">${moments.map((m, i) => html`<div class=${'pmo' + (i ? '' : ' big')} data-n=${String(i + 1).padStart(2, '0')}><span>${i ? 'MOMENT' : 'THE HIGHLIGHT'}</span><b>${m}</b></div>`)}</div>` : null}
-      ${t.TrNotes ? html`<div class="lc">${Cap('My notes')}<div class="lnote" style="margin-top:6px;white-space:pre-wrap;font-size:12.5px">${t.TrNotes}</div></div>` : null}
       <div style="display:flex;gap:8px;margin:6px 12px 18px"><button class="lbtn" style="flex:1;padding:12px" onClick=${() => openTripEdit(l, t)} data-t="tEdit2">Edit journey</button><button class="lbtnd" style="flex:1" onClick=${() => deleteTrip(l, t)} data-t="tDelete">Delete journey</button></div>
     `, 'ppTrip');
   }

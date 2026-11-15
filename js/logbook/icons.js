@@ -26,6 +26,17 @@ const P = {
   book: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/>',
   pin: '<path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
   chart: '<path d="M3 3v18h18"/><path d="M7 16v-4M11 16V8M15 16v-6M19 16V6"/>',
+  trips: '<circle cx="6" cy="19" r="2.2"/><path d="M18 12s-3.2-3.4-3.2-5.7C14.8 4.4 16.2 3 18 3s3.2 1.4 3.2 3.3C21.2 8.6 18 12 18 12z"/><circle cx="18" cy="6.3" r="1"/><path d="M8.2 19H15a3.5 3.5 0 0 0 0-7H9a3 3 0 0 1 0-6h3"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M7.5 13.5h1M11.5 13.5h1M15.5 13.5h1M7.5 17h1M11.5 17h1"/>',
+  wallet: '<path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H17v3"/><rect x="4" y="8" width="16" height="11" rx="2.5"/><path d="M15.5 13.5h4.5"/>',
+  gauge: '<path d="M3.5 17a8.5 8.5 0 1 1 17 0"/><path d="M12 17l4-5"/><circle cx="12" cy="17" r="1.4"/><path d="M6 13l1 .5M18 13l-1 .5M12 8.5v1.2"/>',
+  star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+  globe: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5S9.5 6.1 12 3.5z"/>',
+  compass: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.1 4.9-4.9 2.1 2.1-4.9z"/>',
+  mount: '<path d="M2.5 20 9 9.5l4 6 3-4 5.5 8.5z"/>',
+  solo: '<circle cx="12" cy="4.5" r="2"/><path d="M12 7v6l-3 8M12 13l3 8M8 10l4-3 4 3"/>',
+  family: '<circle cx="7" cy="5" r="1.8"/><circle cx="16" cy="5" r="1.8"/><circle cx="11.5" cy="11" r="1.4"/><path d="M5 21v-6H4l1.5-6h3l1.5 6H9v6M14 21v-5l-1-6h6l-1 6v5M10.5 21v-4h2v4"/>',
+  group: '<circle cx="6" cy="6" r="1.7"/><circle cx="12" cy="5" r="1.7"/><circle cx="18" cy="6" r="1.7"/><path d="M4 21v-8l2-4 2 4v8M10 21v-9l2-5 2 5v9M16 21v-8l2-4 2 4v8"/>',
   people: '<circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/>'
 };
 export const svgIco = (n, c, s = 20) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${P[n] || P.bag}</svg>`;

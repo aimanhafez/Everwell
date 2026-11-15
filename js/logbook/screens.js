@@ -30,7 +30,6 @@ export const scrLbJourneys = {
           <div style="min-width:0"><div class="t">${t.TrName}</div><div class="s">${P.range(t.TrStart, t.TrEnd)} · ${plural(x.days, 'day')}</div>
             <div><span class=${'lbtag' + (x.filled.itin ? ' on' : '')}>ITINERARY</span><span class=${'lbtag' + (x.filled.exp ? ' on' : '')}>EXPENSES</span><span class=${'lbtag' + (x.filled.disc ? ' on' : '')}>DISCOVERY</span></div></div>
           <div class="r"><b>${x.spent ? L.RM(x.spent) : '—'}</b><span>${x.km ? L.n0(x.km) + ' km' : '—'}</span></div></div>`; })}</div>
-        <div style="margin:0 12px 10px">${PlacesBar()}</div>
         <div class="lnote" style="margin:0 18px 14px">Add a journey in Atlas and it shows up here. Rename it or change its dates in Atlas and Voyage follows.</div>`}
     `, 'scrLbJourneys');
   }
@@ -93,8 +92,6 @@ export const scrLbItinerary = {
       <div class="pstrip" data-t="lbDaySum" style="margin-top:0"><div><span>Today</span><b data-t="lbDayKm">${tk ? L.n0(mt.km) + ' km' : '—'}</b></div><div><span>On the road</span><b data-t="lbDayMin">${min ? L.dur(min) : '—'}</b></div><div><span>Highest</span><b data-t="lbDayHi">${tk && mt.max ? L.n0(mt.max) + ' m' : '—'}</b></div></div>
       ${Stops(l, t, d, list, tk)}
       ${stale ? html`<div class="lwarn" data-t="lbStale">The stops changed after this track was made. Tap “Make track again”.</div>` : null}
-      ${DayStory(l, id, d)}
-      ${list.length ? NightStop(l, t, d, list) : null}
       ${tk ? html`
         ${Sect('On the map', 'Day GPX', () => { const g = L.gpx(id, d); download(g.name + '.gpx', g.xml, 'application/gpx+xml'); }, 'lbDayGpx')}
         <div class="lbmap" style="margin:0 12px 12px;background:#07080B" data-t="lbDayMap">${RouteMap({ id, days: [d], w: 366, h: 240, key: 'dayMap' }).svg}</div>
@@ -105,7 +102,6 @@ export const scrLbItinerary = {
             <div class="lnote" style="margin-top:8px">Drag along the profile to read any point.</div></div>` : html`<div class="lwarn" data-t="lbNoEle">No heights for this day yet, so no elevation or climb. Tap “Make track again” to read them.</div>`}` : list.length > 1 ? html`
         <div class="lnote" style="margin:0 18px 14px">Make the GPX track to get the day's km, map and heights. Google follows the roads by each leg's transport.</div>` : null}
       ${Borders(id)}
-      ${WholeJourney(l, t)}
     `, 'scrLbItinerary');
   }
 };
@@ -179,14 +175,13 @@ export const scrLbExpenses = {
     return Page(l, 2, html`
       ${Switcher(l, t)}
       ${SpendCard(sp)}
-      <div class="lbm" style="grid-template-columns:1fr 1fr;margin:0 12px 10px" data-t="lbBL"><div><span>Budget</span><b>${bg.tot ? L.RM(bg.tot) : '—'}</b></div>
+      <div class="lbm" style="grid-template-columns:1fr 1fr;margin:0 12px 10px;cursor:pointer" onClick=${() => canWrite() && openBudget(l, id)} data-t="lbBL"><div><span>Budget ›</span><b>${bg.tot ? L.RM(bg.tot) : 'Set'}</b></div>
         <div><span>${bg.tot && sp.tot > bg.tot ? 'Over' : 'Left'}</span><b class=${bg.tot && sp.tot > bg.tot ? 'lbov' : ''} data-t="lbLeft">${bg.tot ? L.RM(Math.abs(bg.tot - sp.tot)) : '—'}</b></div></div>
       ${sp.tot ? html`<div class="lc lbgr" data-t="lbGround"><div class="h"><span><i></i>Ground <b>${L.RM(sp.ground)}</b></span><span class="n"><i></i>Non-ground <b>${L.RM(sp.non)}</b></span></div>
         <div class="bar"><i style=${`width:${gp}%`}></i></div></div>` : null}
       <div class="lc" data-t="lbRates" style="padding:10px 14px">${curs.map(c => { const r = L.rate(id, c); return html`<div class="lr" style="padding:5px 0;cursor:pointer" onClick=${() => canWrite() && openRate(l, id, c)} data-t=${'lbRate-' + c}>
         <span class="t">Journey rate · ${c}</span><span class="r">${r ? html`RM 1 = ${L.money(r, c)} <span class="lor">›</span>` : html`<span class="lor" style="font-weight:600">Set the rate ›</span>`}</span></div>`; })}
         ${!curs.length ? html`<div class="lsub" style="margin:0">Cash is in MYR for this journey.</div>` : null}</div>
-      ${BudgetCard(l, t, sp, bg)}
       <div class="lbday" data-t="exDays">${[[0, 'Before'], ...ds.map(d => [d.n, 'Day ' + d.n])].map(([k, n]) => html`<span class=${sel === k ? 'on' : ''} onClick=${() => { l.exDay = k; rerender(); }} data-t=${'exD-' + k}>${n}</span>`)}</div>
       <div style="margin:0 12px 10px"><button class="lbtnf" style="width:100%" onClick=${() => canWrite() && openExpense(l, id, null, { day: sel })} data-t="lbAddExp">+ Add an expense</button></div>
       ${body}

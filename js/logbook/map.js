@@ -86,8 +86,8 @@ export function RouteMap(o) {
     while (tw > w - 12 && fs > 8.5) { fs -= 0.5; tw = (textW(name, fs) + 14) * s1; }
     const th = (fs + 9) * s1, g = 11 * s1;
     const cand = [[x + g, y - th / 2], [x - g - tw, y - th / 2], [x + g, y - th - g / 2], [x - g - tw, y - th - g / 2], [x + g, y + g / 2], [x - g - tw, y + g / 2], [x - tw / 2, y - th - g], [x - tw / 2, y + g]];
-    const free = ([bx, by]) => bx >= 3 && by >= 3 && bx + tw <= w - 3 && by + th <= h - 3 && !boxes.some(q => bx < q[0] + q[2] + 3 * s1 && bx + tw + 3 * s1 > q[0] && by < q[1] + q[3] + 2 * s1 && by + th + 2 * s1 > q[1]);
-    const inside = ([bx, by]) => [Math.max(3, Math.min(w - 3 - tw, bx)), Math.max(3, Math.min(h - 3 - th, by))];
+    const free = ([bx, by]) => bx >= 3 && by >= (o.top || 3) && bx + tw <= w - 3 && by + th <= h - 3 && !boxes.some(q => bx < q[0] + q[2] + 3 * s1 && bx + tw + 3 * s1 > q[0] && by < q[1] + q[3] + 2 * s1 && by + th + 2 * s1 > q[1]);
+    const inside = ([bx, by]) => [Math.max(3, Math.min(w - 3 - tw, bx)), Math.max(o.top || 3, Math.min(h - 3 - th, by))];
     const [lx, ly] = cand.find(free) || cand.map(inside).find(free) || inside(cand[0]);
     boxes.push([lx, ly, tw, th]);
     labs.push(html`<g key=${'l' + i} style="pointer-events:none" data-t=${'lab-' + p.s.LpId}><rect x=${lx} y=${ly} width=${tw} height=${th} rx=${6 * s1} fill="rgba(9,11,15,.86)" stroke="rgba(255,255,255,.1)" stroke-width=${s1} />
@@ -115,12 +115,12 @@ export function RouteMap(o) {
 export function RouteCard(o) {
   const t = L.journey(o.id); if (!t) return null;
   const tot = L.lbTotals(o.id), iso = L.isosOf(o.id).find(x => x !== L.P.homeIso()) || L.isosOf(o.id)[0], cn = ((L.P.BY[iso] || {}).name || '').toUpperCase();
-  const m = RouteMap({ id: o.id, days: L.days(t).map(d => d.n), w: o.w || 366, h: o.h || 400, perDay: o.perDay, onPin: o.onPin, key: o.key || 'routeCard', pad: 0.16 });
+  const m = RouteMap({ id: o.id, days: L.days(t).map(d => d.n), w: o.w || 366, h: o.h || 400, perDay: o.perDay, onPin: o.onPin, key: o.key || 'routeCard', pad: 0.16, top: 34 });
   return html`<div class="lbcard" data-t=${(o.key || 'routeCard') + 'Box'}>${m.svg}
     <div class="hd"><b>ROUTE MAP</b>${o.onFull ? html`<span onClick=${o.onFull} data-t="routeFull">View Full Map <i>⤢</i></span>` : null}</div>
-    <div class="ov"><div class="c">${cn}</div><div class="ln"></div>
+    ${o.plain ? null : html`<div class="ov"><div class="c">${cn}</div><div class="ln"></div>
       <div class="st"><i></i><div><b>${L.n0(tot.km)} Km</b><span>Total Distance</span></div></div><div class="bar"></div>
-      <div class="st"><i></i><div><b>${tot.days} Days</b><span>Total Trip</span></div></div></div></div>`;
+      <div class="st"><i></i><div><b>${tot.days} Days</b><span>Total Trip</span></div></div></div>`}</div>`;
 }
 export const routeCardCss = () => { const a = accent(), soft = mixW(a, 0.75); return `
 .lbcard{position:relative;border-radius:18px;overflow:hidden;background:#07080B;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}

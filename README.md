@@ -1,4 +1,12 @@
-# MansWell · v3.8.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.9.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.9.0 · Atlas reads Voyage
+- **Odyssey**: the hero keeps countries, % of the world and continents; four cards (Total trips: solo / family / friends · Travel days: working / off days · Total expenses · Total distance); Borderless stamps; Favourite country (your Voyage score); Most spent (by journey, % of all); six Badges (The Long Haul, World Wanderer = farthest from home, Luxury Voyager, Travel Chameleon = most stops, Throttle Master = most km by motorbike, The High Road); Milestones. Legend: Visited and Wanderlist only. The three fact cards and the Journeys / Going lists on Odyssey are gone (they live in their own tabs).
+- **Journeys**: Country experience overview first (trips, days, distance, ground cost, per day).
+- **One journey**: after the story, six numbers (your score, days, expenses, distance with % by motorbike, riding time, highest), the route map, route overview, daily spending (ground cost), ground vs non-ground by category; notes; **Memories last**. Moments removed.
+- **Voyage**: Google Places bar off the Journeys page; Day story, Night stop and Whole journey removed from Itinerary; the Budget vs actual card removed (tap Budget at the top to set it).
+- Working days are weekdays, off days Sat–Sun (public holidays not counted).
+- To update: upload Step 1, replace Code.gs (3.9.0, same server code), Deploy › New version.
 
 ## 3.8.0 · Voyage: budget card, day filter, itinerary extras
 - Expenses: day filter only (Before · Day 1 · Day 2…, no All); a spread item shows just its share (2/6 · RM 50); **Budget vs actual** redesigned (gauge, RM spent / RM budget per category, % used, RM left or over); expense input adds **E-wallet** (in MYR), **Place** (a stop of that day) and **Note**.

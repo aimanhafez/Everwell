@@ -16,6 +16,9 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.9.0 · Atlas summary from Voyage (Odyssey cards, badges, country overview, journey numbers, route, spending).
+ *   No change to the tabs; same server code as 3.8.0.
+ *
  * 3.8.0 · Voyage: day story and mood (LB_Days), border crossings (LpBorder), expense note, place and e-wallet
  *   (ExNote, ExStop). New tab and columns are added by themselves.
  *
@@ -63,7 +66,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.8.0';
+var EW_VERSION = '3.9.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {

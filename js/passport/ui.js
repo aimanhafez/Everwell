@@ -240,7 +240,7 @@ export function WorldMap(key, o = {}) {
     ${o.live ? html`<div class="zb"><span onClick=${() => zoom(1.6)} data-t="zoomIn">+</span><span onClick=${() => zoom(1 / 1.6)} data-t="zoomOut">−</span><span onClick=${() => { st.z = 1; st.cx = MAP_W / 2; st.cy = MAP_H / 2; rerender(); }} style="font-size:12px" data-t="zoomReset">⤢</span></div>` : null}
   </div>`;
 }
-export const Legend = (s, extra) => html`<div class="pleg"><span><i style=${`background:${K.or}`}></i>Visited ${s ? s.n + s.extra : ''}</span><span><i style=${`background:${WISHC()}`}></i>Wanderlist ${s ? s.wish : ''}</span><span><i style=${`background:${K.light ? 'rgba(60,40,20,.45)' : ta(.55)}`}></i>Home</span><span><i style=${`background:${K.light ? 'rgba(60,40,20,.13)' : ta(.13)}`}></i>Not yet</span>${extra || null}</div>`;
+export const Legend = (s, extra) => html`<div class="pleg"><span><i style=${`background:${K.or}`}></i>Visited ${s ? s.n + s.extra : ''}</span><span><i style=${`background:${WISHC()}`}></i>Wanderlist ${s ? s.wish : ''}</span>${extra || null}</div>`;
 
 /* ───────── confirm ───────── */
 export function confirmAsk(l, title, msg, label, run) { l.confirm = { title, msg, label, run }; rerender(); }
@@ -397,7 +397,6 @@ export function openTripEdit(l, t, preset = {}) {
       <div class="lnote" style="margin-top:6px" data-t="tDur">${d ? plural(d, 'day') + ' in total' + (f.stops.length > 1 ? '. Days per country are optional.' : '.') : 'The length is worked out from the dates.'}</div>
       <div class="llab">Who with · pick one or more</div><div class="pseg" style="grid-template-columns:repeat(5,1fr)">${P.WITH.map(w => html`<span class=${f.with.includes(w) ? 'on' : ''} data-t=${'tWith-' + w} onClick=${() => { f.with = f.with.includes(w) ? f.with.filter(x => x !== w) : P.WITH.filter(x => x === w || f.with.includes(x)); rerender(); }}>${w}</span>`)}</div>
       <div class="llab">The story</div><textarea class="lin" placeholder="What the trip was about" value=${f.desc} onInput=${e => { f.desc = e.target.value; }} data-t="tDesc"></textarea>
-      <div class="llab">Memorable moments · one per line</div><textarea class="lin" placeholder=${'Sunrise at Angkor Wat\nNight train to Hanoi'} value=${f.mom} onInput=${e => { f.mom = e.target.value; }} data-t="tMom"></textarea>
       <div class="llab">My notes</div><textarea class="lin" placeholder="Visa, tips, what to do differently" value=${f.notes} onInput=${e => { f.notes = e.target.value; }} data-t="tNotes"></textarea>
       ${t ? null : html`<div class="lnote" style="margin-top:10px">Add photos on the journey page after saving.</div>`}
     </div>`;
