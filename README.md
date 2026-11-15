@@ -1,4 +1,11 @@
-# MansWell · v3.6.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.7.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.7.0 · Voyage: expenses, map labels, Discovery
+- Expenses: an item can be **spread over days** (e.g. Day 1–6: each day shows its share); each item is **Ground** or **Non-ground** (flights, visa, insurance); donut in the style of your example (theme shades, % on the ring, top 3); only Budget and Left at the top; **day slicer** (All · Before · Day 1…); line icons.
+- Itinerary: no country name or km on the map; every place name shows in full and labels never overlap; line icons for transport.
+- Discovery: **your own overall rating** out of 5; **Trail Marks** (the five, with stars in the theme colour); **Hidden Treasures** (Best cafe, accommodation, city, viewpoint, road, hidden gem); **The Last Word**; **Trail File** (slim GPX card).
+- New columns (made by themselves): ExGround, ExFrom, ExTo in LB_Expenses; RsOverall in LB_Results.
+- To update: upload Step 1, replace Code.gs (3.7.0), Deploy › New version. The Google Places key stays saved.
 
 ## 3.6.1 · Voyage maps follow the theme
 The road, its glow, the pins, the km on the map, the ROUTE MAP card and the elevation chart use your theme's colour (Ember orange, Ivory maroon, Sapphire gold, Rosé pink, Graphite silver). The dark map itself stays. Code.gs only changes its version label to 3.6.1 (nothing else), so all files show the same version.

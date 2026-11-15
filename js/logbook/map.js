@@ -51,6 +51,9 @@ const mixW = (h, f) => { const [r, g, b] = hexRgb(h); return 'rgb(' + [r, g, b].
 /** On the dark map a light theme's deep accent (Ivory maroon) is lifted a little so it still glows. */
 const accent = () => { const a = /^#?[0-9a-f]{6}$/i.test(String(K.or || '').trim()) ? K.or : '#FF7A1A'; return K.light ? mixW(a, 0.3) : a; };
 let uid = 0;
+/** Width of a label in px (measured once per text). */
+const TW = {}; let tctx = null;
+const textW = (t, fs) => { const k = fs + '|' + t; if (TW[k]) return TW[k]; try { tctx = tctx || document.createElement('canvas').getContext('2d'); tctx.font = '600 ' + fs + 'px Inter, system-ui, sans-serif'; return (TW[k] = tctx.measureText(t).width); } catch (e) { return (TW[k] = t.length * fs * 0.58); } };
 const trunc = (s, n) => (String(s).length > n ? String(s).slice(0, n - 1) + '…' : String(s));
 /**
  * o: { id, days:[n…], w, h, perDay, view (optional {x0,y0,k}), labels (default true), onPin(day), key }
@@ -73,20 +76,28 @@ export function RouteMap(o) {
       <path d=${d} fill="none" stroke=${c} stroke-width=${3.4 * s1} stroke-linecap="round" stroke-linejoin="round" stroke-dasharray=${dash} />
       <path d=${d} fill="none" stroke=${mixW(accent(), 0.6)} stroke-width=${1.2 * s1} stroke-opacity=${o.perDay ? 0.5 : 0.95} stroke-linecap="round" stroke-linejoin="round" stroke-dasharray=${dash} /></g>`;
   });
-  const first = pins[0], last = pins[pins.length - 1], showLab = o.labels !== false, placed = [];
+  const first = pins[0], last = pins[pins.length - 1], showLab = o.labels !== false;
+  const pos = pins.map(p => P2(v, Number(p.s.LpLat), Number(p.s.LpLng)));
+  // every place name in full: try right, left, above, below; never on top of another label or pin, never outside the map
+  const boxes = pos.map(([x, y]) => [x - 9 * s1, y - 9 * s1, 18 * s1, 18 * s1]), labs = [];
+  if (showLab) pins.forEach((p, i) => {
+    const [x, y] = pos[i]; if (x < -20 || x > w + 20 || y < -20 || y > h + 20) return;
+    let fs = 11, name = String(p.s.LpPlace || ''), tw = (textW(name, fs) + 14) * s1;
+    while (tw > w - 12 && fs > 8.5) { fs -= 0.5; tw = (textW(name, fs) + 14) * s1; }
+    const th = (fs + 9) * s1, g = 11 * s1;
+    const cand = [[x + g, y - th / 2], [x - g - tw, y - th / 2], [x + g, y - th - g / 2], [x - g - tw, y - th - g / 2], [x + g, y + g / 2], [x - g - tw, y + g / 2], [x - tw / 2, y - th - g], [x - tw / 2, y + g]];
+    const free = ([bx, by]) => bx >= 3 && by >= 3 && bx + tw <= w - 3 && by + th <= h - 3 && !boxes.some(q => bx < q[0] + q[2] + 3 * s1 && bx + tw + 3 * s1 > q[0] && by < q[1] + q[3] + 2 * s1 && by + th + 2 * s1 > q[1]);
+    const inside = ([bx, by]) => [Math.max(3, Math.min(w - 3 - tw, bx)), Math.max(3, Math.min(h - 3 - th, by))];
+    const [lx, ly] = cand.find(free) || cand.map(inside).find(free) || inside(cand[0]);
+    boxes.push([lx, ly, tw, th]);
+    labs.push(html`<g key=${'l' + i} style="pointer-events:none" data-t=${'lab-' + p.s.LpId}><rect x=${lx} y=${ly} width=${tw} height=${th} rx=${6 * s1} fill="rgba(9,11,15,.86)" stroke="rgba(255,255,255,.1)" stroke-width=${s1} />
+      <text x=${lx + 7 * s1} y=${ly + th / 2 + fs * 0.36 * s1} font-size=${fs * s1} font-weight="600" fill="#EEF0F3">${name}</text></g>`);
+  });
   const pinEls = pins.map((p, i) => {
-    const [x, y] = P2(v, Number(p.s.LpLat), Number(p.s.LpLng)), isS = p === first, isE = p === last && pins.length > 1;
+    const [x, y] = pos[i], isS = p === first, isE = p === last && pins.length > 1;
     const c = isS ? '#57C23A' : isE ? '#E8343B' : (o.perDay ? L.DAYC[(p.d - 1) % L.DAYC.length] : accent()), r = 7 * s1;
-    let lab = null;
-    const name = trunc(p.s.LpPlace, 18), tw = (name.length * 6.3 + 14) * s1, th = 20 * s1;
-    if (showLab && x > -20 && x < w + 20 && y > -20 && y < h + 20 && !placed.some(q => Math.abs(q[1] - y) < th + 2 * s1 && Math.abs(q[0] - x) < tw + 10 * s1)) {
-      const right = x + 12 * s1 + tw < w - 4; placed.push([x, y]);
-      const lx = right ? x + 11 * s1 : x - 11 * s1 - tw;
-      lab = html`<g style="pointer-events:none"><rect x=${lx} y=${y - th / 2} width=${tw} height=${th} rx=${6 * s1} fill="rgba(9,11,15,.84)" stroke="rgba(255,255,255,.1)" stroke-width=${s1} />
-        <text x=${lx + 7 * s1} y=${y + 4 * s1} font-size=${11 * s1} font-weight="600" fill="#EEF0F3">${name}</text></g>`;
-    }
     return html`<g key=${'p' + i} style=${o.onPin ? 'cursor:pointer' : ''} onClick=${o.onPin ? () => o.onPin(p.d, p.s) : null} data-t=${'pin-' + p.s.LpId}>
-      <circle cx=${x} cy=${y} r=${r * 1.9} fill=${c} opacity=".25" filter=${`url(#${fid}b)`} /><circle cx=${x} cy=${y} r=${r} fill=${c} stroke="rgba(255,255,255,.92)" stroke-width=${1.5 * s1} /><circle cx=${x} cy=${y} r=${r * 0.36} fill="#fff" />${lab}</g>`;
+      <circle cx=${x} cy=${y} r=${r * 1.9} fill=${c} opacity=".25" filter=${`url(#${fid}b)`} /><circle cx=${x} cy=${y} r=${r} fill=${c} stroke="rgba(255,255,255,.92)" stroke-width=${1.5 * s1} /><circle cx=${x} cy=${y} r=${r * 0.36} fill="#fff" /></g>`;
   });
   const svg = html`<svg viewBox=${`0 0 ${w} ${h}`} width=${w} height=${h} style="display:block;width:100%;height:auto" data-t=${o.key || 'routeMap'}>
     <defs><filter id=${fid} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation=${4.5 * s1} /></filter><filter id=${fid + 'b'}><feGaussianBlur stdDeviation=${2.5 * s1} /></filter>
@@ -95,7 +106,7 @@ export function RouteMap(o) {
     ${g.ready ? html`<path d=${g.land} fill="#0D0F13" stroke="#1C2027" stroke-width=".8" fill-rule="evenodd" /><path d=${g.lit} fill="#181C23" stroke="#3B424D" stroke-width="1.3" fill-rule="evenodd" />`
       : html`<text x=${w / 2} y=${h / 2} text-anchor="middle" font-size="11" fill="#556">Loading map…</text>`}
     ${g.prov ? html`<path d=${g.prov} fill="none" stroke="rgba(160,170,185,.17)" stroke-width=".7" />` : null}
-    ${route}${pinEls}
+    ${route}${pinEls}${labs}
   </svg>`;
   return { svg, view: v, empty: !all.length };
 }

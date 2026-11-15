@@ -16,6 +16,9 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.7.0 · Voyage: an expense can be spread over days (ExFrom–ExTo) and is Ground or Non-ground (ExGround); Discovery has
+ *   your own overall rating (RsOverall) and star ratings again. New columns are added by themselves.
+ *
  * 3.6.1 · Voyage maps follow the theme colour (app files). Same server code as 3.6.0.
  *
  * 3.6.0 · Voyage searches places with Google Places (the same list as the Google Maps app) when you set a key:
@@ -57,7 +60,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.6.1';
+var EW_VERSION = '3.7.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -89,10 +92,10 @@ var TABLES = {
   // MansWell Voyage (was Logbook): the detail of each Atlas journey (linked by its TrId). Travel only.
   LB_Stops: { key: 'LpId', cols: { LpId: 's', LpTrip: 's', LpDay: 'n', LpSeq: 'n', LpPlace: 's', LpCity: 's', LpCountry: 's', LpArr: 's', LpStay: 'n', LpMode: 's', LpKm: 'n', LpMin: 'n', LpNote: 's', LpLat: 'n', LpLng: 'n', LpAddr: 's', LpProv: 's' } },
   LB_Tracks: { key: 'TkKey', cols: { TkKey: 's', TkTrip: 's', TkDay: 'n', TkPoly: 's', TkEle: 's', TkKm: 'n', TkMin: 'n', TkUp: 'n', TkDown: 'n', TkMax: 'n', TkLegs: 's', TkSrc: 's', TkWhen: 't' } },
-  LB_Expenses: { key: 'ExId', cols: { ExId: 's', ExTrip: 's', ExDay: 'n', ExCat: 's', ExWhat: 's', ExPay: 's', ExAmt: 'n', ExCur: 's', ExRate: 'n', ExMyr: 'n', ExBill: 'n', ExBillCur: 's', ExSeq: 'n' } },
+  LB_Expenses: { key: 'ExId', cols: { ExId: 's', ExTrip: 's', ExDay: 'n', ExCat: 's', ExWhat: 's', ExPay: 's', ExAmt: 'n', ExCur: 's', ExRate: 'n', ExMyr: 'n', ExBill: 'n', ExBillCur: 's', ExSeq: 'n', ExGround: 's', ExFrom: 'n', ExTo: 'n' } },
   LB_Budget: { key: 'BgKey', cols: { BgKey: 's', BgTrip: 's', BgCat: 's', BgAmt: 'n' } },
   LB_Rates: { key: 'RtKey', cols: { RtKey: 's', RtTrip: 's', RtCur: 's', RtRate: 'n', RtDate: 'd' } },
-  LB_Results: { key: 'RsTrip', cols: { RsTrip: 's', RsRoads: 'n', RsScenery: 'n', RsComfort: 'n', RsFood: 'n', RsValue: 'n', RsVerdict: 's', RsBack: 's', RsKmMode: 's', RsBadges: 's' } },
+  LB_Results: { key: 'RsTrip', cols: { RsTrip: 's', RsRoads: 'n', RsScenery: 'n', RsComfort: 'n', RsFood: 'n', RsValue: 'n', RsVerdict: 's', RsBack: 's', RsKmMode: 's', RsBadges: 's', RsOverall: 'n' } },
   LB_Finds: { key: 'FdId', cols: { FdId: 's', FdTrip: 's', FdKind: 's', FdName: 's', FdWhere: 's', FdDay: 'n', FdNote: 's', FdLat: 'n', FdLng: 'n', FdSeq: 'n', FdProv: 's' } }
 };
 var WRITE_ACTIONS = ['commit', 'startFresh', 'ppPhotoUp', 'ppPhotoDel', 'lbRoute', 'lbGpxSave'];

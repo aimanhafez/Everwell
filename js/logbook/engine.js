@@ -6,17 +6,19 @@ import * as P from '../passport/engine.js';
 export { P };
 /* ───────── constants ───────── */
 export const CATS = [
-  { k: 'trans', n: 'Transportation', s: 'Transport', c: '#FF8A3D', e: '🚗' },
-  { k: 'stay', n: 'Accommodation', s: 'Stay', c: '#B48CFF', e: '🛏️' },
-  { k: 'meal', n: 'Meals', s: 'Meals', c: '#E9B949', e: '🍜' },
-  { k: 'ess', n: 'Essentials', s: 'Essentials', c: '#5ED1C9', e: '🧴' },
-  { k: 'souv', n: 'Souvenir', s: 'Souvenir', c: '#E2367A', e: '🎁' },
-  { k: 'fun', n: 'Entertainment', s: 'Fun', c: '#6AA8FF', e: '🎟️' }];
+  { k: 'trans', n: 'Transportation', s: 'Transport', i: 'car' },
+  { k: 'stay', n: 'Accommodation', s: 'Stay', i: 'bed' },
+  { k: 'meal', n: 'Meals', s: 'Meals', i: 'meal' },
+  { k: 'ess', n: 'Essentials', s: 'Essentials', i: 'bag' },
+  { k: 'souv', n: 'Souvenir', s: 'Souvenir', i: 'gift' },
+  { k: 'fun', n: 'Entertainment', s: 'Fun', i: 'ticket' }];
 export const CAT = Object.fromEntries(CATS.map(c => [c.k, c]));
 /** The usual mix used to split a total budget. */
 export const MIX = { trans: 0.25, stay: 0.27, meal: 0.2, ess: 0.1, souv: 0.08, fun: 0.1 };
-export const MODES = [['bike', 'Bike', '🏍️'], ['car', 'Car', '🚗'], ['grab', 'Grab', '🚕'], ['bus', 'Bus', '🚌'], ['train', 'Train', '🚆'], ['walk', 'Walk', '🚶'], ['boat', 'Boat', '⛴️'], ['flight', 'Flight', '✈️']];
-export const MODE = Object.fromEntries(MODES.map(m => [m[0], { k: m[0], n: m[1], e: m[2] }]));
+export const MODES = [['bike', 'Bike', 'bike'], ['car', 'Car', 'car'], ['grab', 'Grab', 'taxi'], ['bus', 'Bus', 'bus'], ['train', 'Train', 'train'], ['walk', 'Walk', 'walk'], ['boat', 'Boat', 'boat'], ['flight', 'Flight', 'plane']];
+export const MODE = Object.fromEntries(MODES.map(m => [m[0], { k: m[0], n: m[1], i: m[2] }]));
+/** Trail Marks: the five, rated with stars (half steps). */
+export const RATINGS = [['RsRoads', 'Roads', 'road'], ['RsScenery', 'Scenery', 'view'], ['RsComfort', 'Riding comfort', 'bike'], ['RsFood', 'Food & hospitality', 'meal'], ['RsValue', 'Value for money', 'coins']];
 /** Journey badges: one word per theme, no scores. */
 export const BADGES = [
   { k: 'roads', n: 'Roads', e: '🛣️', o: ['Epic', 'Twisty', 'Smooth', 'Rough', 'Off-road'] },
@@ -25,9 +27,8 @@ export const BADGES = [
   { k: 'food', n: 'Food & hospitality', e: '🍜', o: ['Unforgettable', 'Warm', 'Good', 'Meh'] },
   { k: 'value', n: 'Value for money', e: '💰', o: ['Great value', 'Fair', 'Pricey'] }];
 /** What you found there. */
-export const FINDS = [['cafe', 'Best cafe', '☕'], ['stay', 'Best stay', '🛏️'], ['meal', 'Best meal', '🍜'], ['street', 'Best street food', '🥢'], ['view', 'Best viewpoint', '🏞️'], ['road', 'Best road or pass', '🛣️'],
-  ['gem', 'Hidden gem', '💎'], ['photo', 'Best photo spot', '📸'], ['buy', 'Must buy', '🎁'], ['people', 'Kindest people', '🤝'], ['tip', 'Tip for next time', '💡'], ['avoid', 'Skip next time', '⚠️']]
-  .map(([k, n, e]) => ({ k, n, e }));
+export const FINDS = [['cafe', 'Best cafe', 'coffee'], ['stay', 'Best accommodation', 'bed'], ['city', 'Best city', 'city'], ['view', 'Best viewpoint', 'view'], ['road', 'Best road', 'road'], ['gem', 'Hidden gem', 'gem']]
+  .map(([k, n, i]) => ({ k, n, i }));
 export const FIND = Object.fromEntries(FINDS.map(f => [f.k, f]));
 export const BACK = [['yes', 'Yes, again'], ['maybe', 'Maybe'], ['once', 'Once was enough']];
 export const EVEREST = 8849;
@@ -152,9 +153,23 @@ export function cardCost(e, id) {
   return (Number(e.ExMyr) / (Number(e.ExBill) / r) - 1) * 100;
 }
 export function spend(id) {
-  const by = Object.fromEntries(CATS.map(c => [c.k, 0])); let tot = 0, cash = 0, card = 0;
-  for (const e of expenses(id)) { const v = myrOf(e); tot += v; by[e.ExCat] = (by[e.ExCat] || 0) + v; if (e.ExPay === 'card') card += v; else cash += v; }
-  return { tot, by, cash, card, n: expenses(id).length };
+  const by = Object.fromEntries(CATS.map(c => [c.k, 0])); let tot = 0, cash = 0, card = 0, ground = 0, non = 0;
+  for (const e of expenses(id)) { const v = myrOf(e); tot += v; by[e.ExCat] = (by[e.ExCat] || 0) + v; if (e.ExPay === 'card') card += v; else cash += v; if (isNon(e)) non += v; else ground += v; }
+  return { tot, by, cash, card, ground, non, n: expenses(id).length };
+}
+/** Ground cost = spent on the ground during the trip; non-ground = flights, visa, insurance and the like. */
+export const isNon = e => e.ExGround === 'non';
+/** An expense spread over days (ExFrom–ExTo): its share on each of those days. */
+export const span = e => { const a = Number(e.ExFrom) || 0, b = Number(e.ExTo) || 0; return a >= 1 && b > a ? { from: a, to: b, n: b - a + 1 } : null; };
+/** What shows on one day: normal expenses of that day, and a share of each spread one. */
+export function dayItems(id, day) {
+  const out = [];
+  for (const e of expenses(id)) {
+    const sp = span(e);
+    if (sp) { if (day >= sp.from && day <= sp.to) out.push({ e, share: Math.round(myrOf(e) / sp.n * 100) / 100, k: day - sp.from + 1, n: sp.n }); }
+    else if (Number(e.ExDay) === Number(day)) out.push({ e, share: myrOf(e), k: 0, n: 0 });
+  }
+  return out;
 }
 export function budget(id) {
   const by = Object.fromEntries(CATS.map(c => [c.k, 0])); let tot = 0;
@@ -179,10 +194,13 @@ export function actualTier(spent, nDays) {
 
 /* ───────── results ───────── */
 export const result = id => DB.lbResults.find(r => r.RsTrip === id) || null;
-export const blankResult = id => ({ RsTrip: id, RsRoads: 0, RsScenery: 0, RsComfort: 0, RsFood: 0, RsValue: 0, RsVerdict: '', RsBack: '', RsKmMode: '', RsBadges: '' });
+export const blankResult = id => ({ RsTrip: id, RsRoads: 0, RsScenery: 0, RsComfort: 0, RsFood: 0, RsValue: 0, RsVerdict: '', RsBack: '', RsKmMode: '', RsBadges: '', RsOverall: 0 });
 export const badges = id => { try { return JSON.parse((result(id) || {}).RsBadges || '{}') || {}; } catch (e) { return {}; } };
-export const finds = id => DB.lbFinds.filter(f => f.FdTrip === id).sort((a, b) => FINDS.findIndex(x => x.k === a.FdKind) - FINDS.findIndex(x => x.k === b.FdKind) || (a.FdSeq || 0) - (b.FdSeq || 0));
-export const hasDiscovery = id => Object.keys(badges(id)).length > 0 || finds(id).length > 0 || !!(result(id) || {}).RsVerdict;
+export const finds = id => DB.lbFinds.filter(f => f.FdTrip === id && FIND[f.FdKind]).sort((a, b) => FINDS.findIndex(x => x.k === a.FdKind) - FINDS.findIndex(x => x.k === b.FdKind) || (a.FdSeq || 0) - (b.FdSeq || 0));
+/** Your own overall rating out of 5 (not an average). */
+export const overall = id => Number((result(id) || {}).RsOverall) || 0;
+export const isRated = id => overall(id) > 0 || RATINGS.some(([k]) => Number((result(id) || {})[k]) > 0);
+export const hasDiscovery = id => isRated(id) || finds(id).length > 0 || !!(result(id) || {}).RsVerdict;
 
 /** One set of totals per journey. Atlas reads this later (lbTotals is the connection). */
 export function lbTotals(id) {
@@ -195,7 +213,7 @@ export function lbTotals(id) {
   }
   const r = result(id) || {};
   return { trip: id, name: t.TrName, days: ds.length, stops: st.length, tracks, km, min, climb: up, highest: hi, spent: sp.tot, cash: sp.cash, card: sp.card,
-    budget: bg.tot, badges: badges(id), finds: finds(id).length, verdict: r.RsVerdict || '', back: r.RsBack || '', tier: actualTier(sp.tot, ds.length),
+    budget: bg.tot, overall: overall(id), ratings: Object.fromEntries(RATINGS.map(([k]) => [k, Number(r[k]) || 0])), ground: sp.ground, nonGround: sp.non, finds: finds(id).length, verdict: r.RsVerdict || '', back: r.RsBack || '', tier: actualTier(sp.tot, ds.length),
     filled: { itin: st.length > 0, exp: sp.n > 0, disc: hasDiscovery(id) } };
 }
 export const completeness = id => { const f = lbTotals(id).filled; return (f.itin + f.exp + f.disc) / 3; };
