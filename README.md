@@ -1,4 +1,7 @@
-# MansWell · v3.10.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.10.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.10.1 · Atlas route map shows provinces
+The journey's route map labels each province once (from the stop's Province box; city, then place, when it's empty), so labels no longer crowd. The Province box can be edited in Voyage if Google gives a name you don't want on the map.
 
 ## 3.10.0 · Atlas: rides, budget, travel insights
 - Odyssey: Total expenses and Total distance show per trip and per day; Most spent compares each journey with its own Voyage budget (+% over / −% under); the Country experience overview moved here (after Most spent); after Badges: Top 5 farthest rides, Top 5 longest rides (one above the other), the farthest and longest day ride, and riding km per day (motorbike legs only).

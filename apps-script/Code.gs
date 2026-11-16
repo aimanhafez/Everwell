@@ -68,7 +68,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.10.0';
+var EW_VERSION = '3.10.1';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {

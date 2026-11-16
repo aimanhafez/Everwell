@@ -83,7 +83,7 @@ export function RouteMap(o) {
   const boxes = pos.map(([x, y]) => [x - 9 * s1, y - 9 * s1, 18 * s1, 18 * s1]), labs = [];
   if (showLab) pins.forEach((p, i) => {
     const [x, y] = pos[i]; if (x < -20 || x > w + 20 || y < -20 || y > h + 20) return;
-    let fs = 11, name = String((o.cityLabels ? p.s.LpCity || p.s.LpProv || p.s.LpPlace : p.s.LpPlace) || '');
+    let fs = 11, name = String((o.cityLabels ? p.s.LpProv || p.s.LpCity || p.s.LpPlace : p.s.LpPlace) || '');
     if (o.cityLabels) { if (seenLab.has(name)) return; seenLab.add(name); }
     let tw = (textW(name, fs) + 14) * s1;
     while (tw > w - 12 && fs > 8.5) { fs -= 0.5; tw = (textW(name, fs) + 14) * s1; }
