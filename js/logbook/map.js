@@ -78,23 +78,50 @@ export function RouteMap(o) {
   });
   const first = pins[0], last = pins[pins.length - 1], showLab = o.labels !== false;
   const pos = pins.map(p => P2(v, Number(p.s.LpLat), Number(p.s.LpLng)));
-  // every place name in full: try right, left, above, below; never on top of another label or pin, never outside the map
-  const seenLab = new Set();
-  const boxes = pos.map(([x, y]) => [x - 9 * s1, y - 9 * s1, 18 * s1, 18 * s1]), labs = [];
+  // small province names: one per province (Ha Giang = Ha Giang Province = Hà Giang), never on another name, a pin or the road; skipped if no clean spot
+  const clean = n => String(n || '').replace(/\s*\b(province|city)\b\s*/gi, ' ').replace(/^\s*(tỉnh|thành phố|tinh|thanh pho|tp\.?)\s+/i, '').replace(/\s+/g, ' ').trim();
+  const plain = n => clean(n).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\u0111/g, 'd').replace(/\u0110/g, 'D');
+  const keyOf = n => plain(n).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const boxes = pos.map(([x, y]) => [x - 9 * s1, y - 9 * s1, 18 * s1, 18 * s1]), labs = [], road = [];
+  if (showLab) lines.forEach(x => {
+    const q = x.pts.map(p => P2(v, p[0], p[1])), st = 4 * s1, r = 6 * s1;
+    for (let i = 0; i < q.length; i++) {
+      road.push(q[i]); if (!i) continue;
+      const [ax, ay] = q[i - 1], [bx, by] = q[i], n = Math.floor(Math.hypot(bx - ax, by - ay) / st);
+      for (let k = 1; k < n; k++) road.push([ax + (bx - ax) * k / n, ay + (by - ay) * k / n]);
+    }
+    road.r = r;
+  });
+  const rr = road.r || 6 * s1, rbox = road.filter(([x, y]) => x > -20 && x < w + 20 && y > -20 && y < h + 20);
+  const groups = new Map();
   if (showLab) pins.forEach((p, i) => {
-    const [x, y] = pos[i]; if (x < -20 || x > w + 20 || y < -20 || y > h + 20) return;
-    let fs = 11, name = String((o.cityLabels ? p.s.LpProv || p.s.LpCity || p.s.LpPlace : p.s.LpPlace) || '');
-    if (o.cityLabels) { if (seenLab.has(name)) return; seenLab.add(name); }
-    let tw = (textW(name, fs) + 14) * s1;
-    while (tw > w - 12 && fs > 8.5) { fs -= 0.5; tw = (textW(name, fs) + 14) * s1; }
-    const th = (fs + 9) * s1, g = 11 * s1;
-    const cand = [[x + g, y - th / 2], [x - g - tw, y - th / 2], [x + g, y - th - g / 2], [x - g - tw, y - th - g / 2], [x + g, y + g / 2], [x - g - tw, y + g / 2], [x - tw / 2, y - th - g], [x - tw / 2, y + g]];
-    const free = ([bx, by]) => bx >= 3 && by >= (o.top || 3) && bx + tw <= w - 3 && by + th <= h - 3 && !boxes.some(q => bx < q[0] + q[2] + 3 * s1 && bx + tw + 3 * s1 > q[0] && by < q[1] + q[3] + 2 * s1 && by + th + 2 * s1 > q[1]);
-    const inside = ([bx, by]) => [Math.max(3, Math.min(w - 3 - tw, bx)), Math.max(o.top || 3, Math.min(h - 3 - th, by))];
-    const [lx, ly] = cand.find(free) || cand.map(inside).find(free) || inside(cand[0]);
+    const raw = o.cityLabels ? p.s.LpProv || p.s.LpCity || p.s.LpPlace : p.s.LpPlace, name = o.cityLabels ? plain(raw) : String(raw || '').trim(); if (!name) return;
+    const k = o.cityLabels ? keyOf(raw) : 'p' + i; if (!groups.has(k)) groups.set(k, { name, idx: [] }); groups.get(k).idx.push(i);
+  });
+  const order = [...groups.values()].sort((a, b) => (b.idx.includes(0) || b.idx.includes(pins.length - 1)) - (a.idx.includes(0) || a.idx.includes(pins.length - 1)));
+  order.forEach(gp => {
+    const name = gp.name; let fs = 9.5, tw = (textW(name, fs) + 10) * s1;
+    while (tw > w - 12 && fs > 8) { fs -= 0.5; tw = (textW(name, fs) + 10) * s1; }
+    const th = (fs + 7) * s1, top = o.top || 3;
+    const free = ([bx, by]) => bx >= 3 && by >= top && bx + tw <= w - 3 && by + th <= h - 3
+      && !boxes.some(q => bx < q[0] + q[2] + 2 * s1 && bx + tw + 2 * s1 > q[0] && by < q[1] + q[3] + 2 * s1 && by + th + 2 * s1 > q[1])
+      && !rbox.some(([x, y]) => x > bx - rr && x < bx + tw + rr && y > by - rr && y < by + th + rr);
+    let at = null;
+    // middle pin of the province first, then the others; near first, then further out
+    const mid = gp.idx.length > 2 ? [gp.idx[gp.idx.length >> 1], ...gp.idx] : gp.idx;
+    for (const g of [10 * s1, 18 * s1, 28 * s1]) {
+      for (const i of mid) {
+        const [x, y] = pos[i]; if (x < -20 || x > w + 20 || y < -20 || y > h + 20) continue;
+        const cand = [[x + g, y - th / 2], [x - g - tw, y - th / 2], [x - tw / 2, y - th - g], [x - tw / 2, y + g], [x + g * 0.8, y - th - g * 0.6], [x - g * 0.8 - tw, y - th - g * 0.6], [x + g * 0.8, y + g * 0.6], [x - g * 0.8 - tw, y + g * 0.6]];
+        at = cand.find(free); if (at) { at = [at, i]; break; }
+      }
+      if (at) break;
+    }
+    if (!at) return;
+    const [[lx, ly], i] = at, p = pins[i];
     boxes.push([lx, ly, tw, th]);
-    labs.push(html`<g key=${'l' + i} style="pointer-events:none" data-t=${'lab-' + p.s.LpId}><rect x=${lx} y=${ly} width=${tw} height=${th} rx=${6 * s1} fill="rgba(9,11,15,.86)" stroke="rgba(255,255,255,.1)" stroke-width=${s1} />
-      <text x=${lx + 7 * s1} y=${ly + th / 2 + fs * 0.36 * s1} font-size=${fs * s1} font-weight="600" fill="#EEF0F3">${name}</text></g>`);
+    labs.push(html`<g key=${'l' + i} style="pointer-events:none" data-t=${'lab-' + p.s.LpId}><rect x=${lx} y=${ly} width=${tw} height=${th} rx=${5 * s1} fill="rgba(9,11,15,.82)" stroke="rgba(255,255,255,.1)" stroke-width=${s1} />
+      <text x=${lx + 5 * s1} y=${ly + th / 2 + fs * 0.36 * s1} font-size=${fs * s1} font-weight="600" letter-spacing=".1" fill="#EEF0F3">${name}</text></g>`);
   });
   const pinEls = pins.map((p, i) => {
     const [x, y] = pos[i], isS = p === first, isE = p === last && pins.length > 1;

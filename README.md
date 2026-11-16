@@ -1,4 +1,9 @@
-# MansWell · v3.10.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.10.2 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.10.2 · Cleaner map names
+- Atlas journey route map and the Voyage itinerary day map: smaller province names; each province shown once (Ha Giang, Ha Giang Province and Hà Giang count as one; "Province"/"City" dropped, accents removed).
+- A name never sits on another name, a pin or the road; if there is no clean spot it is left out instead of overlapping.
+- Upload: all files in Step 1. Code.gs only has the version number changed (paste it if you want the numbers to match).
 
 ## 3.10.1 · Atlas route map shows provinces
 The journey's route map labels each province once (from the stop's Province box; city, then place, when it's empty), so labels no longer crowd. The Province box can be edited in Voyage if Google gives a name you don't want on the map.
