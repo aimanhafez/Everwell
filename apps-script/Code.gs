@@ -16,6 +16,8 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.10.0 · Atlas: per trip / per day, most spent against budget, rides (motorbike), travel insights. Same server code.
+ *
  * 3.9.0 · Atlas summary from Voyage (Odyssey cards, badges, country overview, journey numbers, route, spending).
  *   No change to the tabs; same server code as 3.8.0.
  *
@@ -66,7 +68,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.9.0';
+var EW_VERSION = '3.10.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {

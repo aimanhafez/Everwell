@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '3.9.0';
+export const VERSION = '3.10.0';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {

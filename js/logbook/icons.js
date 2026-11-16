@@ -2,7 +2,7 @@
 import { html, K } from '../core.js';
 
 const P = {
-  bike: '<circle cx="5.5" cy="16.5" r="3"/><circle cx="18.5" cy="16.5" r="3"/><path d="M8.5 16.5h5.5l3-6.5h-4.5L10.5 7H8"/><path d="M15 7h2.5l1.5 3"/>',
+  bike: '<circle cx="5" cy="16.6" r="3.4"/><circle cx="19" cy="16.6" r="3.4"/><circle cx="5" cy="16.6" r="1" fill="C"/><circle cx="19" cy="16.6" r="1" fill="C"/><path d="M19 16.6 16.3 9.6"/><path d="M16.3 9.6 15.2 7.4l2.6-.6"/><path d="M7.4 11.3c1.3-2 3.1-2.6 5-2.3l3.9.6"/><path d="M7.4 11.3 3.6 10.2"/><path d="M5 16.6l4.6-2.1"/><path d="M9.6 12.4h4.3l1.4 2.1-1.5 2.1h-3.1z"/><path d="M13.9 12.4l2.9-1.4"/>',
   car: '<path d="M5 15.5v-3l2-5h10l2 5v3"/><rect x="3.5" y="12.5" width="17" height="5" rx="1.5"/><circle cx="7.5" cy="17.5" r="1.6"/><circle cx="16.5" cy="17.5" r="1.6"/>',
   taxi: '<path d="M10 4h4v3"/><path d="M5 15.5v-3l2-5h10l2 5v3"/><rect x="3.5" y="12.5" width="17" height="5" rx="1.5"/><circle cx="7.5" cy="17.5" r="1.6"/><circle cx="16.5" cy="17.5" r="1.6"/>',
   bus: '<rect x="5" y="3" width="14" height="15" rx="2.5"/><path d="M5 11h14M8 21v-3M16 21v-3"/><circle cx="8.5" cy="14.5" r=".9"/><circle cx="15.5" cy="14.5" r=".9"/>',
@@ -39,7 +39,7 @@ const P = {
   group: '<circle cx="6" cy="6" r="1.7"/><circle cx="12" cy="5" r="1.7"/><circle cx="18" cy="6" r="1.7"/><path d="M4 21v-8l2-4 2 4v8M10 21v-9l2-5 2 5v9M16 21v-8l2-4 2 4v8"/>',
   people: '<circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/>'
 };
-export const svgIco = (n, c, s = 20) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${P[n] || P.bag}</svg>`;
+export const svgIco = (n, c, s = 20) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${(P[n] || P.bag).replace(/fill="C"/g, `fill="${c}"`)}</svg>`;
 /** A line icon in the theme colour (or c). */
 export const Ico = (n, s = 20, c) => html`<span style=${`display:inline-flex;line-height:0;flex:none`} dangerouslySetInnerHTML=${{ __html: svgIco(n, c || K.or, s) }}></span>`;
 /** The icon in a soft rounded tile (lists). */

@@ -79,10 +79,13 @@ export function RouteMap(o) {
   const first = pins[0], last = pins[pins.length - 1], showLab = o.labels !== false;
   const pos = pins.map(p => P2(v, Number(p.s.LpLat), Number(p.s.LpLng)));
   // every place name in full: try right, left, above, below; never on top of another label or pin, never outside the map
+  const seenLab = new Set();
   const boxes = pos.map(([x, y]) => [x - 9 * s1, y - 9 * s1, 18 * s1, 18 * s1]), labs = [];
   if (showLab) pins.forEach((p, i) => {
     const [x, y] = pos[i]; if (x < -20 || x > w + 20 || y < -20 || y > h + 20) return;
-    let fs = 11, name = String(p.s.LpPlace || ''), tw = (textW(name, fs) + 14) * s1;
+    let fs = 11, name = String((o.cityLabels ? p.s.LpCity || p.s.LpProv || p.s.LpPlace : p.s.LpPlace) || '');
+    if (o.cityLabels) { if (seenLab.has(name)) return; seenLab.add(name); }
+    let tw = (textW(name, fs) + 14) * s1;
     while (tw > w - 12 && fs > 8.5) { fs -= 0.5; tw = (textW(name, fs) + 14) * s1; }
     const th = (fs + 9) * s1, g = 11 * s1;
     const cand = [[x + g, y - th / 2], [x - g - tw, y - th / 2], [x + g, y - th - g / 2], [x - g - tw, y - th - g / 2], [x + g, y + g / 2], [x - g - tw, y + g / 2], [x - tw / 2, y - th - g], [x - tw / 2, y + g]];
@@ -115,7 +118,7 @@ export function RouteMap(o) {
 export function RouteCard(o) {
   const t = L.journey(o.id); if (!t) return null;
   const tot = L.lbTotals(o.id), iso = L.isosOf(o.id).find(x => x !== L.P.homeIso()) || L.isosOf(o.id)[0], cn = ((L.P.BY[iso] || {}).name || '').toUpperCase();
-  const m = RouteMap({ id: o.id, days: L.days(t).map(d => d.n), w: o.w || 366, h: o.h || 400, perDay: o.perDay, onPin: o.onPin, key: o.key || 'routeCard', pad: 0.16, top: 34 });
+  const m = RouteMap({ id: o.id, days: L.days(t).map(d => d.n), w: o.w || 366, h: o.h || 400, perDay: o.perDay, onPin: o.onPin, key: o.key || 'routeCard', pad: 0.16, top: 34, cityLabels: o.cityLabels });
   return html`<div class="lbcard" data-t=${(o.key || 'routeCard') + 'Box'}>${m.svg}
     <div class="hd"><b>ROUTE MAP</b>${o.onFull ? html`<span onClick=${o.onFull} data-t="routeFull">View Full Map <i>⤢</i></span>` : null}</div>
     ${o.plain ? null : html`<div class="ov"><div class="c">${cn}</div><div class="ln"></div>

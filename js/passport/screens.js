@@ -62,7 +62,9 @@ export const scrPpOverview = {
           ${fv.length > 8 ? html`<div class="lsub" style="text-align:center;margin-top:10px"><span class="lor" style="cursor:pointer;font-weight:600" onClick=${() => { l.allSt = !l.allSt; rerender(); }} data-t="oAllSt">${l.allSt ? 'Show fewer' : '+' + (fv.length - 8) + ' more · show all'}</span></div>` : null}</div>` : null}
       ${S.Favourites()}
       ${S.MostSpent(id => openTrip(id))}
+      ${S.CountryTable()}
       ${S.Badges()}
+      ${S.Rides(l)}
       ${Sect('Milestones', ms.filter(m => m.done).length + ' of ' + ms.length)}
       <div class="lc" data-t="oMs">${ms.map((m, i) => html`<div class="lr" style=${i ? '' : 'border-top:0;padding-top:2px'} data-t=${'ms-' + m.id}>
           <div class="lib" style=${m.done ? `background:${K.or};color:${K.onAcc}` : `background:${K.field};color:${K.mute};box-shadow:inset 0 0 0 1.5px ${K.line2}`}><b style="font-size:11.5px">${m.need}</b></div>
@@ -82,8 +84,6 @@ export const scrPpJourneys = {
     const byYear = []; for (const t of list) { const y = P.yearOf(t.TrStart); let g = byYear.find(x => x.y === y); if (!g) byYear.push(g = { y, ts: [] }); g.ts.push(t); }
     const sel = (v, set, opts, all0, id) => html`<select class=${'pchip' + (v ? ' on' : '')} style="border:0;font-family:inherit;-webkit-appearance:none;appearance:none" onChange=${e => { set(e.target.value); rerender(); }} data-t=${id}><option value="">${all0}</option>${opts.map(([k, t]) => html`<option value=${k} selected=${String(k) === String(v)}>${t}</option>`)}</select>`;
     return Page(l, 1, html`
-      <style>${S.css()}</style>
-      ${S.CountryTable()}
       ${Sect('Journeys', '+ New journey', () => openTripEdit(l, null), 'jNew')}
       ${all.length ? html`<div class="pchips">${sel(l.yr, v => { l.yr = v; }, yrs.map(y => [y, String(y)]), 'All years ▾', 'jYear')}${sel(l.ctry, v => { l.ctry = v; }, ctry.map(i => [i, P.BY[i].name]), 'Country ▾', 'jCtry')}${sel(l.with, v => { l.with = v; }, P.WITH.map(w => [w, w]), 'Who with ▾', 'jWith')}</div>` : null}
       ${!all.length ? html`<div class="lc lempty" data-t="jEmpty">No journeys yet. Add the first one: name, countries, dates and who you went with. Photos come after.<div style="margin-top:12px"><button class="lbtn o on" onClick=${() => openTripEdit(l, null)}>+ Add a journey</button></div></div>`
@@ -141,6 +141,7 @@ export const scrPpTrip = {
       <div class="pgal" data-t="tGal">${shown.map((p, i) => { const last = !l.allPh && i === 8 && more > 0; return html`<div class=${(cv === p.PhId ? 'cv' : '') + (last ? ' more' : '')} data-m=${'+' + more} style=${PH.bg(p.PhId, p.PhId)} onClick=${() => { if (last) { l.allPh = true; rerender(); } else openPhoto(l, p); }} data-t=${'ph-' + p.PhId}></div>`; })}
         ${photos.length < 9 || l.allPh ? html`<label class="add" data-t="tAddPh">${DB.ppOk ? html`<span>+ Add<br/>photos</span><input class="pfile" type="file" accept="image/*" multiple onChange=${add} data-t="tFile" />` : html`<span style="font-size:10.5px">Update the Apps Script to add photos</span>`}</label>` : null}</div>
       ${photos.length >= 9 && !l.allPh && DB.ppOk ? html`<div style="margin:-4px 12px 12px"><label class="lbtn" style="width:100%;padding:10px" data-t="tAddPh2">+ Add photos<input class="pfile" type="file" accept="image/*" multiple onChange=${add} data-t="tFile2" /></label></div>` : null}
+      ${S.TravelInsights(t.TrId)}
       <div style="display:flex;gap:8px;margin:6px 12px 18px"><button class="lbtn" style="flex:1;padding:12px" onClick=${() => openTripEdit(l, t)} data-t="tEdit2">Edit journey</button><button class="lbtnd" style="flex:1" onClick=${() => deleteTrip(l, t)} data-t="tDelete">Delete journey</button></div>
     `, 'ppTrip');
   }

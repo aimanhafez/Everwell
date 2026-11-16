@@ -1,6 +1,6 @@
 // MansWell Atlas · summary cards built from Voyage: the Odyssey cards (totals, favourite country, most spent, badges),
 // the country overview on Journeys, and one journey's numbers, route, daily spending and expenses. Colours follow the theme.
-import { html, K } from '../core.js';
+import { html, K, rerender } from '../core.js';
 import * as P from './engine.js';
 import * as I from './insights.js';
 import * as L from '../logbook/engine.js';
@@ -31,7 +31,12 @@ export const css = () => routeCardCss() + `
 .asro{margin:0 12px 10px;border-radius:14px;background:${K.surface || K.card};box-shadow:inset 0 0 0 1px ${K.hair || K.line};padding:11px 10px;overflow-x:auto;scrollbar-width:none}.asro::-webkit-scrollbar{display:none}
 .asro .ln{position:relative;display:flex;gap:2px;margin-top:10px;min-width:max-content}.asro .ln:before{content:'';position:absolute;left:18px;right:18px;top:7px;height:2px;background:${K.or}}
 .asro .d{position:relative;text-align:center;width:44px;flex:none}.asro .d i{display:block;width:14px;height:14px;border-radius:50%;margin:0 auto 5px;background:${K.or};box-shadow:0 0 0 3px ${K.card}}.asro .d i.s{background:#57C23A}.asro .d i.e{background:#E8343B}
-.asro .d b{display:block;font-size:8.5px;line-height:1.15;color:${K.text};overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.asro .d span{display:block;font-size:7.5px;color:${K.sub};margin-top:1px}
+.asro .d{width:50px!important}.asro .d b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:8.5px;line-height:1.15;min-height:19.5px;color:${K.text};overflow:hidden;word-break:break-word}.asro .d span{display:block;font-size:7.5px;color:${K.sub};margin-top:1px}
+.askc .f2{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid ${K.sep}}.askc .f2 div{padding:7px 11px;font-size:12px;font-weight:700;color:${K.text};white-space:nowrap;min-width:0}.askc .f2 div+div{border-left:1px solid ${K.sep}}.askc .f2 em{display:block;font-style:normal;font-size:8px;font-weight:800;letter-spacing:.6px;color:${K.or};margin-top:1px}
+.astop .r{display:grid;grid-template-columns:14px 1fr auto;gap:8px;padding:6px 0;font-size:12.5px;font-weight:700;color:${K.text}}.astop .r span:first-child{color:${K.or}}.astop .r .mu{color:${K.mute}}
+.astop .ft{border-top:1px solid ${K.sep};margin-top:8px;padding-top:9px;display:flex;justify-content:space-between;align-items:flex-end}.astop .ft .k{font-size:9px;font-weight:800;letter-spacing:.5px;color:${K.text}}.astop .ft .s{font-size:9px;color:${K.sub};margin-top:3px}.astop .ft b{display:block;font-size:22px;margin-top:3px;color:${K.text}}
+.asrd{display:flex;align-items:flex-end;gap:4px;height:112px;margin-top:10px}.asrd div{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:flex-end;height:100%;font-size:8.5px;color:${K.sub};min-width:0}.asrd .v{color:${K.text};font-size:8px}.asrd i{display:block;width:100%;border-radius:4px 4px 2px 2px;background:linear-gradient(180deg,${K.or},${oa(.35)})}
+.asti .hh{display:flex;justify-content:space-between;font-size:9.5px;font-weight:800;letter-spacing:1.3px;color:${K.sub};padding:0 0 8px 32px;border-bottom:1px solid ${K.sep}}.asti .mr{display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:center;padding:9px 0}.asti .nm{font-size:12px;font-weight:700;letter-spacing:.5px;color:${K.text}}.asti .asst{font-size:16px;gap:3px}
 .asdon{display:grid;grid-template-columns:1fr 124px 1fr;align-items:center;gap:4px;text-align:center}.asdon .big{font-size:26px;font-weight:800;color:${K.or}}.asdon .big.nb{color:${K.sub}}.asdon .lab{font-size:8.5px;font-weight:800;letter-spacing:.8px;color:${K.sub}}.asdon .rm{font-size:12px;margin-top:3px;color:${K.text}}
 .assec{display:flex;align-items:center;gap:8px;margin:12px 2px 4px;font-size:11px;font-weight:800;letter-spacing:1.2px;color:${K.text}}.assec .ci{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;box-shadow:inset 0 0 0 1.3px ${K.or}}
 .assb{display:flex;height:9px;border-radius:5px;overflow:hidden;margin:6px 0 7px;background:${K.field}}.assb i{display:block}
@@ -47,8 +52,10 @@ export function StatCards() {
       <div class="f"><span>${t.solo} ${Ico('solo', 14)}</span><span>${t.family} ${Ico('family', 14)}</span><span>${t.friends || '–'} ${Ico('group', 14)}</span></div></div>
     <div class="askc"><div class="h">Travel days</div><div class="m">${Ico('cal', 40)}<b data-t="oDays">${t.days}</b></div>
       <div class="f"><span data-t="oWork">${t.work} <em>WORKING</em></span><span>${t.off} <em>OFF DAYS</em></span></div></div>
-    <div class="askc"><div class="h">Total expenses</div><div class="m">${Ico('wallet', 38)}<b class="sm" data-t="oSpent">${L.RM(t.spent)}</b></div></div>
-    <div class="askc"><div class="h">Total distance</div><div class="m">${Ico('gauge', 38)}<b class="sm" data-t="oKm">${L.n0(t.km)} km</b></div></div></div>`;
+    <div class="askc"><div class="h">Total expenses</div><div class="m">${Ico('wallet', 38)}<b class="sm" data-t="oSpent">${L.RM(t.spent)}</b></div>
+      <div class="f2"><div data-t="oSpentTrip">${L.RM(t.perTrip)}<em>PER TRIP</em></div><div data-t="oSpentDay">${L.RM(t.perDay)}<em>PER DAY</em></div></div></div>
+    <div class="askc"><div class="h">Total distance</div><div class="m">${Ico('gauge', 38)}<b class="sm" data-t="oKm">${L.n0(t.km)} km</b></div>
+      <div class="f2"><div data-t="oKmTrip">${L.n0(t.kmTrip)} km<em>PER TRIP</em></div><div data-t="oKmDay">${L.n0(t.kmDay)} km<em>PER DAY</em></div></div></div></div>`;
 }
 export function Favourites() {
   const f = I.favourites();
@@ -57,13 +64,34 @@ export function Favourites() {
 }
 export function MostSpent(open) {
   const m = I.mostSpent();
-  return Card('MOST SPENT', m.length ? m.map((x, i) => html`<div class="asme" style="cursor:pointer" onClick=${() => open(x.t.TrId)} data-t=${'ms-' + x.t.TrId}><span>${i + 1}</span>${Flag(x.iso, 18)}<div style="min-width:0"><div class="t"><span>${x.t.TrName}</span><b>${L.RM(x.v)}</b></div>
-      <div class="b"><i style=${`width:${(x.top * 100).toFixed(1)}%`}></i><u style=${`left:${(x.top * 100).toFixed(1)}%`}></u></div><div class="p">${x.pct.toFixed(1)}% of all</div></div></div>`)
+  const sc = 1.5; // the budget mark sits at two thirds of the bar
+  return Card('MOST SPENT', m.length ? html`${m.map((x, i) => { const over = x.diff !== null && x.diff > 0; return html`<div class="asme" style="cursor:pointer" onClick=${() => open(x.t.TrId)} data-t=${'ms-' + x.t.TrId}><span>${i + 1}</span>${Flag(x.iso, 18)}<div style="min-width:0"><div class="t"><span>${x.t.TrName}</span><b>${L.RM(x.v)}</b></div>
+      <div class="b"><i style=${`width:${x.b ? Math.min(100, x.v / x.b / sc * 100).toFixed(1) : 100}%;${over ? `background:${K.red}` : ''}`}></i>${x.b ? html`<u style=${`left:${(100 / sc).toFixed(1)}%`}></u>` : null}</div>
+      <div class="p" style=${x.diff === null ? `color:${K.sub}` : `color:${over ? K.red : K.grn}`} data-t=${'msPct-' + x.t.TrId}>${x.diff === null ? 'no budget set' : (over ? '+' : '−') + Math.abs(x.diff).toFixed(1) + '% ' + (over ? 'over' : 'under') + ' budget (' + L.RM(x.b) + ')'}</div></div></div>`; })}
+      <div class="lnote" style="margin-top:6px">The line is that journey's budget in Voyage.</div>`
     : html`<div class="lnote" style="margin-top:6px">Add expenses in Voyage to see where the money went.</div>`, 'oMost');
 }
 export function Badges() {
   return Card('', html`<div class="lcap" style=${`display:block;text-align:center;color:${K.text};font-weight:800;letter-spacing:1px;margin-bottom:10px`}>BADGES</div>
     <div class="asbd">${I.badges().map(b => html`<div class=${'asbg' + (b.on ? '' : ' off')} data-t=${'bdg-' + b.k}><div class="ci">${Ico(b.ic, 18)}</div><div class="k">${b.n.toUpperCase()}</div><b>${b.val}</b>${Flag(b.iso, 12)}</div>`)}</div>`, 'oBadges');
+}
+
+/* ───────── riding (motorbike only) ───────── */
+const hm = m => Math.floor(m / 60) + 'h ' + String(Math.round(m % 60)).padStart(2, '0') + 'm';
+function TopRides(title, list, val, foot, footVal, id) {
+  return html`<div class="lc astop" data-t=${id}><span class="lcap" style=${`display:block;color:${K.text};font-weight:800;letter-spacing:.8px`}>${title}</span>
+    ${[0, 1, 2, 3, 4].map(i => { const r = list[i]; return html`<div class="r" data-t=${r ? id + '-' + (i + 1) : null}><span>${i + 1}</span><span class=${r ? '' : 'mu'}>${r ? r.t.TrName.toUpperCase() : '—'}</span><span>${r ? val(r) : ''}</span></div>`; })}
+    <div class="ft"><div><div class="k">${foot}</div>${footVal ? html`<div class="s">${footVal.t.TrName.toUpperCase()} · DAY ${footVal.d.n}</div><b data-t=${id + 'Day'}>${footVal.v}</b>` : html`<div class="s">—</div>`}</div>${Ico('bike', 40)}</div></div>`;
+}
+export function Rides(l) {
+  const r = I.rides(); if (!r.all.length) return null;
+  const pick = r.all.find(x => x.t.TrId === l.rideTrip) || r.all[0], mx = Math.max(1, ...pick.days.map(d => d.km));
+  return html`${TopRides('TOP 5 FARTHEST RIDES', r.byKm, x => L.n0(x.km) + ' km', 'FARTHEST DAY RIDE', r.far && { ...r.far, v: L.n0(r.far.d.km) + ' km' }, 'oFar')}
+    ${TopRides('TOP 5 LONGEST RIDES', r.byMin, x => hm(x.min), 'LONGEST DAY RIDE', r.long && { ...r.long, v: hm(r.long.d.min) }, 'oLong')}
+    <div class="lc" data-t="oRideDays"><span class="lcap" style=${`display:block;color:${K.text};font-weight:800;letter-spacing:.8px`}>RIDING DISTANCE PER DAY</span>
+      ${r.all.length > 1 ? html`<div class="pchips" style="margin:8px 0 0">${r.all.map(x => html`<span class=${'pchip' + (x === pick ? ' on' : '')} onClick=${() => { l.rideTrip = x.t.TrId; rerender(); }} data-t=${'rideT-' + x.t.TrId}>${x.t.TrName}</span>`)}</div>` : html`<div class="lsub" style="margin:4px 0 0">${pick.t.TrName}</div>`}
+      <div class="asrd">${pick.days.map(d => html`<div data-t=${'rd-' + d.n}><span class="v">${d.km ? L.n0(d.km) : ''}</span><i style=${`height:${(d.km / mx * 80).toFixed(0)}px`}></i><span>D${d.n}</span></div>`)}</div>
+      <div class="lnote" style="margin-top:6px">Motorbike legs only.</div></div>`;
 }
 
 /* ───────── Journeys ───────── */
@@ -87,9 +115,17 @@ export function JourneyNumbers(id) {
 }
 export function JourneyRoute(id) {
   const j = I.journey(id); if (!j.x.tracks && !L.stops(id).some(L.hasPin)) return null;
-  return html`<div style="margin:0 12px 10px" data-t="tRouteMap">${RouteCard({ id, w: 366, h: 360, key: 'atlasRoute', plain: true })}</div>
+  return html`<div style="margin:0 12px 10px" data-t="tRouteMap">${RouteCard({ id, w: 366, h: 360, key: 'atlasRoute', plain: true, cityLabels: true })}</div>
     <div class="asro" data-t="tRouteOv"><span class="lcap" style=${`color:${K.text};font-weight:800;letter-spacing:.8px`}>ROUTE OVERVIEW</span>
       <div class="ln">${j.days.map(d => html`<div class="d" data-t=${'ro-' + d.n}><i class=${d.first ? 's' : d.last ? 'e' : ''}></i><b>${d.end || '—'}</b><span>Day ${d.n}</span><span>${d.km ? L.n0(d.km) + ' km' : '–'}</span></div>`)}</div></div>`;
+}
+/** Travel insights: your Trail Marks from Voyage › Discovery, view only. */
+export function TravelInsights(id) {
+  const r = L.result(id) || {}; if (!L.RATINGS.some(([k]) => Number(r[k]) > 0)) return null;
+  return html`<div class="lc asti" data-t="tInsights"><span class="lcap" style=${`display:block;color:${K.text};font-weight:800;letter-spacing:.8px;margin-bottom:10px`}>TRAVEL INSIGHTS</span>
+    <div class="hh"><span>METRIC</span><span>RATE</span></div>
+    ${L.RATINGS.map(([k, n, ic]) => html`<div class="mr" data-t=${'ti-' + k}>${Ico(ic, 22)}<span class="nm">${n.toUpperCase()}</span>${Stars(Number(r[k]) || 0)}</div>`)}
+    <div class="lnote" style="margin-top:4px">Rated in Voyage › Discovery.</div></div>`;
 }
 export function DailySpending(id) {
   const g = I.groundByDay(id); if (!g.some(x => x.v)) return null;

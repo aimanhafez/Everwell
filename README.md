@@ -1,4 +1,11 @@
-# MansWell · v3.9.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.10.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.10.0 · Atlas: rides, budget, travel insights
+- Odyssey: Total expenses and Total distance show per trip and per day; Most spent compares each journey with its own Voyage budget (+% over / −% under); the Country experience overview moved here (after Most spent); after Badges: Top 5 farthest rides, Top 5 longest rides (one above the other), the farthest and longest day ride, and riding km per day (motorbike legs only).
+- World Wanderer now measures from Kuala Lumpur to the farthest place you reached (your Voyage pins). Malaysia's map point is in Borneo, which made Thailand look farthest.
+- One journey: the route map labels and the route overview use the city (each name once, no overlaps); Travel insights (your Trail Marks, view only) after Memories.
+- New motorbike icon.
+- To update: upload Step 1, replace Code.gs (3.10.0, same server code), Deploy › New version.
 
 ## 3.9.0 · Atlas reads Voyage
 - **Odyssey**: the hero keeps countries, % of the world and continents; four cards (Total trips: solo / family / friends · Travel days: working / off days · Total expenses · Total distance); Borderless stamps; Favourite country (your Voyage score); Most spent (by journey, % of all); six Badges (The Long Haul, World Wanderer = farthest from home, Luxury Voyager, Travel Chameleon = most stops, Throttle Master = most km by motorbike, The High Road); Milestones. Legend: Visited and Wanderlist only. The three fact cards and the Journeys / Going lists on Odyssey are gone (they live in their own tabs).

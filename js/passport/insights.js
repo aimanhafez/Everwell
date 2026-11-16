@@ -2,6 +2,7 @@
 // Travel only: never reads Pocket or Lens. Voyage stays the place where the details are written.
 import * as P from './engine.js';
 import * as L from '../logbook/engine.js';
+import { DB } from '../core.js';
 
 const pastTrips = () => P.trips();
 const d0 = s => new Date(String(s).slice(0, 10) + 'T00:00:00');
@@ -21,6 +22,20 @@ export function bikeOf(id) {
   }
   return { km, min, pct: all ? km / all * 100 : 0 };
 }
+/** Motorbike riding per day of a journey: km (from the track legs) and minutes (from your times). */
+export function rideDays(id) {
+  return L.days(P.trip(id)).map(d => { const list = L.stops(id, d.n), legs = L.legsOf(L.track(id, d.n)); let km = 0, min = 0;
+    for (let i = 1; i < list.length; i++) if (list[i].LpMode === 'bike') { km += (legs[i - 1] || {}).km || 0; min += L.legMin(list, i) || 0; }
+    return { n: d.n, km, min }; });
+}
+/** Top rides (motorbike only): journeys by km and by time, and the single farthest / longest day. */
+export function rides() {
+  const rs = pastTrips().map(t => ({ t, days: rideDays(t.TrId) })).map(r => ({ ...r, km: r.days.reduce((s, d) => s + d.km, 0), min: r.days.reduce((s, d) => s + d.min, 0) }));
+  let far = null, long = null; for (const r of rs) for (const d of r.days) { if (d.km > (far ? far.d.km : 0)) far = { t: r.t, d }; if (d.min > (long ? long.d.min : 0)) long = { t: r.t, d }; }
+  return { byKm: rs.filter(r => r.km > 0).sort((a, b) => b.km - a.km).slice(0, 5), byMin: rs.filter(r => r.min > 0).sort((a, b) => b.min - a.min).slice(0, 5), far, long, all: rs.filter(r => r.km > 0) };
+}
+/** Where distance is measured from: Kuala Lumpur for Malaysia (its map point is in Borneo), else the home country's point. */
+export function homePoint() { const h = P.homeIso(); if (h === 'MY') return [3.139, 101.687]; const c = P.BY[h]; return c ? [c.lat, c.lng] : null; }
 /** The journey's country for each day: the country of its last stop (else the journey's first country). */
 function dayIso(id, n) { const l = L.stops(id, n); return (l.length && l[l.length - 1].LpCountry) || mainIso(id); }
 /** Ground cost per day (spread items share by day). */
@@ -30,7 +45,8 @@ export function totals() {
   const ts = pastTrips(), xs = ts.map(t => ({ t, x: L.lbTotals(t.TrId) }));
   const w = k => ts.filter(t => P.withList(t).includes(k)).length;
   const wo = ts.reduce((s, t) => { const r = workOff(t); s.w += r.w; s.o += r.o; return s; }, { w: 0, o: 0 });
-  return { trips: ts.length, solo: w('Solo'), family: w('Family'), friends: w('Friends'), days: ts.reduce((s, t) => s + P.daysOf(t), 0), work: wo.w, off: wo.o,
+  const spent = xs.reduce((s, a) => s + a.x.spent, 0), km = xs.reduce((s, a) => s + a.x.km, 0), days = ts.reduce((s, t) => s + P.daysOf(t), 0);
+  return { perTrip: ts.length ? spent / ts.length : 0, perDay: days ? spent / days : 0, kmTrip: ts.length ? km / ts.length : 0, kmDay: days ? km / days : 0, trips: ts.length, solo: w('Solo'), family: w('Family'), friends: w('Friends'), days: ts.reduce((s, t) => s + P.daysOf(t), 0), work: wo.w, off: wo.o,
     spent: xs.reduce((s, a) => s + a.x.spent, 0), km: xs.reduce((s, a) => s + a.x.km, 0) };
 }
 /** Your Voyage score per country (average of the journeys that went there). */
@@ -39,20 +55,22 @@ export function favourites() {
   for (const t of pastTrips()) { const v = L.overall(t.TrId); if (!v) continue; for (const iso of new Set(P.isosOf(t.TrId))) { if (iso === P.homeIso()) continue; (by[iso] = by[iso] || []).push(v); } }
   return Object.entries(by).map(([iso, a]) => ({ iso, v: a.reduce((s, x) => s + x, 0) / a.length })).sort((a, b) => b.v - a.v || P.BY[a.iso].name.localeCompare(P.BY[b.iso].name)).slice(0, 3);
 }
-/** The journeys you spent most on, with their share of everything. */
+/** The journeys you spent most on, each against its own Voyage budget. */
 export function mostSpent() {
-  const xs = pastTrips().map(t => ({ t, v: L.spend(t.TrId).tot })).filter(a => a.v > 0), tot = xs.reduce((s, a) => s + a.v, 0);
-  return xs.sort((a, b) => b.v - a.v).slice(0, 3).map(a => ({ ...a, iso: mainIso(a.t.TrId), pct: tot ? a.v / tot * 100 : 0, top: xs[0] ? a.v / Math.max(...xs.map(x => x.v)) : 0 }));
+  const xs = pastTrips().map(t => ({ t, v: L.spend(t.TrId).tot, b: L.budget(t.TrId).tot })).filter(a => a.v > 0);
+  return xs.sort((a, b) => b.v - a.v).slice(0, 3).map(a => ({ ...a, iso: mainIso(a.t.TrId), diff: a.b ? (a.v / a.b - 1) * 100 : null }));
 }
 const best = (arr, f) => arr.reduce((b, x) => (f(x) > (b ? f(b) : 0) ? x : b), null);
 /** Six badges. */
 export function badges() {
-  const ts = pastTrips(), xs = ts.map(t => ({ t, x: L.lbTotals(t.TrId), b: bikeOf(t.TrId) })), home = P.BY[P.homeIso()];
-  const far = home ? best(P.visitedList().filter(c => c.iso !== home.iso && c.lat), c => L.hav([home.lat, home.lng], [c.lat, c.lng])) : null;
+  const ts = pastTrips(), xs = ts.map(t => ({ t, x: L.lbTotals(t.TrId), b: bikeOf(t.TrId) })), hp = homePoint();
+  // farthest place reached: your Voyage pins in that country, else the country's map point
+  const reach = c => { const pins = DB.lbStops.filter(s => s.LpCountry === c.iso && L.hasPin(s)).map(s => [Number(s.LpLat), Number(s.LpLng)]); const pts = pins.length ? pins : [[c.lat, c.lng]]; return Math.max(...pts.map(q => L.hav(hp, q))); };
+  const far = hp ? best(P.visitedList().filter(c => c.lat || DB.lbStops.some(s => s.LpCountry === c.iso)), reach) : null;
   const B = (k, n, ic, a, val, iso) => ({ k, n, ic, val: a ? val(a) : '—', iso: a ? iso(a) : '', on: !!a });
   return [
     B('long', 'The Long Haul', 'cal', best(xs, a => a.x.days), a => a.x.days + ' days', a => mainIso(a.t.TrId)),
-    B('far', 'World Wanderer', 'globe', far, c => L.n0(L.hav([home.lat, home.lng], [c.lat, c.lng])) + ' km away', c => c.iso),
+    B('far', 'World Wanderer', 'globe', far, c => L.n0(reach(c)) + ' km away', c => c.iso),
     B('lux', 'Luxury Voyager', 'wallet', best(xs, a => a.x.spent), a => L.RM(a.x.spent), a => mainIso(a.t.TrId)),
     B('cham', 'Travel Chameleon', 'compass', best(xs, a => a.x.stops), a => a.x.stops + ' stops', a => mainIso(a.t.TrId)),
     B('throttle', 'Throttle Master', 'bike', best(xs, a => a.b.km), a => L.n0(a.b.km) + ' km', a => mainIso(a.t.TrId)),
@@ -75,7 +93,7 @@ export function countryOverview() {
 /** One journey's numbers for its Atlas page. */
 export function journey(id) {
   const t = P.trip(id), x = L.lbTotals(id), b = bikeOf(id), sp = L.spend(id);
-  const dayRows = L.days(t).map(d => { const l = L.stops(id, d.n); return { n: d.n, end: l.length ? l[l.length - 1].LpPlace : '', km: L.dayKm(id, d.n), first: d.n === 1, last: d.n === L.days(t).length }; });
+  const dayRows = L.days(t).map(d => { const l = L.stops(id, d.n); return { n: d.n, end: l.length ? (l[l.length - 1].LpCity || l[l.length - 1].LpProv || l[l.length - 1].LpPlace) : '', km: L.dayKm(id, d.n), first: d.n === 1, last: d.n === L.days(t).length }; });
   const cat = non => L.CATS.map(c => ({ c, v: L.expenses(id).filter(e => e.ExCat === c.k && L.isNon(e) === non).reduce((s, e) => s + L.myrOf(e), 0) })).filter(a => a.v > 0).sort((a, b) => b.v - a.v);
   return { x, b, sp, days: dayRows, ground: groundByDay(id), gcat: cat(false), ncat: cat(true), has: x.stops > 0 || sp.n > 0 || x.overall > 0 };
 }
