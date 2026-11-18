@@ -4,7 +4,7 @@ import { html, K, DB, G, rerender, Today, Notify, NAV, Navigate, store } from '.
 import * as S from './summary.js';
 import * as I from './insights.js';
 import * as LB from '../logbook/engine.js';
-import { Page, Sect, Cap, Flag, WorldMap, Legend, focusMap, openCountry, openWish, openGoing, openTrip, openTripEdit, deleteTrip, openPick, openPhoto,
+import { Page, Sect, Cap, Flag, WorldMap, Legend, focusMap, openCountry, openWish, openGoing, openDream, removeGoing, CLEAR, openTrip, openTripEdit, deleteTrip, openPick, openPhoto,
   confirmAsk, psave, canWrite, plural, tripLine, go, openSheet, closeSheet, TierBadge, WISHC, P, PH } from './ui.js';
 
 const MONS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -148,65 +148,73 @@ export const scrPpTrip = {
   }
 };
 
-/* ───────── Wanderlist ───────── */
-function wishActions(l, p) {
-  const c = P.BY[p.PlIso], gg = P.isGoing(p);
-  openSheet(l, { title: c.name, body: () => html`<div data-t="wishActions" style="display:flex;flex-direction:column;gap:9px;padding-bottom:6px">
-    ${gg ? html`<button class="lbtnf" onClick=${() => { closeSheet(l); openTripEdit(l, null, { isos: [p.PlIso] }); }} data-t="waTrip">✓ I'm back: add the journey</button>
-      <button class="lbtn" style="padding:12px" onClick=${() => { closeSheet(l); openGoing(l, p.PlIso); }} data-t="waGoing">Change year or days</button>`
-      : html`<button class="lbtnf" onClick=${() => { closeSheet(l); openGoing(l, p.PlIso); }} data-t="waGoing">Confirm I'm going</button>
-      <button class="lbtn" style="padding:12px" onClick=${() => { closeSheet(l); openTripEdit(l, null, { isos: [p.PlIso] }); }} data-t="waTrip">I went: add the journey</button>`}
-    <button class="lbtn" style="padding:12px" onClick=${() => { closeSheet(l); openWish(l, p.PlIso); }} data-t="waEdit">Edit priority, tier, places</button>
-    <button class="lbtn" style="padding:12px" onClick=${() => { closeSheet(l); psave({ up: { PP_Places: [{ ...p, PlStatus: 'been', PlGo: '' }] } }, 'Visited before', c.name); }} data-t="waBeen">Visited before, no journey to write up</button>
-    <button class="lbtnd" onClick=${() => { closeSheet(l); confirmAsk(l, 'Remove ' + c.name + ' from your Wanderlist?', 'Its tier, places and notes are removed too.', 'Remove', () => psave({ up: { PP_Places: [{ ...p, PlStatus: '', PlWhy: '', PlSee: '', PlNote: '', PlYear: 0, PlTier: '', PlGo: '', PlGoYear: 0, PlGoDays: 0 }] } }, 'Wanderlist removed', c.name)); }} data-t="waRemove">Remove from Wanderlist</button>
+/* ───────── Wanderlist: + Add → Dreaming → Confirm → Going ───────── */
+function wishActions(l, d) {
+  const nm = P.dreamName(d), one = d.isos.length === 1 ? d.places[0] : null;
+  openSheet(l, { title: nm, body: () => html`<div data-t="wishActions" style="display:flex;flex-direction:column;gap:9px;padding-bottom:6px">
+    <button class="lbtnf" onClick=${() => { closeSheet(l); openGoing(l, d); }} data-t="waGoing">Confirm I'm going</button>
+    <button class="lbtn" style="padding:12px" onClick=${() => { closeSheet(l); openDream(l, d); }} data-t="waEdit">Edit priority, tier, places</button>
+    <button class="lbtn" style="padding:12px" onClick=${() => { closeSheet(l); openTripEdit(l, null, { isos: d.isos }); }} data-t="waTrip">I went: add the journey</button>
+    ${one ? html`<button class="lbtn" style="padding:12px" onClick=${() => { closeSheet(l); psave({ up: { PP_Places: [{ ...one, PlStatus: 'been', PlGo: '', PlDream: '' }] } }, 'Visited before', nm); }} data-t="waBeen">Visited before, no journey to write up</button>` : null}
+    <button class="lbtnd" onClick=${() => { closeSheet(l); confirmAsk(l, 'Delete ' + nm + '?', 'It leaves your Wanderlist with its tier, places and notes.', 'Delete', () => psave({ up: { PP_Places: d.places.map(p => ({ ...p, ...CLEAR })) } }, 'Wanderlist removed', nm)); }} data-t="waRemove">Delete</button>
   </div>` });
 }
-function move(list, i, d) {
-  const j = i + d; if (j < 0 || j >= list.length) return;
-  const rows = list.map((p, k) => ({ ...p, PlSeq: k + 1 }));
-  [rows[i].PlSeq, rows[j].PlSeq] = [rows[j].PlSeq, rows[i].PlSeq];
-  psave({ up: { PP_Places: rows } }, 'Wanderlist order', P.BY[list[i].PlIso].name);
+function move(list, i, dir) {
+  const j = i + dir; if (j < 0 || j >= list.length) return;
+  const o = list.slice(); [o[i], o[j]] = [o[j], o[i]]; let k = 1;
+  const rows = []; o.forEach(d => d.places.forEach(p => rows.push({ ...p, PlSeq: k++ })));
+  psave({ up: { PP_Places: rows } }, 'Wanderlist order', P.dreamName(list[i]));
 }
-/** An upcoming trip (exact dates): one card with its countries; planned in Voyage. */
+/** Going · an upcoming trip: one card; plan it in Voyage or remove it (back to Dreaming). Countries can't be changed. */
+function goingActions(l, t) {
+  const plan = () => { G.lbTrip = t.TrId; store.set('lb_trip', t.TrId); Navigate('scrLbItinerary'); };
+  openSheet(l, { title: t.TrName, body: () => html`<div data-t="goActions" style="display:flex;flex-direction:column;gap:9px;padding-bottom:6px">
+    <button class="lbtnf" onClick=${() => { closeSheet(l); plan(); }} data-t="gaPlan">Plan in Voyage</button>
+    <button class="lbtnd" onClick=${() => { closeSheet(l); removeGoing(l, t); }} data-t="gaRemove">Remove from Going</button>
+    <div class="lnote">It goes back to Dreaming with its priority and tier.</div></div>` });
+}
 const UpCard = (l, t) => {
   const isos = P.isosOf(t.TrId), n = P.daysTo(t), x = { days: new Set(LB.stops(t.TrId).map(s => Number(s.LpDay))).size, spent: LB.spend(t.TrId).tot };
-  const plan = () => { G.lbTrip = t.TrId; store.set('lb_trip', t.TrId); Navigate('scrLbItinerary'); };
-  return html`<div class="lc pup" data-t=${'up-' + t.TrId}>
-    <div onClick=${() => openGoing(l, null, t)} style="cursor:pointer">
-      <div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:5px">${isos.map(i => Flag(i, 22))}</div><span class="pupt" data-t=${'upIn-' + t.TrId}>${n ? 'IN ' + plural(n, 'DAY') : 'ON THE ROAD'}</span></div>
-      <div class="t">${t.TrName}</div>
-      <div class="s">${isos.map(i => P.BY[i].name).join(' · ')}</div><div class="s">${tripLine(t)}</div></div>
+  const plan = e => { e.stopPropagation(); G.lbTrip = t.TrId; store.set('lb_trip', t.TrId); Navigate('scrLbItinerary'); };
+  return html`<div class="lc pup" data-t=${'up-' + t.TrId} onClick=${() => goingActions(l, t)} style="cursor:pointer">
+    <div style="display:flex;justify-content:space-between;align-items:center"><div class="pfls">${isos.map(i => Flag(i, 22))}</div><span class="pupt" data-t=${'upIn-' + t.TrId}>${n ? 'IN ' + plural(n, 'DAY') : 'ON THE ROAD'}</span></div>
+    <div class="t">${t.TrName}</div>
+    <div class="s">${isos.map(i => P.BY[i].name).join(' · ')}</div><div class="s">${tripLine(t)}</div>
     <div class="pupf"><span>${x.days || x.spent ? [x.days ? 'Itinerary ' + plural(x.days, 'day') : '', x.spent ? LB.RM(x.spent) + ' booked' : ''].filter(Boolean).join(' · ') : 'Nothing planned yet'}</span>
       <span class="lor" style="font-weight:700;cursor:pointer" onClick=${plan} data-t=${'upPlan-' + t.TrId}>Plan in Voyage ›</span></div></div>`;
 };
-const WRow = (l, p, extra) => { const c = P.BY[p.PlIso]; return html`<div class="pwl" data-t=${'wl-' + p.PlIso}>
-  <div onClick=${() => wishActions(l, p)} style="cursor:pointer">${Flag(p.PlIso, 25)}</div>
-  <div onClick=${() => wishActions(l, p)} style="cursor:pointer;min-width:0"><div class="t">${c.name}${P.isGoing(p) ? null : html` <span class=${'ppri ' + (p.PlPri || 'M')}>${(PRI[p.PlPri] || 'Medium').toUpperCase()}</span>`}</div>
-    <div class="s">${P.isGoing(p) ? p.PlGoYear + ' · ' + plural(p.PlGoDays, 'day') : c.cont}${P.isTier(p.PlTier) ? ' · ' + P.tierText(p.PlTier) : ''}</div>
-    ${p.PlSee ? html`<div class="ptags">${String(p.PlSee).split('|').filter(Boolean).map(s => html`<i>${s}</i>`)}</div>` : null}</div>
-  <div style="display:flex;gap:8px;align-items:flex-start">${TierBadge(p.PlTier)}${extra || null}</div></div>`; };
+/** Going from before 3.11.1 (a year and days, no dates): shown as it was; remove only. */
+const GRow = (l, p) => { const c = P.BY[p.PlIso]; return html`<div class="pwl" data-t=${'wl-' + p.PlIso} onClick=${() => confirmAsk(l, 'Remove ' + c.name + ' from Going?', 'It goes back to Dreaming.', 'Remove', () => psave({ up: { PP_Places: [{ ...p, PlGo: '', PlGoYear: 0, PlGoDays: 0 }] } }, 'Back to dreaming', c.name))} style="cursor:pointer">
+  <div>${Flag(p.PlIso, 25)}</div><div style="min-width:0"><div class="t">${c.name}</div><div class="s">${p.PlGoYear} · ${plural(p.PlGoDays, 'day')}${P.isTier(p.PlTier) ? ' · ' + P.tierText(p.PlTier) : ''}</div></div>
+  <div>${TierBadge(p.PlTier)}</div></div>`; };
+/** A dream: flags on one line, the country names below. */
+const DRow = (l, d, extra) => { const tags = String(d.see || '').split('|').filter(Boolean); return html`<div class="pdr" data-t=${'wl-' + d.isos.join('-')}>
+  <div onClick=${() => wishActions(l, d)} style="cursor:pointer;min-width:0">
+    <div class="pfls">${d.isos.map(i => Flag(i, 20))}</div>
+    <div class="t">${P.dreamName(d)} <span class=${'ppri ' + d.pri}>${(PRI[d.pri] || 'Medium').toUpperCase()}</span></div>
+    <div class="s">${P.isTier(d.tier) ? P.tierText(d.tier) : [...new Set(d.isos.map(i => P.BY[i].cont))].join(' · ')}</div>
+    ${tags.length ? html`<div class="ptags">${tags.map(s => html`<i>${s}</i>`)}</div>` : null}</div>
+  <div style="display:flex;gap:8px;align-items:flex-start">${TierBadge(d.tier)}${extra || null}</div></div>`; };
 export const scrPpWishlist = {
   view(l) {
     const all = P.wishlist(), gw = P.going(), ups = P.upcoming(), sort = l.sort || 'order', PR = { H: 0, M: 1, L: 2 };
-    const base = P.dreaming();
-    const list = sort === 'order' ? base : base.slice().sort(sort === 'pri' ? (a, b) => (PR[a.PlPri] ?? 1) - (PR[b.PlPri] ?? 1) || a.PlSeq - b.PlSeq
-      : sort === 'tier' ? (a, b) => P.tierRank(a.PlTier) - P.tierRank(b.PlTier) || a.PlSeq - b.PlSeq : (a, b) => P.BY[a.PlIso].cont.localeCompare(P.BY[b.PlIso].cont) || a.PlSeq - b.PlSeq);
-    const addNew = () => openPick(l, { title: 'Add to Wanderlist', filter: c => !P.isVisited(c.iso) && P.status(c.iso) !== 'wish' && c.iso !== P.homeIso(), onPick: iso => { closeSheet(l); openWish(l, iso); } });
+    const base = P.dreams();
+    const list = sort === 'order' ? base : base.slice().sort(sort === 'pri' ? (a, b) => (PR[a.pri] ?? 1) - (PR[b.pri] ?? 1) || a.seq - b.seq
+      : sort === 'tier' ? (a, b) => P.tierRank(a.tier) - P.tierRank(b.tier) || a.seq - b.seq : (a, b) => a.cont.localeCompare(b.cont) || a.seq - b.seq);
+    const addNew = () => openDream(l, null);
     const tally = P.TIER_LETTERS.map(x => [x, all.filter(p => P.isTier(p.PlTier) && p.PlTier[0] === x).length]), noTier = all.filter(p => !P.isTier(p.PlTier)).length;
+    const nGo = gw.length + ups.length;
     return Page(l, 2, html`
       ${Sect('Wanderlist', '+ Add', addNew, 'wlAdd')}
       ${all.length ? html`<div class="lc" data-t="wlTally"><span class="lcap">${plural(all.length, 'destination')} · ${gw.length + all.filter(p => P.upIsos().has(p.PlIso)).length} confirmed</span>
         <div class="ptiers">${tally.filter(([, n]) => n).map(([x, n]) => html`<i style=${`width:${n / all.length * 100}%;background:${P.TIER_COLOR[x]}`}></i>`)}${noTier ? html`<i style=${`width:${noTier / all.length * 100}%;background:${K.line2}`}></i>` : null}</div>
         <div class="ptl">${tally.map(([x, n]) => html`<span style=${`--c:${P.TIER_COLOR[x]}`}>${x} ${n}</span>`)}${noTier ? html`<span style=${`--c:${K.line2}`}>No tier ${noTier}</span>` : null}</div></div>` : null}
-      ${!all.length ? html`<div class="lc lempty" data-t="wlEmpty">Places you dream of go here, with a tier for budget and length. Confirm when you're going and they show on Odyssey.<div style="margin-top:12px"><button class="lbtn o on" onClick=${addNew}>+ Add a destination</button></div></div>` : null}
-      ${all.length || ups.length ? Sect('Going', '+ I\'m going', () => openGoing(l, null), 'wlGo') : null}
-      ${ups.map(t => UpCard(l, t))}
-      ${gw.length ? html`<div class="lc" data-t="wlGoing">${gw.map(p => WRow(l, p))}</div>` : null}
-      ${(all.length || ups.length) && !gw.length && !ups.length ? html`<div class="lnote" style="margin:-4px 18px 14px" data-t="wlGoEmpty">Confirm a trip with one or more countries. With exact dates you can plan it in Voyage before you go.</div>` : null}
+      ${!all.length && !ups.length ? html`<div class="lc lempty" data-t="wlEmpty">Places you dream of go here, one or more countries at a time, with a tier for budget and length. Confirm when you're going to plan it in Voyage.<div style="margin-top:12px"><button class="lbtn o on" onClick=${addNew}>+ Add a destination</button></div></div>` : null}
+      ${nGo ? html`${Sect('Going', String(nGo))}${ups.map(t => UpCard(l, t))}${gw.length ? html`<div class="lc" data-t="wlGoing">${gw.map(p => GRow(l, p))}</div>` : null}` : null}
       ${base.length ? html`${Sect('Dreaming', String(base.length))}
         <div class="pchips">${[['order', 'My order'], ['pri', 'Priority'], ['tier', 'Tier'], ['cont', 'Continent']].map(([k, t]) => html`<span class=${'pchip' + (sort === k ? ' on' : '')} onClick=${() => { l.sort = k; rerender(); }} data-t=${'wlSort-' + k}>${t}</span>`)}</div>
-        <div class="lc" data-t="wlList">${list.map((p, i) => WRow(l, p, sort === 'order' ? html`<div class="pord"><span onClick=${() => move(list, i, -1)} data-t=${'wlUp-' + p.PlIso} style=${i ? '' : 'opacity:.3'}>▲</span><span onClick=${() => move(list, i, 1)} data-t=${'wlDn-' + p.PlIso} style=${i < list.length - 1 ? '' : 'opacity:.3'}>▼</span></div>` : null))}</div>
-        <div class="lnote" style="margin:0 18px">Tap a destination to confirm you're going, edit it or remove it.${sort === 'order' ? ' ▲ ▼ set your order.' : ''}</div>` : null}
+        <div class="lc" data-t="wlList">${list.map((d, i) => DRow(l, d, sort === 'order' ? html`<div class="pord"><span onClick=${() => move(list, i, -1)} data-t=${'wlUp-' + d.isos[0]} style=${i ? '' : 'opacity:.3'}>▲</span><span onClick=${() => move(list, i, 1)} data-t=${'wlDn-' + d.isos[0]} style=${i < list.length - 1 ? '' : 'opacity:.3'}>▼</span></div>` : null))}</div>
+        <div class="lnote" style="margin:0 18px">Tap a dream to confirm you're going, edit it or delete it.${sort === 'order' ? ' ▲ ▼ set your order.' : ''}</div>` : null}
     `, 'ppWishlist');
   }
 };

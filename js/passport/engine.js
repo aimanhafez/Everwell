@@ -132,6 +132,24 @@ export const upIsos = () => new Set(upcoming().flatMap(t => isosOf(t.TrId)));
 export const daysTo = t => Math.max(0, Math.round((d0(t.TrStart) - d0(Today())) / 864e5));
 export const going = () => { const u = upIsos(); return wishlist().filter(p => isGoing(p) && !u.has(p.PlIso)).sort((a, b) => (a.PlGoYear || 9999) - (b.PlGoYear || 9999) || (a.PlSeq || 0) - (b.PlSeq || 0)); };
 export const dreaming = () => { const u = upIsos(); return wishlist().filter(p => !isGoing(p) && !u.has(p.PlIso)); };
+/** A dream = one Dreaming row: countries added together share PlDream (one country on its own has none).
+ *  Priority, tier, places and notes are the same on every country of the dream. */
+const dreamKey = p => p.PlDream || 'c:' + p.PlIso;
+export function dreams() {
+  const m = new Map(), u = upIsos(), inTrip = new Set();
+  wishlist().forEach(p => { if (u.has(p.PlIso)) inTrip.add(dreamKey(p)); });
+  dreaming().forEach(p => { const k = dreamKey(p); if (inTrip.has(k)) return; if (!m.has(k)) m.set(k, []); m.get(k).push(p); });
+  return [...m.entries()].map(([id, ps]) => { ps.sort((a, b) => (a.PlSeq || 0) - (b.PlSeq || 0)); const h = ps[0];
+    return { id, group: h.PlDream || '', isos: ps.map(p => p.PlIso), places: ps, seq: h.PlSeq || 0, pri: h.PlPri || 'M', tier: h.PlTier || '', see: h.PlSee || '', note: h.PlNote || '', cont: (BY[h.PlIso] || {}).cont || '' }; })
+    .sort((a, b) => a.seq - b.seq);
+}
+/** The dream a wished country belongs to (even if it is in an upcoming trip). */
+export function dreamOf(iso) {
+  const p = place(iso); if (!p) return null; const k = dreamKey(p);
+  const ps = wishlist().filter(x => dreamKey(x) === k).sort((a, b) => (a.PlSeq || 0) - (b.PlSeq || 0)); if (!ps.length) return null; const h = ps[0];
+  return { id: k, group: h.PlDream || '', isos: ps.map(x => x.PlIso), places: ps, seq: h.PlSeq || 0, pri: h.PlPri || 'M', tier: h.PlTier || '', see: h.PlSee || '', note: h.PlNote || '', cont: (BY[h.PlIso] || {}).cont || '' };
+}
+export const dreamName = d => d.isos.map(i => (BY[i] || {}).name).join(' · ');
 
 /* ───────── route: places per country ───────── */
 export const splitPlaces = t => String(t || '').split(/\s*(?:,|→|->|;|\n)\s*/).map(s => s.trim()).filter(Boolean);

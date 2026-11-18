@@ -1,4 +1,11 @@
-# MansWell · v3.11.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.11.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.11.1 · Wanderlist: Add → Dreaming → Confirm → Going
+- One "+ Add" button. A dream can hold one or more countries with one priority, tier, places and notes; it goes to Dreaming as one row (flags on one line, names below).
+- Tap a dream: Confirm I'm going, Edit, I went: add the journey, Delete.
+- Confirm I'm going: the dream's countries are fixed; give the trip a name, dates and who with. It moves to Going and opens in Voyage. "Just the year" is gone.
+- Going: Plan in Voyage or Remove from Going (back to Dreaming as the same dream). Countries confirmed with only a year before 3.11.1 show in Going with Remove only.
+- Upload: all files in Step 1 and paste the new Code.gs (adds PlDream to PP_Places by itself), then Deploy › New version.
 
 ## 3.11.0 · Upcoming trips
 - Wanderlist › I'm going: one trip can hold several countries (from your Wanderlist or search). Choose Exact dates or Just the year.

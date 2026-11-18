@@ -16,6 +16,8 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.11.1 · Wanderlist dreams: countries added together stay one Dreaming row (PP_Places gets PlDream, added by itself).
+ *
  * 3.11.0 · Upcoming trips: Wanderlist › I'm going can hold several countries with exact dates (PP_Trips gets TrPlan,
  *   added to your Sheet by itself). The trip is planned in Voyage and becomes a journey after its end date.
  *
@@ -71,7 +73,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.11.0';
+var EW_VERSION = '3.11.1';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -95,7 +97,7 @@ var TABLES = {
   LN_Budget: { key: 'BuKey', cols: { BuKey: 's', BuYear: 'n', BuItem: 's', BuAmt: 'n', BuType: 's' } },
   // MansWell Passport (travel): its own tabs, never linked to money.
   PP_Settings: { key: 'PsetKey', cols: { PsetKey: 's', PsetVal: 's' } },
-  PP_Places: { key: 'PlIso', cols: { PlIso: 's', PlStatus: 's', PlPri: 's', PlYear: 'n', PlWhy: 's', PlSee: 's', PlNote: 's', PlSeq: 'n', PlPhoto: 's', PlAdded: 'd', PlFirst: 's', PlTier: 's', PlGo: 's', PlGoYear: 'n', PlGoDays: 'n' } },
+  PP_Places: { key: 'PlIso', cols: { PlIso: 's', PlStatus: 's', PlPri: 's', PlYear: 'n', PlWhy: 's', PlSee: 's', PlNote: 's', PlSeq: 'n', PlPhoto: 's', PlAdded: 'd', PlFirst: 's', PlTier: 's', PlGo: 's', PlGoYear: 'n', PlGoDays: 'n', PlDream: 's' } },
   PP_Trips: { key: 'TrId', cols: { TrId: 's', TrName: 's', TrStart: 'd', TrEnd: 'd', TrWith: 's', TrDesc: 's', TrMoments: 's', TrNotes: 's', TrRoute: 's', TrCover: 's', TrAdded: 't', TrPlan: 's' } },
   PP_Stops: { key: 'StKey', cols: { StKey: 's', StTrip: 's', StIso: 's', StDays: 'n', StSeq: 'n', StRoute: 's' } },
   PP_Photos: { key: 'PhId', cols: { PhId: 's', PhTrip: 's', PhFile: 's', PhW: 'n', PhH: 'n', PhTaken: 'd', PhCap: 's', PhSeq: 'n' } },

@@ -81,6 +81,9 @@ ul.pmom li:before{content:'';position:absolute;left:0;top:14px;width:6px;height:
 .pseg span{text-align:center;font-size:12.5px;font-weight:600;color:${K.sub};padding:9px 0;border-radius:9px;cursor:pointer}.pseg span.on{background:${oa(.14)};color:${K.or};box-shadow:inset 0 0 0 1px ${oa(.5)}}
 .pseg.dis span{cursor:default;opacity:.75}
 textarea.lin{height:auto;min-height:74px;padding:10px 12px;line-height:1.45;font-weight:500;resize:vertical}
+.pfls{display:flex;gap:4px;flex-wrap:nowrap;overflow:hidden}
+.pdr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:11px;align-items:start;padding:12px 0;border-top:1px solid ${K.sep}}.pdr:first-child{border-top:0;padding-top:2px}
+.pdr .t{font-size:14.5px;font-weight:600;color:${K.text};margin-top:7px;line-height:1.35}.pdr .t .ppri{font-size:8.5px;margin-left:3px;vertical-align:2px}.pdr .s{font-size:11.5px;color:${K.sub};margin-top:2px;line-height:1.4}
 .pup{cursor:default}.pup .t{font-size:16px;font-weight:700;color:${K.text};margin-top:8px}.pup .s{font-size:12px;color:${K.sub};margin-top:3px}
 .pupt{font-size:9px;font-weight:800;letter-spacing:1px;color:${K.or};background:${oa(.13)};border-radius:99px;padding:4px 8px}
 .pupf{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid ${K.sep};font-size:12px;color:${K.sub}}
@@ -316,7 +319,7 @@ export function openCountry(l, iso, o = {}) {
         ${pl.PlWhy ? html`<div style="font-size:13.5px;margin-top:5px;color:${K.text}">${pl.PlWhy}</div>` : null}
         ${pl.PlSee ? html`<div class="ptags">${String(pl.PlSee).split('|').filter(Boolean).map(s => html`<i>${s}</i>`)}</div>` : null}
         ${pl.PlNote ? html`<div class="lnote" style="margin-top:6px">${pl.PlNote}</div>` : null}
-        ${st === 'wish' ? html`<div style="margin-top:9px;display:flex;gap:8px"><span class="lbtn o" onClick=${() => { closeSheet(l); openWish(l, iso); }} data-t="cEditWish">Edit</span>${P.isGoing(pl) ? null : html`<span class="lbtn" onClick=${() => { closeSheet(l); openGoing(l, iso); }} data-t="cGoing">I'm going</span>`}</div>` : null}</div>` : null}
+        ${st === 'wish' ? html`<div style="margin-top:9px;display:flex;gap:8px"><span class="lbtn o" onClick=${() => { closeSheet(l); openWish(l, iso); }} data-t="cEditWish">Edit</span>${P.isGoing(pl) || P.upIsos().has(iso) ? null : html`<span class="lbtn" onClick=${() => { closeSheet(l); openGoing(l, P.dreamOf(iso)); }} data-t="cGoing">I'm going</span>`}</div>` : null}</div>` : null}
       ${ts.length ? html`<div class="lst" style="margin:18px 0 8px"><h2 style="font-size:19px">Your journeys here<i>.</i></h2><div class="ln"></div><span class="lk">${ts.length}</span></div>
         <div class="lfx">${ts.map(t => { const cv = P.coverOf(t); return html`<div class="phl" onClick=${() => { closeSheet(l); openTrip(t.TrId); }} data-t=${'cTrip-' + t.TrId}><div class="im" style=${PH.bg(cv && cv.PhId, t.TrId)}></div><div><div class="t">${t.TrName}</div><div class="s">${tripLine(t)}</div></div><span style=${`color:${K.mute}`}>›</span></div>`; })}</div>` : null}
       ${home ? null : html`<button class="lbtnf" style="margin-top:16px" data-t="cAddTrip" onClick=${() => { closeSheet(l); openTripEdit(l, null, { isos: [iso] }); }}>+ Add a journey to ${c.name}</button>`}
@@ -338,6 +341,7 @@ export function TierPicker(f) {
   </div>`;
 }
 export function openWish(l, iso) {
+  const dd = P.status(iso) === 'wish' ? P.dreamOf(iso) : null; if (dd && dd.isos.length > 1) return openDream(l, dd); // part of a dream: edit the whole dream
   const c = P.BY[iso], pl = P.place(iso);
   const isWish = pl && pl.PlStatus === 'wish';
   const f = { pri: (pl && pl.PlPri) || 'M', tier: (isWish && P.isTier(pl.PlTier)) ? pl.PlTier : '', see: pl && pl.PlSee ? String(pl.PlSee).split('|').join(', ') : '', note: (pl && pl.PlNote) || '', busy: '' };
@@ -359,71 +363,76 @@ export function openWish(l, iso) {
     psave({ up: { PP_Places: [row] } }, was ? 'Wanderlist edited' : 'Wanderlist added', c.name + (row.PlTier ? ' · ' + row.PlTier : '')); closeSheet(l);
   } });
 }
-/** I'm going: one trip, one or more countries. Exact dates → an upcoming trip, planned in Voyage (not a journey until it ends).
- *  Just the year → each country moves to Going with a year and planned days, as before. t = an upcoming trip to edit. */
-export function openGoing(l, iso, t) {
-  const y0 = new Date().getFullYear(), pl0 = iso ? P.place(iso) : null, oldGo = !t && P.isGoing(pl0);
-  const f = { isos: t ? P.isosOf(t.TrId) : iso ? [iso] : [], mode: t ? 'dates' : oldGo ? 'year' : 'dates', q: '',
-    name: t ? t.TrName : '', start: t ? t.TrStart : '', end: t ? t.TrEnd : '', with: t ? P.withList(t) : ['Solo'],
-    year: oldGo && pl0.PlGoYear ? pl0.PlGoYear : y0 + 1, days: oldGo && pl0.PlGoDays ? String(pl0.PlGoDays) : '' };
-  const yrs = [y0, y0 + 1, y0 + 2, y0 + 3];
-  const taken = () => { const u = new Set(); P.upcoming().filter(x => !t || x.TrId !== t.TrId).forEach(x => P.isosOf(x.TrId).forEach(i => u.add(i))); return u; };
-  const ok = c => c.iso !== P.homeIso() && !f.isos.includes(c.iso) && (f.mode === 'dates' || !P.isVisited(c.iso));
-  const dur = () => (f.start && f.end && f.end >= f.start ? P.daysOf({ TrStart: f.start, TrEnd: f.end }) : 0);
-  openSheet(l, { title: t ? 'Edit upcoming trip' : 'I\'m going', body: () => {
-    const tk = taken(), wl = P.wishlist().filter(p => ok(P.BY[p.PlIso]) && !tk.has(p.PlIso)).slice(0, 8);
-    const sug = f.q.trim() ? P.search(f.q).filter(ok).slice(0, 5) : [], d = dur();
-    return html`<div data-t="goingForm">
-      <div class="llab" style="margin-top:4px">Countries · in the order you go</div>
-      <div class="pgw">${f.isos.map((x, i) => html`<span class="pgoc" data-t=${'goC-' + x}>${Flag(x, 16)}${P.BY[x].name}<b onClick=${() => { f.isos.splice(i, 1); rerender(); }} data-t=${'goX-' + x}>×</b></span>`)}
-        ${f.isos.length ? null : html`<span class="lsub" style="margin:4px 0">Pick one or more.</span>`}</div>
-      ${wl.length ? html`<div class="lsub" style="margin:8px 0 6px">From your Wanderlist</div><div class="pgw">${wl.map(p => html`<span class="pgoc s" onClick=${() => { f.isos.push(p.PlIso); rerender(); }} data-t=${'goW-' + p.PlIso}>+ ${Flag(p.PlIso, 14)}${P.BY[p.PlIso].name}</span>`)}</div>` : null}
-      <div class="psrch" style="margin:8px 0 0"><input placeholder="Search a country" value=${f.q} onInput=${e => { f.q = e.target.value; rerender(); }} data-t="goQ" /></div>
-      ${sug.length ? html`<div class="psug">${sug.map(c => html`<div class="pcr" data-t=${'goAdd-' + c.iso} onClick=${() => { f.isos.push(c.iso); f.q = ''; rerender(); }}>${Flag(c.iso, 18)}<div><div class="t" style="font-size:13.5px">${c.name}</div></div></div>`)}</div>` : null}
-      ${t ? null : html`<div class="llab">When</div>${Seg([['dates', 'Exact dates'], ['year', 'Just the year']], f.mode, k => { f.mode = k; if (k === 'year') f.isos = f.isos.filter(x => !P.isVisited(x)); rerender(); }, 'goMode')}`}
-      ${f.mode === 'dates' ? html`
-        ${P.srvAtLeast('3.11.0') ? null : html`<div class="lwarn" style="margin:10px 0 0" data-t="goOldGs">Update the Apps Script to MansWell 3.11 (paste the new Code.gs, then Deploy › New version) to save trips with dates.</div>`}
-        <div class="llab">Trip name</div><input class="lin" value=${f.name} onInput=${e => { f.name = e.target.value; }} data-t="goName" />
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px">
-          <div><div class="llab">From</div><input class="lin" style="min-width:0;width:100%" type="date" value=${f.start} min=${t ? '' : Today()} onInput=${e => { f.start = e.target.value; if (!f.end || f.end < f.start) f.end = f.start; rerender(); }} data-t="goStart" /></div>
-          <div><div class="llab">To</div><input class="lin" style="min-width:0;width:100%" type="date" value=${f.end} min=${f.start || Today()} onInput=${e => { f.end = e.target.value; rerender(); }} data-t="goEnd" /></div></div>
-        <div class="lnote" style="margin-top:6px" data-t="goDur">${d ? plural(d, 'day') + '. ' : ''}It opens in <b>Voyage</b> now, so you can build the itinerary and add bookings before you go. After the last day it becomes a journey by itself.</div>
-        <div class="llab">Who with · pick one or more</div><div class="pseg" style="grid-template-columns:repeat(5,1fr)">${P.WITH.map(w => html`<span class=${f.with.includes(w) ? 'on' : ''} data-t=${'goWith-' + w} onClick=${() => { f.with = f.with.includes(w) ? f.with.filter(x => x !== w) : P.WITH.filter(x => x === w || f.with.includes(x)); rerender(); }}>${w}</span>`)}</div>`
-      : html`
-        <div class="llab">Year</div>${Seg(yrs.map(y => [y, String(y)]), f.year, k => { f.year = k; rerender(); }, 'goYear')}
-        <div class="llab">Planned days</div><input class="lin" inputmode="numeric" value=${f.days} onInput=${e => { f.days = e.target.value.replace(/\D/g, '').slice(0, 3); }} data-t="goDays" />
-        <div class="lnote" style="margin-top:10px">${f.isos.length > 1 ? 'They move' : 'It moves'} to <b>Going</b>. Set exact dates later to plan it in Voyage.</div>`}
+/** + Add / Edit a dream: one or more countries with one priority, tier, places and notes. It goes to Dreaming. */
+export function openDream(l, d) {
+  const h = d ? d.places[0] : null;
+  const f = { isos: d ? d.isos.slice() : [], q: '', pri: d ? d.pri : 'M', tier: d && P.isTier(d.tier) ? d.tier : '', see: h && h.PlSee ? String(h.PlSee).split('|').join(', ') : '', note: (h && h.PlNote) || '' };
+  const ok = c => c.iso !== P.homeIso() && !P.isVisited(c.iso) && !f.isos.includes(c.iso) && (P.status(c.iso) !== 'wish' || (d && d.isos.includes(c.iso)));
+  openSheet(l, { title: d ? 'Edit · ' + P.dreamName(d) : 'Add to Wanderlist', body: () => {
+    const sug = f.q.trim() ? P.search(f.q).filter(ok).slice(0, 6) : [];
+    return html`<div data-t="wishForm">
+      <div class="llab" style="margin-top:4px">Countries</div>
+      <div class="pgw">${f.isos.map((x, i) => html`<span class="pgoc" data-t=${'dC-' + x}>${Flag(x, 16)}${P.BY[x].name}<b onClick=${() => { f.isos.splice(i, 1); rerender(); }} data-t=${'dX-' + x}>×</b></span>`)}</div>
+      <div class="psrch" style="margin:8px 0 0"><input placeholder=${f.isos.length ? 'Search to add another country' : 'Search a country'} value=${f.q} onInput=${e => { f.q = e.target.value; rerender(); }} data-t="pickQ" /></div>
+      ${sug.length ? html`<div class="psug">${sug.map(c => html`<div class="pcr" data-t=${'pick-' + c.iso} onClick=${() => { f.isos.push(c.iso); f.q = ''; rerender(); }}>${Flag(c.iso, 18)}<div><div class="t" style="font-size:13.5px">${c.name}</div><div class="s">${c.cont}</div></div></div>`)}</div>` : null}
+      <div class="llab">Priority</div>${Seg([['H', 'High'], ['M', 'Medium'], ['L', 'Low']], f.pri, k => { f.pri = k; rerender(); }, 'wPri')}
+      <div class="llab">Tier · budget</div>${TierPicker(f)}
+      <div class="llab">Places to see · separate with commas</div><input class="lin" value=${f.see} onInput=${e => { f.see = e.target.value; }} data-t="wSee" />
+      <div class="llab">Notes</div><textarea class="lin" value=${f.note} onInput=${e => { f.note = e.target.value; }} data-t="wNote"></textarea>
     </div>`;
   },
-  saveLabel: t ? 'Save' : 'Confirm · I\'m going',
-  extra: t ? () => html`<button class="lbtn" style=${`padding:13px 12px;color:${K.red}`} data-t="goCancel" onClick=${() => confirmAsk(l, 'Cancel ' + t.TrName + '?', 'Its countries go back to Dreaming. Anything planned in Voyage stays until you remove it there.', 'Cancel trip', () => { psave({ del: { PP_Trips: [t.TrId], PP_Stops: P.stopsOf(t.TrId).map(s => s.StKey) } }, 'Upcoming trip cancelled', t.TrName); closeSheet(l); })}>Cancel trip</button>`
-    : oldGo ? () => html`<button class="lbtn" style="padding:13px 12px" data-t="goUndo" onClick=${() => { psave({ up: { PP_Places: [{ ...P.place(iso), PlGo: '', PlGoYear: 0, PlGoDays: 0 }] } }, 'Back to dreaming', P.BY[iso].name); closeSheet(l); }}>Not going</button>` : null,
+  saveLabel: d ? 'Save' : 'Add to Dreaming',
   onSave: () => {
     if (!f.isos.length) return Notify('Add at least one country.', 'error');
-    let seq = P.nextSeq();
-    const wishRow = (x, extra) => { const cur = P.place(x), was = cur && cur.PlStatus === 'wish';
-      return { ...(cur || {}), PlIso: x, PlStatus: 'wish', PlPri: (cur && cur.PlPri) || 'M', PlTier: (cur && cur.PlTier) || '', PlSee: (cur && cur.PlSee) || '', PlNote: (cur && cur.PlNote) || '', PlSeq: was && cur.PlSeq ? cur.PlSeq : seq++,
-        PlPhoto: (cur && cur.PlPhoto) || '', PlAdded: was && cur.PlAdded ? cur.PlAdded : Today(), PlFirst: (cur && cur.PlFirst) || '', PlYear: (cur && cur.PlYear) || 0, PlWhy: (cur && cur.PlWhy) || '', ...extra }; };
-    if (f.mode === 'year') {
-      const d = Number(f.days) || 0; if (!d || d > 365) return Notify('Enter how many days you plan.', 'error');
-      const rows = f.isos.map(x => wishRow(x, { PlGo: 'going', PlGoYear: Number(f.year), PlGoDays: d }));
-      psave({ up: { PP_Places: rows } }, 'Going', f.isos.map(x => P.BY[x].name).join(', ') + ' · ' + f.year + ' · ' + d + ' days'); closeSheet(l); return;
-    }
+    if (f.isos.length > 1 && !P.srvAtLeast('3.11.1')) return Notify('Update the Apps Script to MansWell 3.11.1 to keep several countries in one dream.', 'error');
+    const grp = f.isos.length > 1 ? (d && d.group) || newId('DR') : '';
+    let seq = d ? d.seq : P.nextSeq();
+    const rows = f.isos.map(x => { const cur = P.place(x), was = cur && cur.PlStatus === 'wish';
+      return { ...(cur || {}), PlIso: x, PlStatus: 'wish', PlPri: f.pri, PlTier: P.isTier(f.tier) ? f.tier : '', PlSee: f.see.split(',').map(s => s.trim()).filter(Boolean).join('|'), PlNote: f.note.trim(), PlDream: grp,
+        PlSeq: seq++, PlPhoto: (cur && cur.PlPhoto) || '', PlAdded: was && cur.PlAdded ? cur.PlAdded : Today(), PlFirst: (cur && cur.PlFirst) || '', PlYear: (cur && cur.PlYear) || 0, PlWhy: (cur && cur.PlWhy) || '',
+        PlGo: was ? (cur.PlGo || '') : '', PlGoYear: was ? (cur.PlGoYear || 0) : 0, PlGoDays: was ? (cur.PlGoDays || 0) : 0 }; });
+    const dropped = d ? d.places.filter(p => !f.isos.includes(p.PlIso)).map(p => ({ ...p, ...CLEAR })) : [];
+    psave({ up: { PP_Places: [...rows, ...dropped] } }, d ? 'Wanderlist edited' : 'Wanderlist added', f.isos.map(x => P.BY[x].name).join(', ') + (rows[0].PlTier ? ' · ' + rows[0].PlTier : '')); closeSheet(l);
+  } });
+}
+/** What "removed from the Wanderlist" writes on a country. */
+export const CLEAR = { PlStatus: '', PlWhy: '', PlSee: '', PlNote: '', PlYear: 0, PlTier: '', PlGo: '', PlGoYear: 0, PlGoDays: 0, PlDream: '' };
+/** Confirm I'm going: the dream's countries stay as they are; give the trip a name, dates and who with.
+ *  It becomes an upcoming trip (Going + Voyage) and a journey after its end date. */
+export function openGoing(l, d) {
+  if (!d) return;
+  const f = { name: '', start: '', end: '', with: ['Solo'] };
+  const dur = () => (f.start && f.end && f.end >= f.start ? P.daysOf({ TrStart: f.start, TrEnd: f.end }) : 0);
+  openSheet(l, { title: 'I\'m going', body: () => { const n = dur(); return html`<div data-t="goingForm">
+      <div class="llab" style="margin-top:4px">Countries</div>
+      <div class="pgw">${d.isos.map(x => html`<span class="pgoc" data-t=${'goC-' + x}>${Flag(x, 16)}${P.BY[x].name}</span>`)}</div>
+      ${P.srvAtLeast('3.11.0') ? null : html`<div class="lwarn" style="margin:10px 0 0" data-t="goOldGs">Update the Apps Script to MansWell 3.11 (paste the new Code.gs, then Deploy › New version) to confirm trips.</div>`}
+      <div class="llab">Trip name</div><input class="lin" value=${f.name} onInput=${e => { f.name = e.target.value; }} data-t="goName" />
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px">
+        <div><div class="llab">From</div><input class="lin" style="min-width:0;width:100%" type="date" value=${f.start} min=${Today()} onInput=${e => { f.start = e.target.value; if (!f.end || f.end < f.start) f.end = f.start; rerender(); }} data-t="goStart" /></div>
+        <div><div class="llab">To</div><input class="lin" style="min-width:0;width:100%" type="date" value=${f.end} min=${f.start || Today()} onInput=${e => { f.end = e.target.value; rerender(); }} data-t="goEnd" /></div></div>
+      <div class="llab">Who with · pick one or more</div><div class="pseg" style="grid-template-columns:repeat(5,1fr)">${P.WITH.map(w => html`<span class=${f.with.includes(w) ? 'on' : ''} data-t=${'goWith-' + w} onClick=${() => { f.with = f.with.includes(w) ? f.with.filter(x => x !== w) : P.WITH.filter(x => x === w || f.with.includes(x)); rerender(); }}>${w}</span>`)}</div>
+      <div class="lnote" style="margin-top:10px" data-t="goDur">${n ? plural(n, 'day') + '. ' : ''}It moves to <b>Going</b> and opens in <b>Voyage</b> for the itinerary and expenses. After the last day it becomes a journey by itself.</div>
+    </div>`; },
+  saveLabel: 'Confirm · I\'m going',
+  onSave: () => {
     if (!P.srvAtLeast('3.11.0')) return Notify('Update the Apps Script to MansWell 3.11 first.', 'error');
     const name = f.name.trim(); if (!name) return Notify('Give the trip a name.', 'error');
     if (!f.start || !f.end) return Notify('Choose the dates.', 'error');
     if (f.end < f.start) return Notify('The trip ends before it starts.', 'error');
     if (f.end < Today()) return Notify('That trip has already ended. Add it as a journey instead.', 'error');
     if (!f.with.length) return Notify('Choose who you are going with.', 'error');
-    const id = t ? t.TrId : newId('TR');
-    const row = { TrId: id, TrName: name, TrStart: f.start, TrEnd: f.end, TrWith: f.with.join(', '), TrDesc: t ? t.TrDesc || '' : '', TrMoments: '', TrNotes: t ? t.TrNotes || '' : '', TrRoute: '', TrCover: '', TrAdded: t ? t.TrAdded : new Date().toISOString(), TrPlan: 'going' };
-    const keep = f.isos.map((x, i) => ({ StKey: id + '|' + x, StTrip: id, StIso: x, StDays: 0, StSeq: i + 1, StRoute: '' }));
-    const gone = t ? P.stopsOf(id).filter(s => !keep.some(k => k.StKey === s.StKey)).map(s => s.StKey) : [];
-    // countries not visited yet sit on the Wanderlist (shown on the trip's card); a year-only "going" is folded into the trip
-    const places = f.isos.filter(x => !P.isVisited(x)).map(x => wishRow(x, { PlGo: '', PlGoYear: 0, PlGoDays: 0 }));
-    psave({ up: { PP_Trips: [row], PP_Stops: keep, ...(places.length ? { PP_Places: places } : {}) }, del: gone.length ? { PP_Stops: gone } : {} }, t ? 'Upcoming trip edited' : 'Upcoming trip', name + ' · ' + f.isos.join(', ') + ' · ' + f.start);
+    const id = newId('TR');
+    const row = { TrId: id, TrName: name, TrStart: f.start, TrEnd: f.end, TrWith: f.with.join(', '), TrDesc: '', TrMoments: '', TrNotes: '', TrRoute: '', TrCover: '', TrAdded: new Date().toISOString(), TrPlan: 'going' };
+    const keep = d.isos.map((x, i) => ({ StKey: id + '|' + x, StTrip: id, StIso: x, StDays: 0, StSeq: i + 1, StRoute: '' }));
+    const old = d.places.filter(p => P.isGoing(p)).map(p => ({ ...p, PlGo: '', PlGoYear: 0, PlGoDays: 0 })); // a year-only "going" is replaced by the dated trip
+    psave({ up: { PP_Trips: [row], PP_Stops: keep, ...(old.length ? { PP_Places: old } : {}) } }, 'Going', name + ' · ' + d.isos.join(', ') + ' · ' + f.start);
     closeSheet(l);
   } });
+}
+/** Remove an upcoming trip from Going: the trip goes, its countries are back in Dreaming as the same dream. */
+export function removeGoing(l, t) {
+  confirmAsk(l, 'Remove ' + t.TrName + ' from Going?', 'Its countries go back to Dreaming. Anything planned in Voyage stays until you remove it there.', 'Remove', () => psave({ del: { PP_Trips: [t.TrId], PP_Stops: P.stopsOf(t.TrId).map(s => s.StKey) } }, 'Removed from Going', t.TrName));
 }
 
 /* ───────── add / edit a trip ───────── */
