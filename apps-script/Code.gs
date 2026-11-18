@@ -16,6 +16,10 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.13.0 · 219 countries: 14 more (Faroe Islands, Gibraltar …) and Taiwan, Hong Kong … now count as countries (app only; same server code).
+ *
+ * 3.12.0 · England, Scotland, Wales and Northern Ireland as four countries (app only; same server code as 3.11.1).
+ *
  * 3.11.1 · Wanderlist dreams: countries added together stay one Dreaming row (PP_Places gets PlDream, added by itself).
  *
  * 3.11.0 · Upcoming trips: Wanderlist › I'm going can hold several countries with exact dates (PP_Trips gets TrPlan,
@@ -73,7 +77,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.11.1';
+var EW_VERSION = '3.13.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {

@@ -3,10 +3,37 @@
 // Wishlist = you wished for it and it isn't visited. Not yet = everything else. So a country can never be both.
 import { DB, Today } from '../core.js';
 import { COUNTRY_ROWS } from './countries.js';
+import { UK_PARTS } from './ukparts.js';
 
-export const COUNTRIES = COUNTRY_ROWS.map(r => ({ iso: r[0], name: r[1], iso3: r[2], num: r[3], cap: r[4], cont: r[5], cur: r[6], curName: r[7], lat: r[8], lng: r[9], ex: !!r[10] }));
+export const COUNTRIES = COUNTRY_ROWS.map(r => ({ iso: r[0], name: r[1], iso3: r[2], num: r[3], cap: r[4], cont: r[5], cur: r[6], curName: r[7], lat: r[8], lng: r[9], ex: !!r[10] })).sort((a, b) => a.name.localeCompare(b.name, 'en'));
 export const BY = Object.fromEntries(COUNTRIES.map(c => [c.iso, c]));
-export const WORLD_N = COUNTRIES.filter(c => !c.ex).length; // 195
+/** Since 3.12 the United Kingdom is England, Scotland, Wales and Northern Ireland. "GB" stays readable for entries saved
+ *  before (until they are moved, see ukLeft), but it is not on the map, in search or in the count. */
+export const UK = ['GB-ENG', 'GB-SCT', 'GB-WLS', 'GB-NIR'];
+BY.GB = { iso: 'GB', name: 'United Kingdom', iso3: 'GBR', num: '826', cap: 'London', cont: 'Europe', cur: 'GBP', curName: 'British pound', lat: 54, lng: -2, ex: 2, legacy: true };
+/** Google and OpenStreetMap still say "GB": the region to search in for a country of ours. */
+export const regionOf = iso => (String(iso || '').startsWith('GB-') ? 'GB' : iso);
+const inRing = (r, la, lo) => { let c = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const [y1, x1] = r[i], [y2, x2] = r[j]; if ((y1 > la) !== (y2 > la) && lo < (x2 - x1) * (la - y1) / (y2 - y1) + x1) c = !c; } return c; };
+/** Which of the four a point is in (the nearest one for a pin just off the coast). */
+export function ukPartAt(lat, lng) {
+  lat = Number(lat); lng = Number(lng); if (!lat && !lng) return '';
+  for (const k of UK) if (UK_PARTS[k].some(r => inRing(r, lat, lng))) return k;
+  let best = '', bd = 1e9; for (const k of UK) for (const r of UK_PARTS[k]) for (const [y, x] of r) { const d = (y - lat) ** 2 + ((x - lng) * 0.6) ** 2; if (d < bd) { bd = d; best = k; } }
+  return bd < 1 ? best : '';
+}
+/** Entries saved as "United Kingdom" before 3.12 that still need England, Scotland, Wales or Northern Ireland. */
+export function ukLeft() {
+  const tids = new Set(DB.ppStops.filter(s => s.StIso === 'GB').map(s => s.StTrip));
+  return { trips: DB.ppTrips.filter(t => tids.has(t.TrId)), places: DB.ppPlaces.filter(p => p.PlIso === 'GB' && (p.PlStatus === 'wish' || p.PlStatus === 'been')),
+    stops: DB.lbStops.filter(s => s.LpCountry === 'GB'), junk: DB.ppPlaces.filter(p => p.PlIso === 'GB' && p.PlStatus !== 'wish' && p.PlStatus !== 'been') };
+}
+const UK_NAME = { england: 'GB-ENG', scotland: 'GB-SCT', wales: 'GB-WLS', cymru: 'GB-WLS', 'northern ireland': 'GB-NIR' };
+/** A search result's country code → ours: "GB" becomes the part (from its province name, else its pin). */
+export function ccToIso(cc, prov, lat, lng) {
+  cc = String(cc || '').toUpperCase(); if (cc !== 'GB') return BY[cc] && !BY[cc].legacy ? cc : '';
+  return UK_NAME[String(prov || '').trim().toLowerCase()] || ukPartAt(lat, lng) || '';
+}
+export const WORLD_N = COUNTRIES.filter(c => !c.ex).length; // 219: every place in Atlas counts as a country (3.13)
 export const CONTINENTS = ['Africa', 'Antarctica', 'Asia', 'Europe', 'North America', 'Oceania', 'South America'];
 export const WITH = ['Solo', 'Family', 'Friends', 'Partner', 'Other'];
 /** Who you went with: one or more, stored as "Solo, Friends". */
@@ -79,7 +106,7 @@ export const visitedList = () => COUNTRIES.filter(c => isVisited(c.iso) && c.iso
 export const wishlist = () => DB.ppPlaces.filter(p => p.PlStatus === 'wish' && !isVisited(p.PlIso) && BY[p.PlIso]).sort((a, b) => (a.PlSeq || 0) - (b.PlSeq || 0) || (a.PlAdded || '').localeCompare(b.PlAdded || ''));
 export const nextSeq = () => DB.ppPlaces.reduce((m, p) => Math.max(m, Number(p.PlSeq) || 0), 0) + 1;
 
-/** Overview numbers. Countries = the 195; places like Taiwan or Hong Kong are counted apart. Home isn't counted. */
+/** Overview numbers. Countries = all 219 (Taiwan, Faroe Islands … count too). Home isn't counted. */
 export function stats() {
   const v = visitedList(), countries = v.filter(c => !c.ex), extra = v.filter(c => c.ex);
   const conts = new Set(v.map(c => c.cont));
@@ -107,10 +134,12 @@ export function stampOf(iso) { let h = 0; for (const ch of iso) h = (h * 31 + ch
 
 /* search */
 const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const UK_ALIAS = ['uk', 'united kingdom', 'britain', 'great britain', 'gb', 'gbr'];
 export function search(q, f = {}) {
   const k = fold(q).trim();
-  return COUNTRIES.filter(c => (!k || fold(c.name).includes(k) || c.iso.toLowerCase() === k || c.iso3.toLowerCase() === k || fold(c.cap).includes(k))
-    && (!f.cont || c.cont === f.cont) && (!f.st || status(c.iso) === f.st));
+  return COUNTRIES.filter(c => (!k || fold(c.name).includes(k) || c.iso.toLowerCase() === k || c.iso3.toLowerCase() === k || fold(c.cap).includes(k) || (c.iso.startsWith('GB-') && k.length > 1 && UK_ALIAS.some(a => a.startsWith(k))))
+    && (!f.cont || c.cont === f.cont) && (!f.st || status(c.iso) === f.st))
+    .map((c, i) => [k && fold(c.name).startsWith(k) ? 0 : k && c.iso.startsWith('GB-') && UK_ALIAS.some(a => a.startsWith(k)) ? 1 : k && fold(c.name).includes(k) ? 2 : 3, i, c]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(x => x[2]);
 }
 
 /* ───────── Wanderlist: tiers and "I'm going" ───────── */

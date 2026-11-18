@@ -1,4 +1,16 @@
-# MansWell · v3.11.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.13.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.13.0 · 219 countries
+- 14 more countries: Faroe Islands, Gibraltar, Isle of Man, Jersey, Guernsey, Åland, Svalbard, Bermuda, Aruba, Curaçao, Cayman Islands, Guam, French Polynesia, New Caledonia. Each has its flag, map spot (a dot on the world map, its shape when zoomed), Visited / Wanderlist and its currency in Voyage. Svalbard is drawn apart from Norway.
+- Taiwan, Hong Kong, Macau, Greenland, Kosovo, Puerto Rico and Antarctica now count as countries too (no more "+ places"). The world count is 219.
+- Upload: all files in Step 1 (14 new flags in flags/). Code.gs: version number only.
+
+## 3.12.0 · England, Scotland, Wales, Northern Ireland
+- The United Kingdom is now four countries in Atlas and Voyage: own map shapes, flags (Northern Ireland: the Ulster Banner, as its football team uses), Visited / Wanderlist and journeys. All use GBP.
+- The world count is 198. Searching "uk", "britain" or "united kingdom" shows all four.
+- Voyage: Google and OpenStreetMap still say "GB"; a picked place goes to the right one (from its province name, else its pin).
+- Anything saved as United Kingdom before shows a note once ("… need a home"): pick one or more for each journey and Wanderlist entry. Voyage stops with a pin move by themselves, and route places follow their pins (London → England, Edinburgh → Scotland).
+- Upload: all files in Step 1 (4 new flags in flags/, js/passport/ukparts.js). Code.gs: version number only.
 
 ## 3.11.1 · Wanderlist: Add → Dreaming → Confirm → Going
 - One "+ Add" button. A dream can hold one or more countries with one priority, tier, places and notes; it goes to Dreaming as one row (flags on one line, names below).

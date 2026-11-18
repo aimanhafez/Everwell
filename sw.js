@@ -3,11 +3,11 @@
  * Passport photo previews you have opened are kept in 'manswell-pp-photos' (kept across updates).
  * Voyage map files (js/logbook/geo) are kept the first time a map is opened.
  * Change CACHE whenever you upload new files so phones pick them up. */
-var CACHE = 'manswell-3.11.1-1';
+var CACHE = 'manswell-3.13.0-1';
 var SHELL = ['./', 'index.html', 'styles.css', 'manifest.webmanifest', 'js/main.js', 'js/core.js', 'js/shared.js', 'js/sweep.js', 'js/logo.js',
   'js/screens/home.js', 'js/screens/accounts.js', 'js/screens/transactions.js', 'js/screens/more.js', 'js/screens/import.js', 'js/screens/dreamer.js', 'js/screens/payslip.js', 'js/screens/yearclose.js', 'js/payslip-data.js', 'js/backup.js', 'js/vendor/xlsx.mini.min.js', 'js/vendor/preact-htm.js',
   'js/lens/engine.js', 'js/lens/ui.js', 'js/lens/pnl.js', 'js/lens/assets.js', 'js/lens/plan.js', 'js/lens/budget.js', 'js/lens/settings.js', 'js/lens/guide.js', 'js/theme.js',
-  'js/passport/engine.js', 'js/passport/ui.js', 'js/passport/screens.js', 'js/passport/photos.js', 'js/passport/countries.js', 'js/passport/geo.js', 'js/passport/insights.js', 'js/passport/summary.js',
+  'js/passport/engine.js', 'js/passport/ui.js', 'js/passport/screens.js', 'js/passport/photos.js', 'js/passport/countries.js', 'js/passport/geo.js', 'js/passport/ukparts.js', 'js/passport/insights.js', 'js/passport/summary.js',
   'js/logbook/engine.js', 'js/logbook/ui.js', 'js/logbook/screens.js', 'js/logbook/map.js', 'js/logbook/icons.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/manswell.svg'];
 self.addEventListener('install', function (e) {

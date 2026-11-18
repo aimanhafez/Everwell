@@ -200,7 +200,7 @@ export function PlaceField(f, o = {}) {
   const run = async v => {
     if (f.used >= PER_SEARCH) { f.full = true; return rerender(); }
     const tok = ++SUG.n; f.look = true; rerender();
-    const res = await call('lbPlaces', { q: String(v).trim(), session: f.ses, country: (P.BY[f.country] || {}).name || '', region: f.country || '', near: o.near || null }, true);
+    const res = await call('lbPlaces', { q: String(v).trim(), session: f.ses, country: (P.BY[f.country] || {}).name || '', region: P.regionOf(f.country) || '', near: o.near || null }, true);
     if (tok !== SUG.n) return; f.look = false;
     if (!res) { f.sug = []; return rerender(); }
     if (res.use) DB.lbPlaces = res.use;
@@ -217,11 +217,11 @@ export function PlaceField(f, o = {}) {
       f.ses = newSession(); f.used = 0; f.full = false;
       if (!d) return rerender();
       if (d.use) DB.lbPlaces = d.use;
-      f.place = x.name || f.place; f.city = d.city || f.city; f.prov = d.prov || ''; if (d.cc && P.BY[d.cc]) f.country = d.cc;
+      f.place = x.name || f.place; f.city = d.city || f.city; f.prov = d.prov || ''; { const k = P.ccToIso(d.cc, d.prov, d.lat, d.lng); if (k) f.country = k; }
       f.pin = { lat: d.lat, lng: d.lng, addr: d.addr, exact: true }; return rerender();
     }
     // free search: the name you typed stays
-    if (!f.place.trim()) f.place = x.name; if (x.city) f.city = x.city; f.prov = x.prov || f.prov || ''; if (x.cc && P.BY[x.cc]) f.country = x.cc;
+    if (!f.place.trim()) f.place = x.name; if (x.city) f.city = x.city; f.prov = x.prov || f.prov || ''; { const k = P.ccToIso(x.cc, x.prov, x.lat, x.lng); if (k) f.country = k; }
     f.pin = { lat: x.lat, lng: x.lng, addr: x.addr, area: !!x.area }; rerender();
   };
   return html`<div>
@@ -310,7 +310,7 @@ export function openPins(l, id, day, focus) {
   if (!focus && list.length > 1 && list.every(L.hasPin)) return guard(async () => { if (canWrite()) await makeTrack(id, day, list.map(s => ({ ...s, LpLat: Number(s.LpLat), LpLng: Number(s.LpLng) }))); });
   const f = { busy: false, rows: list.map((s, i) => ({ s, q: qOf(s), res: L.hasPin(s) ? [{ lat: Number(s.LpLat), lng: Number(s.LpLng), addr: s.LpAddr || 'Saved pin' }] : [], pick: L.hasPin(s) ? 0 : -1, st: L.hasPin(s) ? 'have' : 'wait', open: !!(focus && focus.includes(i)), man: '' })) };
   const find = async r => { r.st = 'look'; rerender(); const i = f.rows.indexOf(r), pv = f.rows[i - 1] && f.rows[i - 1].pick >= 0 ? f.rows[i - 1].res[f.rows[i - 1].pick] : null;
-    const res = await call('lbGeocode', { q: r.q, country: (P.BY[r.s.LpCountry] || {}).name || '', region: r.s.LpCountry || '', near: pv ? { lat: pv.lat, lng: pv.lng } : null }); r.res = res || []; r.pick = r.res.length ? 0 : -1; r.st = !res ? 'err' : r.res.length ? (r.res.length > 1 ? 'many' : 'sure') : 'none'; rerender(); };
+    const res = await call('lbGeocode', { q: r.q, country: (P.BY[r.s.LpCountry] || {}).name || '', region: P.regionOf(r.s.LpCountry) || '', near: pv ? { lat: pv.lat, lng: pv.lng } : null }); r.res = res || []; r.pick = r.res.length ? 0 : -1; r.st = !res ? 'err' : r.res.length ? (r.res.length > 1 ? 'many' : 'sure') : 'none'; rerender(); };
   (async () => { for (const r of f.rows) if (r.st === 'wait') await find(r); })();
   const pinOf = r => (r.pick >= 0 && r.res[r.pick] ? r.res[r.pick] : null);
   openSheet(l, { title: 'Places found · Day ' + day, body: () => {

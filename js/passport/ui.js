@@ -148,12 +148,64 @@ function Nav(active) {
       ${I(52 + i * 130, { b: 41 }, 26, 26, ic, i === active ? K.or : K.mute, { pad: 4, onClick: () => go(scr), label: 'Atlas ' + lb })}
       <div class="abs" style=${`left:${i * 130}px;bottom:25px;width:130px;height:14px;text-align:center;font-size:10px;letter-spacing:.3px;font-weight:${i === active ? 600 : 400};color:${i === active ? K.or : K.mute};cursor:pointer`} onClick=${() => go(scr)}>${lb}</div>`)}`;
 }
+/* ───────── the United Kingdom is now four countries (3.12): move entries saved before ───────── */
+function UkNote(l) {
+  const u = P.ukLeft(), n = u.trips.length + u.places.length;
+  if (!n && !u.junk.length && !u.stops.length) return null;
+  if (!n) { setTimeout(() => moveUk(l, {}, true), 0); return null; } // only bookkeeping left (Voyage pins, blank rows): done quietly
+  return html`<div class="lwarn" data-t="ppUkNote" style="cursor:pointer" onClick=${() => openUkMove(l)}>The United Kingdom is now England, Scotland, Wales and Northern Ireland. ${plural(n, 'entry')} saved as United Kingdom ${n === 1 ? 'needs' : 'need'} a home. <b class="lor">Choose ›</b></div>`;
+}
+const UKN = { 'GB-ENG': 'England', 'GB-SCT': 'Scotland', 'GB-WLS': 'Wales', 'GB-NIR': 'N. Ireland' };
+/** Which parts a journey's Voyage pins fall in. */
+const pinParts = tid => P.UK.filter(k => DB.lbStops.some(s => s.LpTrip === tid && s.LpCountry === 'GB' && P.ukPartAt(s.LpLat, s.LpLng) === k));
+export function openUkMove(l) {
+  const u = P.ukLeft(), pick = {};
+  u.trips.forEach(t => { pick['t:' + t.TrId] = pinParts(t.TrId); });
+  u.places.forEach(p => { pick['p'] = []; });
+  const Chips = k => html`<div class="pgw" style="margin-top:8px">${P.UK.map(x => { const on = pick[k].includes(x); return html`<span class=${'pgoc' + (on ? '' : ' s')} data-t=${'uk-' + k + '-' + x} onClick=${() => { pick[k] = on ? pick[k].filter(y => y !== x) : P.UK.filter(y => y === x || pick[k].includes(y)); rerender(); }}>${Flag(x, 14)}${UKN[x]}${on ? ' ✓' : ''}</span>`; })}</div>`;
+  openSheet(l, { title: 'Where was this?', body: () => html`<div data-t="ukMove">
+      <div class="lnote" style="margin-top:0">Saved as United Kingdom before it became four countries. Pick one or more for each.</div>
+      ${u.trips.map(t => html`<div class="llab">Journey · ${t.TrName}</div>${Chips('t:' + t.TrId)}${pinParts(t.TrId).length ? html`<div class="lnote" style="margin-top:4px">Picked from your Voyage pins.</div>` : null}`)}
+      ${u.places.length ? html`<div class="llab">${u.places[0].PlStatus === 'wish' ? 'Wanderlist' : 'Visited before'} · United Kingdom</div>${Chips('p')}` : null}
+      <div class="lnote" style="margin-top:12px">Voyage stops with a pin go to the part they are in. Expenses stay in GBP.</div></div>`,
+  saveLabel: 'Save',
+  onSave: () => {
+    const miss = Object.keys(pick).find(k => !pick[k].length);
+    if (miss) return Notify('Pick at least one for each.', 'error');
+    moveUk(l, pick); closeSheet(l);
+  } });
+}
+function moveUk(l, pick, quiet) {
+  const u = P.ukLeft(), up = { PP_Stops: [], PP_Places: [], LB_Stops: [] }, del = { PP_Stops: [], PP_Places: [] };
+  u.trips.forEach(t => {
+    const parts = pick['t:' + t.TrId] || []; if (!parts.length) return;
+    const st = P.stopsOf(t.TrId), out = [];
+    // places on the route go with the part their Voyage pin is in (London → England, Edinburgh → Scotland); the rest stay with the first
+    const lb = DB.lbStops.filter(x => x.LpTrip === t.TrId), partOfPlace = nm => { const q = String(nm).trim().toLowerCase(), m = lb.find(x => [x.LpCity, x.LpPlace].some(v => String(v || '').trim().toLowerCase() === q)); const k = m ? P.ukPartAt(m.LpLat, m.LpLng) : ''; return parts.includes(k) ? k : parts[0]; };
+    st.forEach(s => { if (s.StIso !== 'GB') { out.push(s); return; } del.PP_Stops.push(s.StKey); const pl = P.splitPlaces(s.StRoute || '');
+      parts.forEach((x, i) => { if (!st.some(o => o.StIso === x)) out.push({ ...s, StKey: t.TrId + '|' + x, StIso: x, StDays: i ? 0 : s.StDays, StRoute: pl.filter(n => partOfPlace(n) === x).join(', ') }); }); });
+    out.forEach((s, i) => up.PP_Stops.push({ ...s, StSeq: i + 1 }));
+  });
+  u.places.forEach(p => {
+    const parts = pick['p'] || []; if (!parts.length) return;
+    const grp = parts.length > 1 && p.PlStatus === 'wish' ? p.PlDream || newId('DR') : p.PlDream || '';
+    parts.forEach(x => { const cur = P.place(x); if (cur && (cur.PlStatus === 'wish' || cur.PlStatus === 'been')) return; up.PP_Places.push({ ...p, PlIso: x, PlDream: grp }); });
+    del.PP_Places.push('GB');
+  });
+  u.junk.forEach(() => { if (!del.PP_Places.includes('GB')) del.PP_Places.push('GB'); });
+  const first = {}; u.trips.forEach(t => { first[t.TrId] = (pick['t:' + t.TrId] || [])[0]; });
+  u.stops.forEach(s => { const k = P.ukPartAt(s.LpLat, s.LpLng) || first[s.LpTrip] || (P.stopsOf(s.LpTrip).map(x => x.StIso).find(x => P.UK.includes(x))) || ''; if (k) up.LB_Stops.push({ ...s, LpCountry: k }); });
+  Object.keys(up).forEach(k => { if (!up[k].length) delete up[k]; }); Object.keys(del).forEach(k => { if (!del[k].length) delete del[k]; });
+  if (!Object.keys(up).length && !Object.keys(del).length) return;
+  if (quiet) { if (!DB.ppOk || G.ukQuiet) return; G.ukQuiet = 1; save({ up, del }); return; }
+  psave({ up, del }, 'United Kingdom → four countries', Object.values(pick).map(a => a.join('+')).join(', '));
+}
 export function Page(l, active, kids, id) {
   if (G.ppOpenSettings) { G.ppOpenSettings = false; setTimeout(() => openSettings(l), 0); }
   return html`<div>
     <style>${css()}</style>
     ${Header(l)}
-    <div class="lz" data-t=${id} id=${id}>${UpdateNote()}${kids}</div>
+    <div class="lz" data-t=${id} id=${id}>${UpdateNote()}${UkNote(l)}${kids}</div>
     ${Nav(active)}
     ${Sheet(l)}${Confirm(l)}${Viewer(l)}
     ${PasswordDialog(l)}
