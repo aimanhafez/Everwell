@@ -53,7 +53,9 @@ export function parseDur(t) {
 }
 
 /* ───────── journeys (from Atlas only) ───────── */
-export const journeys = () => P.trips();
+/** Upcoming trips (from Wanderlist) first, then completed journeys. */
+export const journeys = () => [...P.upcoming(), ...P.trips()];
+export const isUpcoming = t => P.isUpcoming(t);
 export const journey = id => P.trip(id);
 export function days(t) {
   const n = P.daysOf(t), out = []; if (!n) return out;

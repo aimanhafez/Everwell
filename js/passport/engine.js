@@ -36,7 +36,13 @@ export const prow = (k, v) => ({ PsetKey: k, PsetVal: JSON.stringify(v) });
 export const homeIso = () => pget('home', 'MY');
 
 /* trips, stops, places */
-export const trips = () => DB.ppTrips.slice().sort((a, b) => (b.TrStart || '').localeCompare(a.TrStart || '') || (b.TrAdded || '').localeCompare(a.TrAdded || ''));
+/** A trip confirmed in Wanderlist (TrPlan 'going') stays upcoming until its end date has passed; then it is a normal, completed journey. */
+export const isUpcoming = t => !!t && t.TrPlan === 'going' && String(t.TrEnd || t.TrStart || '').slice(0, 10) >= Today();
+const done = () => DB.ppTrips.filter(t => !isUpcoming(t));
+/** Upcoming trips (Wanderlist › Going and Voyage only), soonest first. */
+export const upcoming = () => DB.ppTrips.filter(isUpcoming).sort((a, b) => (a.TrStart || '').localeCompare(b.TrStart || ''));
+/** Completed journeys only (Atlas › Journeys, Odyssey, insights). */
+export const trips = () => done().sort((a, b) => (b.TrStart || '').localeCompare(a.TrStart || '') || (b.TrAdded || '').localeCompare(a.TrAdded || ''));
 export const trip = id => DB.ppTrips.find(t => t.TrId === id) || null;
 export const stopsOf = id => DB.ppStops.filter(s => s.StTrip === id).sort((a, b) => (a.StSeq || 0) - (b.StSeq || 0));
 export const isosOf = id => stopsOf(id).map(s => s.StIso);
@@ -48,9 +54,9 @@ export const coverOf = t => (t && t.TrCover && DB.ppPhotos.find(p => p.PhId === 
 /** iso → 'visited' | 'wish' | 'none' (home is 'home' for the map only) */
 let memo = { sig: '', st: null };
 function statusMap() {
-  const sig = DB.ppStops.length + '|' + DB.ppPlaces.map(p => p.PlIso + p.PlStatus).join(',') + '|' + DB.ppTrips.length + '|' + DB.ppStops.map(s => s.StKey).join(',');
+  const sig = DB.ppStops.length + '|' + DB.ppPlaces.map(p => p.PlIso + p.PlStatus).join(',') + '|' + DB.ppTrips.map(t => t.TrId + (isUpcoming(t) ? 'u' : '')).join(',') + '|' + DB.ppStops.map(s => s.StKey).join(',');
   if (memo.sig === sig) return memo.st;
-  const st = {}, tripIds = new Set(DB.ppTrips.map(t => t.TrId));
+  const st = {}, tripIds = new Set(done().map(t => t.TrId));
   for (const p of DB.ppPlaces) if (p.PlStatus === 'wish') st[p.PlIso] = 'wish';
   for (const p of DB.ppPlaces) if (p.PlStatus === 'been') st[p.PlIso] = 'visited';
   for (const s of DB.ppStops) if (tripIds.has(s.StTrip)) st[s.StIso] = 'visited';
@@ -120,8 +126,12 @@ export const isTier = c => /^(S[1-3]|[ABCD][1-4])$/.test(String(c || ''));
 export const tierText = c => !isTier(c) ? '' : c[0] === 'S' ? S_LEVELS[c] : LENGTHS[c[1]] + ' · ' + TIER_BUDGET[c[0]];
 export const tierRank = c => (isTier(c) ? TIER_LETTERS.indexOf(c[0]) * 10 + Number(c[1]) : 999);
 export const isGoing = p => !!p && p.PlGo === 'going';
-export const going = () => wishlist().filter(isGoing).sort((a, b) => (a.PlGoYear || 9999) - (b.PlGoYear || 9999) || (a.PlSeq || 0) - (b.PlSeq || 0));
-export const dreaming = () => wishlist().filter(p => !isGoing(p));
+/** Countries already inside an upcoming trip (they show on the trip's card, not as their own rows). */
+export const upIsos = () => new Set(upcoming().flatMap(t => isosOf(t.TrId)));
+/** Days until an upcoming trip starts (0 = on the road now). */
+export const daysTo = t => Math.max(0, Math.round((d0(t.TrStart) - d0(Today())) / 864e5));
+export const going = () => { const u = upIsos(); return wishlist().filter(p => isGoing(p) && !u.has(p.PlIso)).sort((a, b) => (a.PlGoYear || 9999) - (b.PlGoYear || 9999) || (a.PlSeq || 0) - (b.PlSeq || 0)); };
+export const dreaming = () => { const u = upIsos(); return wishlist().filter(p => !isGoing(p) && !u.has(p.PlIso)); };
 
 /* ───────── route: places per country ───────── */
 export const splitPlaces = t => String(t || '').split(/\s*(?:,|→|->|;|\n)\s*/).map(s => s.trim()).filter(Boolean);

@@ -18,6 +18,7 @@ export const css = () => atlasCss() + routeCardCss() + `
 .lbsw b{display:block;font-size:12px;font-weight:800;letter-spacing:1.2px;color:${K.text};text-transform:uppercase}.lbsw span{display:block;font-size:11px;color:${K.sub};margin-top:2px}.lbsw em{margin-left:auto;font-style:normal;color:${K.or};font-size:13px}
 .lbj{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid ${K.sep};cursor:pointer}.lbj:first-child{border-top:0;padding-top:2px}.lbj:last-child{padding-bottom:2px}
 .lbj .t{font-size:14.5px;font-weight:600;color:${K.text}}.lbj .s{font-size:11.5px;color:${K.sub};margin-top:2px}.lbj .r{text-align:right}.lbj .r b{display:block;font-size:13.5px;color:${K.text}}.lbj .r span{font-size:11px;color:${K.sub}}
+.lbup{font-size:8.5px;font-weight:800;letter-spacing:.8px;padding:3px 7px;border-radius:99px;color:${K.or};background:${oa(.13)};vertical-align:2px;margin-left:4px}
 .lbtag{display:inline-block;font-size:8.5px;font-weight:700;letter-spacing:.6px;padding:3px 6px;border-radius:5px;margin:5px 4px 0 0;color:${K.mute};box-shadow:inset 0 0 0 1px ${K.line2}}.lbtag.on{color:${K.or};background:${oa(.12)};box-shadow:none}
 .lbday{display:flex;gap:6px;margin:0 12px 10px;overflow-x:auto;scrollbar-width:none}.lbday::-webkit-scrollbar{display:none}
 .lbday span{flex:none;position:relative;font-size:12px;font-weight:600;color:${K.sub};padding:8px 12px;border-radius:11px;box-shadow:inset 0 0 0 1px ${K.line2};cursor:pointer}.lbday span.on{background:${K.or};color:${K.onAcc};box-shadow:none}
@@ -165,7 +166,7 @@ export function Switcher(l, t) {
 }
 function openSwitch(l) {
   openSheet(l, { title: 'Choose a journey', body: () => html`<div>${L.journeys().map(t => html`<div class="pcr" onClick=${() => { setCur(t.TrId); closeSheet(l); }} data-t=${'lbPick-' + t.TrId}>
-    <div style="display:flex;gap:2px">${P.isosOf(t.TrId).slice(0, 1).map(iso => Flag(iso, 18))}</div><div><div class="t">${t.TrName}</div><div class="s">${P.range(t.TrStart, t.TrEnd)}</div></div>
+    <div style="display:flex;gap:2px">${P.isosOf(t.TrId).slice(0, 1).map(iso => Flag(iso, 18))}</div><div><div class="t">${t.TrName}${L.isUpcoming(t) ? html` <span class="lbup">UPCOMING</span>` : null}</div><div class="s">${P.range(t.TrStart, t.TrEnd)}</div></div>
     ${cur() && cur().TrId === t.TrId ? html`<span class="lor">✓</span>` : html`<span></span>`}</div>`)}
     <div class="lnote" style="margin-top:10px">Journeys are added, renamed and re-dated in Atlas. Voyage follows.</div></div>` });
 }

@@ -16,6 +16,9 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.11.0 · Upcoming trips: Wanderlist › I'm going can hold several countries with exact dates (PP_Trips gets TrPlan,
+ *   added to your Sheet by itself). The trip is planned in Voyage and becomes a journey after its end date.
+ *
  * 3.10.0 · Atlas: per trip / per day, most spent against budget, rides (motorbike), travel insights. Same server code.
  *
  * 3.9.0 · Atlas summary from Voyage (Odyssey cards, badges, country overview, journey numbers, route, spending).
@@ -68,7 +71,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.10.2';
+var EW_VERSION = '3.11.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -93,7 +96,7 @@ var TABLES = {
   // MansWell Passport (travel): its own tabs, never linked to money.
   PP_Settings: { key: 'PsetKey', cols: { PsetKey: 's', PsetVal: 's' } },
   PP_Places: { key: 'PlIso', cols: { PlIso: 's', PlStatus: 's', PlPri: 's', PlYear: 'n', PlWhy: 's', PlSee: 's', PlNote: 's', PlSeq: 'n', PlPhoto: 's', PlAdded: 'd', PlFirst: 's', PlTier: 's', PlGo: 's', PlGoYear: 'n', PlGoDays: 'n' } },
-  PP_Trips: { key: 'TrId', cols: { TrId: 's', TrName: 's', TrStart: 'd', TrEnd: 'd', TrWith: 's', TrDesc: 's', TrMoments: 's', TrNotes: 's', TrRoute: 's', TrCover: 's', TrAdded: 't' } },
+  PP_Trips: { key: 'TrId', cols: { TrId: 's', TrName: 's', TrStart: 'd', TrEnd: 'd', TrWith: 's', TrDesc: 's', TrMoments: 's', TrNotes: 's', TrRoute: 's', TrCover: 's', TrAdded: 't', TrPlan: 's' } },
   PP_Stops: { key: 'StKey', cols: { StKey: 's', StTrip: 's', StIso: 's', StDays: 'n', StSeq: 'n', StRoute: 's' } },
   PP_Photos: { key: 'PhId', cols: { PhId: 's', PhTrip: 's', PhFile: 's', PhW: 'n', PhH: 'n', PhTaken: 'd', PhCap: 's', PhSeq: 'n' } },
   PP_Thumbs: { key: 'ThId', cols: { ThId: 's', ThData: 's' } },

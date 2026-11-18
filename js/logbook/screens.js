@@ -12,9 +12,14 @@ const setDay = (t, d) => { (G.lbDayOf = G.lbDayOf || {})[t.TrId] = d; rerender()
 const badge = (i, n) => (i === 0 ? 's' : i === n - 1 && n > 1 ? 'e' : '');
 
 /* ───────── Journeys ───────── */
+const JRow = (t, x, up) => html`<div class="lbj" onClick=${() => { setCur(t.TrId); go('scrLbItinerary'); }} data-t=${'lbJ-' + t.TrId}>
+          ${Ring(L.completeness(t.TrId), 44)}
+          <div style="min-width:0"><div class="t">${t.TrName}${up ? html` <span class="lbup" data-t=${'lbUp-' + t.TrId}>UPCOMING</span>` : null}</div><div class="s">${P.range(t.TrStart, t.TrEnd)} · ${plural(x.days, 'day')}</div>
+            <div><span class=${'lbtag' + (x.filled.itin ? ' on' : '')}>ITINERARY</span><span class=${'lbtag' + (x.filled.exp ? ' on' : '')}>EXPENSES</span><span class=${'lbtag' + (x.filled.disc ? ' on' : '')}>DISCOVERY</span></div></div>
+          <div class="r"><b>${x.spent ? L.RM(x.spent) : '—'}</b><span>${x.km ? L.n0(x.km) + ' km' : '—'}</span></div></div>`;
 export const scrLbJourneys = {
   view(l) {
-    const ts = L.journeys(), tot = ts.map(t => L.lbTotals(t.TrId)), orph = L.orphans(), nOrph = Object.values(orph).reduce((s, a) => s + a.length, 0);
+    const all = L.journeys(), ups = all.filter(L.isUpcoming), ts = all.filter(t => !L.isUpcoming(t)), tot = ts.map(t => L.lbTotals(t.TrId)), orph = L.orphans(), nOrph = Object.values(orph).reduce((s, a) => s + a.length, 0);
     const spent = tot.reduce((s, x) => s + x.spent, 0), km = tot.reduce((s, x) => s + x.km, 0), cnt = k => tot.filter(x => x.filled[k]).length;
     return Page(l, 0, html`
       <div class="ppass" data-t="lbHero"><span class="lcap">All journeys · logged</span>
@@ -23,13 +28,10 @@ export const scrLbJourneys = {
         <div class="g3"><div><span class="lcap">Itinerary</span><b data-t="lbNItin">${cnt('itin')} of ${ts.length}</b></div><div><span class="lcap">Expenses</span><b data-t="lbNExp">${cnt('exp')} of ${ts.length}</b></div><div><span class="lcap">Discovery</span><b data-t="lbNDisc">${cnt('disc')} of ${ts.length}</b></div></div></div>
       ${nOrph ? html`<div class="lwarn" data-t="lbOrphan">${plural(nOrph, 'Voyage detail')} belong to a journey deleted in Atlas.
         <span class="lor" style="cursor:pointer;font-weight:700;margin-left:4px" data-t="lbOrphanDel" onClick=${() => confirmAsk(l, 'Remove the leftover details?', 'Stops, tracks, expenses, budget and discoveries of journeys deleted in Atlas are removed. Your other journeys are not touched.', 'Remove', () => lbsave({ del: orph }, 'Leftovers removed', nOrph + ' rows'))}>Remove ›</span></div>` : null}
-      ${!ts.length ? Empty('No journeys yet', 'Journeys start in Atlas. Add one there and it shows up here, ready for its itinerary, expenses and discoveries.') : html`
+      ${ups.length ? html`${Sect('Upcoming', 'from Wanderlist')}<div class="lc" data-t="lbUpList">${ups.map(t => JRow(t, L.lbTotals(t.TrId), true))}</div>` : null}
+      ${!ts.length && !ups.length ? Empty('No journeys yet', 'Journeys start in Atlas. Add one there, or confirm an upcoming trip with dates in Wanderlist, and it shows up here, ready for its itinerary, expenses and discoveries.') : !ts.length ? null : html`
         ${Sect('Journeys', 'from Atlas')}
-        <div class="lc" data-t="lbList">${ts.map((t, i) => { const x = tot[i]; return html`<div class="lbj" onClick=${() => { setCur(t.TrId); go('scrLbItinerary'); }} data-t=${'lbJ-' + t.TrId}>
-          ${Ring(L.completeness(t.TrId), 44)}
-          <div style="min-width:0"><div class="t">${t.TrName}</div><div class="s">${P.range(t.TrStart, t.TrEnd)} · ${plural(x.days, 'day')}</div>
-            <div><span class=${'lbtag' + (x.filled.itin ? ' on' : '')}>ITINERARY</span><span class=${'lbtag' + (x.filled.exp ? ' on' : '')}>EXPENSES</span><span class=${'lbtag' + (x.filled.disc ? ' on' : '')}>DISCOVERY</span></div></div>
-          <div class="r"><b>${x.spent ? L.RM(x.spent) : '—'}</b><span>${x.km ? L.n0(x.km) + ' km' : '—'}</span></div></div>`; })}</div>
+        <div class="lc" data-t="lbList">${ts.map((t, i) => JRow(t, tot[i], false))}</div>
         <div class="lnote" style="margin:0 18px 14px">Add a journey in Atlas and it shows up here. Rename it or change its dates in Atlas and Voyage follows.</div>`}
     `, 'scrLbJourneys');
   }

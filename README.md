@@ -1,4 +1,12 @@
-# MansWell · v3.10.2 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.11.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.11.0 · Upcoming trips
+- Wanderlist › I'm going: one trip can hold several countries (from your Wanderlist or search). Choose Exact dates or Just the year.
+- With exact dates it is an upcoming trip: one card under Going (countries, dates, "in n days", what's planned) and it opens in Voyage straight away (Upcoming section, UPCOMING tag) for the itinerary, budget and bookings.
+- Atlas › Journeys stays for completed trips. An upcoming trip doesn't count in Odyssey, badges, rides or spending; after its end date it becomes a journey by itself and its countries turn Visited.
+- Tap the card to edit it or Cancel trip (countries go back to Dreaming; Voyage offers to remove what was planned).
+- Journey page › Expenses: icons only (no category names) and every amount on one line; 5–6 kinds go in two rows of 3.
+- Upload: all files in Step 1, and paste the new Code.gs (adds the TrPlan column to PP_Trips by itself), then Deploy › New version.
 
 ## 3.10.2 · Cleaner map names
 - Atlas journey route map and the Voyage itinerary day map: smaller province names; each province shown once (Ha Giang, Ha Giang Province and Hà Giang count as one; "Province"/"City" dropped, accents removed).

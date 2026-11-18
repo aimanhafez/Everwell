@@ -40,7 +40,7 @@ export const css = () => routeCardCss() + `
 .asdon{display:grid;grid-template-columns:1fr 124px 1fr;align-items:center;gap:4px;text-align:center}.asdon .big{font-size:26px;font-weight:800;color:${K.or}}.asdon .big.nb{color:${K.sub}}.asdon .lab{font-size:8.5px;font-weight:800;letter-spacing:.8px;color:${K.sub}}.asdon .rm{font-size:12px;margin-top:3px;color:${K.text}}
 .assec{display:flex;align-items:center;gap:8px;margin:12px 2px 4px;font-size:11px;font-weight:800;letter-spacing:1.2px;color:${K.text}}.assec .ci{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;box-shadow:inset 0 0 0 1.3px ${K.or}}
 .assb{display:flex;height:9px;border-radius:5px;overflow:hidden;margin:6px 0 7px;background:${K.field}}.assb i{display:block}
-.assbl{display:grid;gap:2px;font-size:10px;text-align:center}.assbl div{border-right:1px solid ${K.sep};padding:2px;min-width:0}.assbl div:last-child{border-right:0}.assbl b{display:block;font-size:11.5px;color:${K.text}}.assbl small{display:block;color:${K.sub};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.assbl{display:grid;gap:8px 2px;font-size:10px;text-align:center}.assbl div{border-right:1px solid ${K.sep};padding:2px;min-width:0}.assbl div.e{border-right:0}.assbl b{display:block;margin-top:4px;white-space:nowrap;font-size:12.5px;color:${K.text}}.assbl small{display:block;color:${K.sub};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 `;
 const Card = (title, kids, id, extra = '') => html`<div class="lc" data-t=${id}>${title ? html`<span class="lcap" style=${`display:block;color:${K.text};font-weight:800;letter-spacing:.8px;${extra}`}>${title}</span>` : null}${kids}</div>`;
 
@@ -144,7 +144,7 @@ export function ExpenseSplit(id) {
   const j = I.journey(id), sp = j.sp; if (!sp.tot) return null;
   const R = 50, C = 2 * Math.PI * R, gp = sp.ground / sp.tot, cols = shades();
   const part = (L0, tot) => html`<div class="assb">${L0.map((a, i) => html`<i style=${`width:${(a.v / tot * 100).toFixed(1)}%;background:${cols[i % 6]}`}></i>`)}</div>
-    <div class="assbl" style=${`grid-template-columns:repeat(${L0.length},minmax(0,1fr))`}>${L0.map(a => html`<div>${Ico(a.c.i, 15)}<small>${a.c.s}</small><b>${L.RM(a.v)}</b></div>`)}</div>`;
+    <div class="assbl" style=${`grid-template-columns:repeat(${L0.length > 4 ? 3 : L0.length},minmax(0,1fr))`}>${L0.map((a, i) => html`<div class=${(L0.length > 4 && i % 3 === 2) || i === L0.length - 1 ? 'e' : ''} title=${a.c.n} data-t=${'esc-' + a.c.k}>${Ico(a.c.i, 17)}<b>${L.RM(a.v)}</b></div>`)}</div>`;
   return Card('EXPENSES', html`<div class="asdon" style="margin-top:8px"><div><div class="big" data-t="tGroundPct">${Math.round(gp * 100)}%</div><div class="lab">GROUND COST</div><div class="rm">${L.RM(sp.ground)}</div></div>
       <svg viewBox="0 0 124 124" width="124" height="124"><circle cx="62" cy="62" r=${R} fill="none" stroke=${cols[3]} stroke-width="14" /><circle cx="62" cy="62" r=${R} fill="none" stroke=${K.or} stroke-width="14" stroke-dasharray=${`${(C * gp).toFixed(1)} ${C.toFixed(1)}`} transform="rotate(-90 62 62)" />
         <text x="62" y="55" text-anchor="middle" font-size="7" letter-spacing="1" fill=${K.sub}>TOTAL SPEND</text><text x="62" y="72" text-anchor="middle" font-size="15" font-weight="800" fill=${K.text}>${L.RM(sp.tot)}</text></svg>

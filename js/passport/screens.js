@@ -3,6 +3,7 @@
 import { html, K, DB, G, rerender, Today, Notify, NAV, Navigate, store } from '../core.js';
 import * as S from './summary.js';
 import * as I from './insights.js';
+import * as LB from '../logbook/engine.js';
 import { Page, Sect, Cap, Flag, WorldMap, Legend, focusMap, openCountry, openWish, openGoing, openTrip, openTripEdit, deleteTrip, openPick, openPhoto,
   confirmAsk, psave, canWrite, plural, tripLine, go, openSheet, closeSheet, TierBadge, WISHC, P, PH } from './ui.js';
 
@@ -166,6 +167,18 @@ function move(list, i, d) {
   [rows[i].PlSeq, rows[j].PlSeq] = [rows[j].PlSeq, rows[i].PlSeq];
   psave({ up: { PP_Places: rows } }, 'Wanderlist order', P.BY[list[i].PlIso].name);
 }
+/** An upcoming trip (exact dates): one card with its countries; planned in Voyage. */
+const UpCard = (l, t) => {
+  const isos = P.isosOf(t.TrId), n = P.daysTo(t), x = { days: new Set(LB.stops(t.TrId).map(s => Number(s.LpDay))).size, spent: LB.spend(t.TrId).tot };
+  const plan = () => { G.lbTrip = t.TrId; store.set('lb_trip', t.TrId); Navigate('scrLbItinerary'); };
+  return html`<div class="lc pup" data-t=${'up-' + t.TrId}>
+    <div onClick=${() => openGoing(l, null, t)} style="cursor:pointer">
+      <div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:5px">${isos.map(i => Flag(i, 22))}</div><span class="pupt" data-t=${'upIn-' + t.TrId}>${n ? 'IN ' + plural(n, 'DAY') : 'ON THE ROAD'}</span></div>
+      <div class="t">${t.TrName}</div>
+      <div class="s">${isos.map(i => P.BY[i].name).join(' · ')}</div><div class="s">${tripLine(t)}</div></div>
+    <div class="pupf"><span>${x.days || x.spent ? [x.days ? 'Itinerary ' + plural(x.days, 'day') : '', x.spent ? LB.RM(x.spent) + ' booked' : ''].filter(Boolean).join(' · ') : 'Nothing planned yet'}</span>
+      <span class="lor" style="font-weight:700;cursor:pointer" onClick=${plan} data-t=${'upPlan-' + t.TrId}>Plan in Voyage ›</span></div></div>`;
+};
 const WRow = (l, p, extra) => { const c = P.BY[p.PlIso]; return html`<div class="pwl" data-t=${'wl-' + p.PlIso}>
   <div onClick=${() => wishActions(l, p)} style="cursor:pointer">${Flag(p.PlIso, 25)}</div>
   <div onClick=${() => wishActions(l, p)} style="cursor:pointer;min-width:0"><div class="t">${c.name}${P.isGoing(p) ? null : html` <span class=${'ppri ' + (p.PlPri || 'M')}>${(PRI[p.PlPri] || 'Medium').toUpperCase()}</span>`}</div>
@@ -174,7 +187,7 @@ const WRow = (l, p, extra) => { const c = P.BY[p.PlIso]; return html`<div class=
   <div style="display:flex;gap:8px;align-items:flex-start">${TierBadge(p.PlTier)}${extra || null}</div></div>`; };
 export const scrPpWishlist = {
   view(l) {
-    const all = P.wishlist(), gw = P.going(), sort = l.sort || 'order', PR = { H: 0, M: 1, L: 2 };
+    const all = P.wishlist(), gw = P.going(), ups = P.upcoming(), sort = l.sort || 'order', PR = { H: 0, M: 1, L: 2 };
     const base = P.dreaming();
     const list = sort === 'order' ? base : base.slice().sort(sort === 'pri' ? (a, b) => (PR[a.PlPri] ?? 1) - (PR[b.PlPri] ?? 1) || a.PlSeq - b.PlSeq
       : sort === 'tier' ? (a, b) => P.tierRank(a.PlTier) - P.tierRank(b.PlTier) || a.PlSeq - b.PlSeq : (a, b) => P.BY[a.PlIso].cont.localeCompare(P.BY[b.PlIso].cont) || a.PlSeq - b.PlSeq);
@@ -182,11 +195,14 @@ export const scrPpWishlist = {
     const tally = P.TIER_LETTERS.map(x => [x, all.filter(p => P.isTier(p.PlTier) && p.PlTier[0] === x).length]), noTier = all.filter(p => !P.isTier(p.PlTier)).length;
     return Page(l, 2, html`
       ${Sect('Wanderlist', '+ Add', addNew, 'wlAdd')}
-      ${all.length ? html`<div class="lc" data-t="wlTally"><span class="lcap">${plural(all.length, 'destination')} · ${gw.length} confirmed</span>
+      ${all.length ? html`<div class="lc" data-t="wlTally"><span class="lcap">${plural(all.length, 'destination')} · ${gw.length + all.filter(p => P.upIsos().has(p.PlIso)).length} confirmed</span>
         <div class="ptiers">${tally.filter(([, n]) => n).map(([x, n]) => html`<i style=${`width:${n / all.length * 100}%;background:${P.TIER_COLOR[x]}`}></i>`)}${noTier ? html`<i style=${`width:${noTier / all.length * 100}%;background:${K.line2}`}></i>` : null}</div>
         <div class="ptl">${tally.map(([x, n]) => html`<span style=${`--c:${P.TIER_COLOR[x]}`}>${x} ${n}</span>`)}${noTier ? html`<span style=${`--c:${K.line2}`}>No tier ${noTier}</span>` : null}</div></div>` : null}
       ${!all.length ? html`<div class="lc lempty" data-t="wlEmpty">Places you dream of go here, with a tier for budget and length. Confirm when you're going and they show on Odyssey.<div style="margin-top:12px"><button class="lbtn o on" onClick=${addNew}>+ Add a destination</button></div></div>` : null}
-      ${gw.length ? html`${Sect('Going', String(gw.length))}<div class="lc" data-t="wlGoing">${gw.map(p => WRow(l, p))}</div>` : null}
+      ${all.length || ups.length ? Sect('Going', '+ I\'m going', () => openGoing(l, null), 'wlGo') : null}
+      ${ups.map(t => UpCard(l, t))}
+      ${gw.length ? html`<div class="lc" data-t="wlGoing">${gw.map(p => WRow(l, p))}</div>` : null}
+      ${(all.length || ups.length) && !gw.length && !ups.length ? html`<div class="lnote" style="margin:-4px 18px 14px" data-t="wlGoEmpty">Confirm a trip with one or more countries. With exact dates you can plan it in Voyage before you go.</div>` : null}
       ${base.length ? html`${Sect('Dreaming', String(base.length))}
         <div class="pchips">${[['order', 'My order'], ['pri', 'Priority'], ['tier', 'Tier'], ['cont', 'Continent']].map(([k, t]) => html`<span class=${'pchip' + (sort === k ? ' on' : '')} onClick=${() => { l.sort = k; rerender(); }} data-t=${'wlSort-' + k}>${t}</span>`)}</div>
         <div class="lc" data-t="wlList">${list.map((p, i) => WRow(l, p, sort === 'order' ? html`<div class="pord"><span onClick=${() => move(list, i, -1)} data-t=${'wlUp-' + p.PlIso} style=${i ? '' : 'opacity:.3'}>▲</span><span onClick=${() => move(list, i, 1)} data-t=${'wlDn-' + p.PlIso} style=${i < list.length - 1 ? '' : 'opacity:.3'}>▼</span></div>` : null))}</div>

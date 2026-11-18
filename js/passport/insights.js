@@ -65,8 +65,9 @@ const best = (arr, f) => arr.reduce((b, x) => (f(x) > (b ? f(b) : 0) ? x : b), n
 export function badges() {
   const ts = pastTrips(), xs = ts.map(t => ({ t, x: L.lbTotals(t.TrId), b: bikeOf(t.TrId) })), hp = homePoint();
   // farthest place reached: your Voyage pins in that country, else the country's map point
-  const reach = c => { const pins = DB.lbStops.filter(s => s.LpCountry === c.iso && L.hasPin(s)).map(s => [Number(s.LpLat), Number(s.LpLng)]); const pts = pins.length ? pins : [[c.lat, c.lng]]; return Math.max(...pts.map(q => L.hav(hp, q))); };
-  const far = hp ? best(P.visitedList().filter(c => c.lat || DB.lbStops.some(s => s.LpCountry === c.iso)), reach) : null;
+  const doneIds = new Set(ts.map(t => t.TrId)), myStops = DB.lbStops.filter(s => doneIds.has(s.LpTrip)); // upcoming trips don't count yet
+  const reach = c => { const pins = myStops.filter(s => s.LpCountry === c.iso && L.hasPin(s)).map(s => [Number(s.LpLat), Number(s.LpLng)]); const pts = pins.length ? pins : [[c.lat, c.lng]]; return Math.max(...pts.map(q => L.hav(hp, q))); };
+  const far = hp ? best(P.visitedList().filter(c => c.lat || myStops.some(s => s.LpCountry === c.iso)), reach) : null;
   const B = (k, n, ic, a, val, iso) => ({ k, n, ic, val: a ? val(a) : '—', iso: a ? iso(a) : '', on: !!a });
   return [
     B('long', 'The Long Haul', 'cal', best(xs, a => a.x.days), a => a.x.days + ' days', a => mainIso(a.t.TrId)),
