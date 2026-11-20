@@ -16,6 +16,9 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.14.3 · Videos play inside MansWell (each video: anyone with the link can view; photos stay private). PP_Photos gets PhShare.
+ *   Paste this Code.gs and Deploy › New version.
+ *
  * 3.14.2 · Videos go from the phone straight to Drive (much faster); paste this Code.gs and Deploy › New version.
  *
  * 3.14.1 · Videos from iPhone: no more "took too long to open" (app only; same server code as 3.14.0).
@@ -84,7 +87,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.14.2';
+var EW_VERSION = '3.14.3';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -111,7 +114,7 @@ var TABLES = {
   PP_Places: { key: 'PlIso', cols: { PlIso: 's', PlStatus: 's', PlPri: 's', PlYear: 'n', PlWhy: 's', PlSee: 's', PlNote: 's', PlSeq: 'n', PlPhoto: 's', PlAdded: 'd', PlFirst: 's', PlTier: 's', PlGo: 's', PlGoYear: 'n', PlGoDays: 'n', PlDream: 's' } },
   PP_Trips: { key: 'TrId', cols: { TrId: 's', TrName: 's', TrStart: 'd', TrEnd: 'd', TrWith: 's', TrDesc: 's', TrMoments: 's', TrNotes: 's', TrRoute: 's', TrCover: 's', TrAdded: 't', TrPlan: 's' } },
   PP_Stops: { key: 'StKey', cols: { StKey: 's', StTrip: 's', StIso: 's', StDays: 'n', StSeq: 'n', StRoute: 's' } },
-  PP_Photos: { key: 'PhId', cols: { PhId: 's', PhTrip: 's', PhFile: 's', PhW: 'n', PhH: 'n', PhTaken: 'd', PhCap: 's', PhSeq: 'n', PhKind: 's', PhDur: 'n' } },
+  PP_Photos: { key: 'PhId', cols: { PhId: 's', PhTrip: 's', PhFile: 's', PhW: 'n', PhH: 'n', PhTaken: 'd', PhCap: 's', PhSeq: 'n', PhKind: 's', PhDur: 'n', PhShare: 's' } },
   PP_Thumbs: { key: 'ThId', cols: { ThId: 's', ThData: 's' } },
   // MansWell Voyage (was Logbook): the detail of each Atlas journey (linked by its TrId). Travel only.
   LB_Stops: { key: 'LpId', cols: { LpId: 's', LpTrip: 's', LpDay: 'n', LpSeq: 'n', LpPlace: 's', LpCity: 's', LpCountry: 's', LpArr: 's', LpStay: 'n', LpMode: 's', LpKm: 'n', LpMin: 'n', LpNote: 's', LpLat: 'n', LpLng: 'n', LpAddr: 's', LpProv: 's', LpBorder: 's' } },
@@ -270,6 +273,14 @@ var ACTIONS = {
     return row;
   },
   /** Atlas · a video, sent in parts: start opens a Drive upload, each part is added, the last one saves the row (3.14). */
+  /** Atlas · a video saved before 3.14.3: set it to "anyone with the link can view" so it plays inside MansWell. */
+  ppVideoShare: function (ss, p) {
+    var row = readTable_(ss, 'PP_Photos').filter(function (r) { return r.PhId === String(p.id); })[0];
+    if (!row || row.PhKind !== 'video') throw new Error('Video not found.');
+    row.PhShare = shareVideo_(row.PhFile);
+    locked_(function () { upsertRows_(ss, 'PP_Photos', [row]); });
+    return row;
+  },
   ppVideoStart: function (ss, p) {
     if (!p.id || !(Number(p.size) > 0)) throw new Error('No video to save.');
     var folder = locked_(function () { return ppFolder_(String(p.folder || 'Photos')); });
@@ -298,7 +309,7 @@ var ACTIONS = {
     if (code === 308) { var rg = /bytes=0-(\d+)/.exec(String((res.getHeaders() || {}).Range || (res.getHeaders() || {}).range || '')); return { more: true, next: rg ? Number(rg[1]) + 1 : 0 }; }
     if (code !== 200 && code !== 201) throw new Error('Drive stopped the video upload (' + code + ').');
     var fileId = JSON.parse(res.getContentText()).id;
-    var row = { PhId: String(p.id), PhTrip: String(p.trip || ''), PhFile: fileId, PhW: Number(p.w) || 0, PhH: Number(p.h) || 0, PhTaken: String(p.taken || ''), PhCap: '', PhSeq: Number(p.seq) || 0, PhKind: 'video', PhDur: Number(p.dur) || 0 };
+    var row = { PhId: String(p.id), PhTrip: String(p.trip || ''), PhFile: fileId, PhW: Number(p.w) || 0, PhH: Number(p.h) || 0, PhTaken: String(p.taken || ''), PhCap: '', PhSeq: Number(p.seq) || 0, PhKind: 'video', PhDur: Number(p.dur) || 0, PhShare: shareVideo_(fileId) };
     locked_(function () { ensureTables_(ss); upsertRows_(ss, 'PP_Photos', [row]); if (p.thumb) upsertRows_(ss, 'PP_Thumbs', [{ ThId: row.PhId, ThData: String(p.thumb) }]); });
     CacheService.getScriptCache().remove('vid_' + p.id);
     return { row: row };
@@ -528,6 +539,8 @@ function driveErr_(e) {
   if (/permission|authoriz|scope/i.test(m)) return new Error('Google Drive is not approved yet. Open Apps Script, choose setupPassport and press Run, approve Drive, then try again.');
   return e;
 }
+/** Videos only: anyone with the link can view (so Drive's player works inside MansWell). Photos stay private. */
+function shareVideo_(fileId) { try { DriveApp.getFileById(fileId).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); return 'link'; } catch (e) { return ''; } }
 /** Run fn while holding the script lock (Sheet writes, folder creation). */
 function locked_(fn) { var lk = LockService.getScriptLock(); lk.waitLock(25000); try { return fn(); } finally { lk.releaseLock(); } }
 function ppFolder_(name) {

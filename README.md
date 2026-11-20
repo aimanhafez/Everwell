@@ -1,4 +1,10 @@
-# MansWell · v3.14.2 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.14.3 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.14.3 · Premium viewer, videos play inside
+- New Memories viewer: the photo's own colours glow behind it, a framed photo / video with a soft shadow, the journey in serif with "Day 3 · Wednesday, 29 Apr 2026", a 8 / 42 counter, a film strip to jump, swipe and arrows, double-tap (or Zoom) to zoom a photo and drag to look around, round glass buttons, a soft fade between items.
+- Videos play inside MansWell (Google Drive's player); no "Open in Drive". Each video is set to "anyone with the link can view"; photos stay private. Videos saved before are switched the first time you open them.
+- Set as cover keeps the viewer open (Cover ✓).
+- Upload: all files in Step 1, paste the new Code.gs (PP_Photos gets PhShare by itself) and Deploy › New version.
 
 ## 3.14.2 · Faster videos
 - Videos now go from the phone straight to your Google Drive in 16 MB parts (before, every 4 MB went through the Apps Script first). The bar moves while it sends and shows "120 of 480 MB · about 3 min left".

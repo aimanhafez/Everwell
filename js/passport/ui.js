@@ -1,6 +1,6 @@
 // MansWell Passport · UI kit: the shell (header, five tabs), flags, the world map, and the sheets every tab shares
 // (one country, add/edit a trip, a wish, pick a country, photo viewer, confirm). Same look and theme as Lens.
-import { html, K, DB, NAV, I, Brand, Navigate, rerender, save, Notify, guard, Today, G, store } from '../core.js';
+import { html, K, DB, NAV, I, Brand, Navigate, rerender, save, Notify, guard, Today, G, store, api, applySaved } from '../core.js';
 import { syncNow, PasswordDialog, askPassword } from '../shared.js';
 import { css as lensCss, Sheet, openSheet, closeSheet, oa, ta, Cap, newId } from '../lens/ui.js';
 import * as P from './engine.js';
@@ -70,13 +70,27 @@ ul.pmom li:before{content:'';position:absolute;left:0;top:14px;width:6px;height:
 .pstp:before{content:'';position:absolute;inset:4px;border-radius:50%;border:1px dashed var(--s);opacity:.7}.pstp.sq{border-radius:13px}.pstp.sq:before{border-radius:9px}
 .pstp b{font:800 16px Inter,system-ui;letter-spacing:1px;display:block}.pstp span{font-size:7.5px;font-weight:700;letter-spacing:.8px;display:block}
 .pstp.lock{--s:${K.line2};color:${K.mute}}
-.pview{position:absolute;inset:0;z-index:60;background:rgba(0,0,0,.94);display:flex;flex-direction:column}
-.pview .im{position:relative;touch-action:pan-y;user-select:none}.pview .im img{pointer-events:none;-webkit-user-drag:none}.parr{position:absolute;top:50%;margin-top:-19px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center;font-size:22px;cursor:pointer;backdrop-filter:blur(6px)}.parr.l{left:10px}.parr.r{right:10px}
-.pplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;color:#fff;text-decoration:none;font-size:12.5px;font-weight:700}.pplay i{width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.5);display:grid;place-items:center;font-style:normal;font-size:24px;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.pview{position:absolute;inset:0;z-index:60;background:#060608;display:flex;flex-direction:column;overflow:hidden;color:#fff;outline:0}
+.pview .amb{position:absolute;inset:-60px;background:center/cover no-repeat;filter:blur(42px) saturate(1.25);opacity:.55;transform:scale(1.15);transition:background-image .3s}
+.pview .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,6,8,.6),rgba(6,6,8,.12) 28%,rgba(6,6,8,.22) 62%,rgba(6,6,8,.9))}
+.pview .top{position:relative;z-index:2;display:flex;align-items:center;gap:10px;padding:16px 16px 6px}
+.pview .gb{width:38px;height:38px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:21px;cursor:pointer;background:rgba(255,255,255,.13);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.pview .ti{flex:1;min-width:0}.pview .ti b{display:block;font:400 19px Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pview .ti span{font-size:11px;opacity:.75;letter-spacing:.2px}
+.pview .cnt{flex:none;font-size:11px;font-weight:700;letter-spacing:1px;padding:6px 10px;border-radius:99px;background:rgba(255,255,255,.13);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+.pview .im{position:relative;z-index:1;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:10px 14px;touch-action:pan-y;user-select:none}
+.pview .fr{position:relative;max-width:100%;max-height:100%;border-radius:20px;overflow:hidden;box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);animation:pvIn .28s ease both;line-height:0}
+.pview .fr img{display:block;max-width:calc(100vw - 28px);max-height:calc(100vh - 330px);max-height:calc(100dvh - 330px);object-fit:contain;pointer-events:none;-webkit-user-drag:none;transition:transform .25s ease}.pview .fr.z{overflow:hidden}.pview .fr.z img{transition:none}
+.pview .fr.vd{width:100%;aspect-ratio:16/9;max-height:calc(100dvh - 330px)}.pview .fr iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.pview .wait{position:absolute;inset:0;background:center/cover no-repeat #111;display:grid;place-items:center}.pview .wait span{font-size:12.5px;padding:8px 12px;border-radius:99px;background:rgba(0,0,0,.55)}.pview .ld{color:#aaa;font-size:13px;padding:40px}
+@keyframes pvIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+.pview .cap{position:relative;z-index:2;display:flex;gap:6px;padding:4px 20px 10px;min-height:30px}.pview .chip{font-size:9px;font-weight:800;letter-spacing:1.2px;padding:5px 9px;border-radius:99px;background:${K.or};color:${K.onAcc || '#fff'}}.pview .chip.o{background:rgba(255,255,255,.16);color:#fff}
+.pview .fs{position:relative;z-index:2;display:flex;gap:7px;justify-content:center;align-items:center;padding:4px 12px 14px;min-height:62px}
+.pview .fs .th{width:40px;height:40px;border-radius:10px;opacity:.5;cursor:pointer;position:relative;display:grid;place-items:center;transition:all .2s}.pview .fs .th.on{opacity:1;width:48px;height:48px;box-shadow:0 0 0 2px #fff,0 0 0 4px ${K.or}}
+.pview .fs .th i{font-style:normal;font-size:10px;color:#fff;text-shadow:0 1px 3px #000}
+.pview .bt{position:relative;z-index:2;display:flex;justify-content:center;gap:22px;padding:0 16px 28px}
+.pvb{background:none;border:0;color:#fff;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;font-family:inherit;padding:0}.pvb b{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-weight:400;font-size:18px;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}.pvb span{font-size:10.5px;letter-spacing:.6px;opacity:.85}.pvb.d{color:#FF9AA8}
+.pview .parr{position:absolute;z-index:3;top:50%;margin-top:-19px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);color:#fff;display:grid;place-items:center;font-size:22px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}.pview .parr.l{left:8px}.pview .parr.r{right:8px}
 .pgal .pvid{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}.pgal .pvid i{width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center;font-style:normal;font-size:11px}.pgal .pvid b{position:absolute;right:6px;bottom:4px;color:#fff;font-size:10.5px;text-shadow:0 1px 2px #000}
-.pview .top{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 8px;color:#fff;font-size:14px}.pview .top span{cursor:pointer;padding:6px}
-.pview .im{flex:1;display:grid;place-items:center;padding:6px}.pview .im img{max-width:100%;max-height:100%;border-radius:6px}
-.pview .bt{display:flex;gap:8px;padding:12px 16px 30px}.pview .bt button{flex:1;padding:12px;border-radius:12px;border:0;font:600 13px inherit;font-family:inherit;background:rgba(255,255,255,.1);color:#fff;cursor:pointer}.pview .bt button.d{color:#FF7A7E}
 .pconf{position:absolute;inset:0;z-index:70;display:grid;place-items:center}.pconf .dim{position:absolute;inset:0;background:rgba(0,0,0,.6)}
 .pconf .bx{position:relative;width:310px;background:${K.panel};border-radius:18px;padding:20px;box-shadow:inset 0 0 0 1px ${K.line2};color:${K.text}}
 .pconf .bx b{display:block;font-size:16px}.pconf .bx p{font-size:13px;color:${K.sub};line-height:1.5;margin:8px 0 16px}.pconf .row{display:flex;gap:8px}
@@ -317,33 +331,61 @@ function Confirm(l) {
 /* ───────── photo viewer ───────── */
 export function openPhoto(l, ph, o = {}) {
   l.pview = { ph, o, src: null, err: '' }; rerender();
-  if (PH.isVideo(ph)) return;
+  if (PH.isVideo(ph)) {
+    if (!ph.PhShare) api('ppVideoShare', { id: ph.PhId }, undefined, { quiet: true }).then(r => { applySaved({ PP_Photos: [r] }); if (l.pview && l.pview.ph.PhId === ph.PhId) { l.pview.ph = r; rerender(); } }).catch(e => { if (l.pview) { l.pview.err = "Couldn't get the video ready: " + e.message; rerender(); } });
+    return;
+  }
   const ls = ph.PhTrip ? P.photosOf(ph.PhTrip) : [], i = ls.findIndex(x => x.PhId === ph.PhId); // the next and previous photos load in the background, so swiping is quick
   setTimeout(() => [ls[i + 1], ls[i - 1]].forEach(n => { if (n && !PH.isVideo(n)) PH.full(n.PhId).catch(() => {}); }), 400);
   PH.full(ph.PhId).then(s => { if (l.pview && l.pview.ph === ph) { l.pview.src = s; rerender(); } }).catch(e => { if (l.pview) { l.pview.err = e.message; rerender(); } });
 }
+/** The Memories viewer: the photo or video in a framed card on its own colours, the journey day, a film strip, swipe / arrows,
+ *  double-tap to zoom (photos). Videos play inside, with Google Drive's player. */
+const WD = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 function Viewer(l) {
   const v = l.pview; if (!v) return null;
   const close = () => { l.pview = null; rerender(); };
   const t = v.ph.PhTrip && P.trip(v.ph.PhTrip);
   const list = t ? P.photosOf(t.TrId) : [v.ph], at = Math.max(0, list.findIndex(x => x.PhId === v.ph.PhId));
   const go = d => { const n = list[at + d]; if (n) openPhoto(l, n, v.o); };
-  const vid = PH.isVideo(v.ph), prev = vid ? PH.thumb(v.ph.PhId) : v.src || PH.thumb(v.ph.PhId);
-  const ts = e => { v.x0 = e.clientX; v.x1 = null; }, te = e => { if (v.x0 == null) return; const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX, dx = x - v.x0; v.x0 = null; if (Math.abs(dx) > 45) go(dx < 0 ? 1 : -1); };
+  const vid = PH.isVideo(v.ph), th = PH.thumb(v.ph.PhId), img = vid ? th : v.src || th;
+  // Day 3 · Wednesday, 29 Apr 2026
+  const tk = v.ph.PhTaken ? new Date(String(v.ph.PhTaken).slice(0, 10) + 'T00:00:00') : null;
+  const dn = tk && t ? Math.round((tk - new Date(String(t.TrStart).slice(0, 10) + 'T00:00:00')) / 864e5) + 1 : 0;
+  const when = tk ? (dn >= 1 && dn <= P.daysOf(t) ? 'Day ' + dn + ' · ' : '') + WD[tk.getDay()] + ', ' + P.fmtDay(v.ph.PhTaken) : '';
+  // gestures: swipe left / right; double-tap zooms a photo (then drag to look around)
+  const down = e => { v.x0 = e.clientX; v.y0 = e.clientY; v.x1 = null; v.pan = v.zoom ? { x: e.clientX, y: e.clientY, px: v.px || 0, py: v.py || 0 } : null; };
+  const moveP = e => { if (v.x0 == null) return; v.x1 = e.clientX; if (v.pan) { v.px = v.pan.px + (e.clientX - v.pan.x); v.py = v.pan.py + (e.clientY - v.pan.y); const el = e.currentTarget.querySelector('img'); if (el) el.style.transform = `translate(${v.px}px,${v.py}px) scale(2.2)`; } };
+  const up = e => {
+    if (v.x0 == null) return; const dx = (e.clientX ?? v.x1 ?? v.x0) - v.x0, dy = (e.clientY ?? v.y0) - v.y0; v.x0 = null;
+    if (!v.zoom && Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) { go(dx < 0 ? 1 : -1); return; }
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 8 && !vid) { const now = Date.now(); if (now - (v.tap || 0) < 320) { v.tap = 0; v.zoom = !v.zoom; v.px = 0; v.py = 0; rerender(); } else v.tap = now; }
+  };
+  const near = list.map((x, i) => [x, i]).slice(Math.max(0, Math.min(at - 3, list.length - 7)), Math.max(0, Math.min(at - 3, list.length - 7)) + 7);
+  const act = (ic, label, fn, id, cls) => html`<button class=${'pvb' + (cls ? ' ' + cls : '')} onClick=${fn} data-t=${id}><b>${ic}</b><span>${label}</span></button>`;
+  const del = () => confirmAsk(l, vid ? 'Delete this video?' : 'Delete this photo?', 'It is removed from the trip and moved to the bin in your Google Drive.', 'Delete', () => guard(async () => {
+    if (!canWrite()) return;
+    await PH.remove([v.ph.PhId]); await save({ del: { PP_Photos: [v.ph.PhId] }, up: t && t.TrCover === v.ph.PhId ? { PP_Trips: [{ ...t, TrCover: '' }] } : {}, log: [{ AuAction: 'Atlas · Photo deleted', AuRef: 'PASSPORT', AuDetail: t ? t.TrName : '' }] });
+    close();
+  }));
   return html`<div class="pview" data-t="viewer" tabindex="0" onKeyDown=${e => { if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); if (e.key === 'Escape') close(); }}>
-    <div class="top"><span onClick=${close} data-t="viewerClose">‹ Back</span><span style="font-size:12px;opacity:.8">${t ? t.TrName : ''}${v.ph.PhTaken ? ' · ' + P.fmtDay(v.ph.PhTaken) : ''}${list.length > 1 ? html` · <b data-t="viewerPos">${at + 1} / ${list.length}</b>` : null}</span></div>
-    <div class="im" onPointerDown=${ts} onPointerMove=${e => { if (v.x0 != null) v.x1 = e.clientX; }} onPointerUp=${te} onPointerCancel=${() => { if (v.x0 != null && v.x1 != null) te({ clientX: v.x1 }); v.x0 = null; }}>
-      ${prev ? html`<img src=${prev} alt="" draggable="false" />` : html`<span style="color:#aaa;font-size:13px">${v.err || 'Loading…'}</span>`}
-      ${vid ? html`<a class="pplay" href=${PH.driveUrl(v.ph)} target="_blank" rel="noopener" data-t="viewerPlay"><i>▶</i><span>Play · ${PH.durTxt(v.ph.PhDur)}</span></a>` : null}
-      ${at > 0 ? html`<span class="parr l" onClick=${() => go(-1)} data-t="viewerPrev">‹</span>` : null}${at < list.length - 1 ? html`<span class="parr r" onClick=${() => go(1)} data-t="viewerNext">›</span>` : null}</div>
+    <div class="amb" style=${th ? `background-image:url("${th}")` : PH.bg('', v.ph.PhId)}></div><div class="veil"></div>
+    <div class="top"><span class="gb" onClick=${close} data-t="viewerClose">‹</span>
+      <div class="ti"><b>${t ? t.TrName : ''}</b><span>${when}</span></div>${list.length > 1 ? html`<span class="cnt" data-t="viewerPos">${at + 1} / ${list.length}</span>` : null}</div>
+    <div class="im" onPointerDown=${down} onPointerMove=${moveP} onPointerUp=${up} onPointerCancel=${() => { if (v.x0 != null && v.x1 != null && !v.zoom) { const dx = v.x1 - v.x0; if (Math.abs(dx) > 45) go(dx < 0 ? 1 : -1); } v.x0 = null; }}>
+      <div class=${'fr' + (vid ? ' vd' : '') + (v.zoom ? ' z' : '')} key=${v.ph.PhId}>
+        ${vid ? (v.ph.PhShare ? html`<iframe src=${'https://drive.google.com/file/d/' + encodeURIComponent(v.ph.PhFile) + '/preview'} allow="autoplay; fullscreen" allowfullscreen data-t="viewerVideo"></iframe>`
+            : html`<div class="wait" style=${img ? `background-image:url("${img}")` : ''}><span>${v.err || 'Getting the video ready…'}</span></div>`)
+          : img ? html`<img src=${img} alt="" draggable="false" style=${v.zoom ? `transform:translate(${v.px || 0}px,${v.py || 0}px) scale(2.2)` : ''} data-t="viewerImg" />` : html`<span class="ld">${v.err || 'Loading…'}</span>`}
+      </div>
+      ${at > 0 && !v.zoom ? html`<span class="parr l" onClick=${() => go(-1)} data-t="viewerPrev">‹</span>` : null}${at < list.length - 1 && !v.zoom ? html`<span class="parr r" onClick=${() => go(1)} data-t="viewerNext">›</span>` : null}</div>
+    <div class="cap"><span class="chip">${vid ? 'VIDEO · ' + PH.durTxt(v.ph.PhDur) : 'PHOTO'}</span>${t && t.TrCover === v.ph.PhId ? html`<span class="chip o">COVER</span>` : null}</div>
+    ${list.length > 1 ? html`<div class="fs" data-t="viewerStrip">${near.map(([x, i]) => html`<span class=${'th' + (i === at ? ' on' : '')} style=${PH.bg(x.PhId, x.PhId)} onClick=${() => openPhoto(l, x, v.o)} data-t=${'vs-' + x.PhId}>${PH.isVideo(x) ? html`<i>▶</i>` : null}</span>`)}</div>` : null}
     <div class="bt">
-      ${t && v.o.cover !== false && !vid ? html`<button onClick=${() => { psave({ up: { PP_Trips: [{ ...t, TrCover: v.ph.PhId }] } }, 'Trip cover', t.TrName); close(); }} data-t="setCover">${t.TrCover === v.ph.PhId ? '✓ Cover' : 'Set as cover'}</button>` : null}
-      ${v.o.onOpenTrip && t ? html`<button onClick=${() => { close(); v.o.onOpenTrip(t); }} data-t="openTrip">Open trip</button>` : null}
-      ${v.o.del !== false ? html`<button class="d" data-t="photoDel" onClick=${() => confirmAsk(l, vid ? 'Delete this video?' : 'Delete this photo?', 'It is removed from the trip and moved to the bin in your Google Drive.', 'Delete', () => guard(async () => {
-        if (!canWrite()) return;
-        await PH.remove([v.ph.PhId]); await save({ del: { PP_Photos: [v.ph.PhId] }, up: t && t.TrCover === v.ph.PhId ? { PP_Trips: [{ ...t, TrCover: '' }] } : {}, log: [{ AuAction: 'Atlas · Photo deleted', AuRef: 'PASSPORT', AuDetail: t ? t.TrName : '' }] });
-        close();
-      }))}>Delete</button>` : null}
+      ${t && v.o.cover !== false && !vid ? act('★', t.TrCover === v.ph.PhId ? 'Cover ✓' : 'Cover', () => { psave({ up: { PP_Trips: [{ ...t, TrCover: v.ph.PhId }] } }, 'Trip cover', t.TrName); rerender(); }, 'setCover') : null}
+      ${!vid ? act('⤢', v.zoom ? 'Fit' : 'Zoom', () => { v.zoom = !v.zoom; v.px = 0; v.py = 0; rerender(); }, 'viewerZoom') : null}
+      ${v.o.onOpenTrip && t ? act('↗', 'Journey', () => { close(); v.o.onOpenTrip(t); }, 'openTrip') : null}
+      ${v.o.del !== false ? act('🗑', 'Delete', del, 'photoDel', 'd') : null}
     </div></div>`;
 }
 
