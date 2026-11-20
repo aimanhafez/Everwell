@@ -1,4 +1,9 @@
-# MansWell · v3.14.3 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.14.4 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.14.4 · Phone videos stand upright
+- The video frame takes the video's own shape: phone recordings play upright and as big as the screen allows (no more small video in a wide box). Turning the phone resizes it.
+- Videos the phone couldn't measure get their real size and length from Google Drive the first time they're opened.
+- Upload: all files in Step 1, paste the new Code.gs and Deploy › New version.
 
 ## 3.14.3 · Premium viewer, videos play inside
 - New Memories viewer: the photo's own colours glow behind it, a framed photo / video with a soft shadow, the journey in serif with "Day 3 · Wednesday, 29 Apr 2026", a 8 / 42 counter, a film strip to jump, swipe and arrows, double-tap (or Zoom) to zoom a photo and drag to look around, round glass buttons, a soft fade between items.

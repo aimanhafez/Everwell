@@ -16,6 +16,8 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.14.4 · Videos keep their own shape (phone videos stand upright). Paste this Code.gs and Deploy › New version.
+ *
  * 3.14.3 · Videos play inside MansWell (each video: anyone with the link can view; photos stay private). PP_Photos gets PhShare.
  *   Paste this Code.gs and Deploy › New version.
  *
@@ -87,7 +89,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.14.3';
+var EW_VERSION = '3.14.4';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -280,6 +282,17 @@ var ACTIONS = {
     row.PhShare = shareVideo_(row.PhFile);
     locked_(function () { upsertRows_(ss, 'PP_Photos', [row]); });
     return row;
+  },
+  /** Atlas · a video's real width, height and length from Drive (for videos the phone couldn't read: plays in the right shape). */
+  ppVideoMeta: function (ss, p) {
+    var row = readTable_(ss, 'PP_Photos').filter(function (r) { return r.PhId === String(p.id); })[0];
+    if (!row || row.PhKind !== 'video') throw new Error('Video not found.');
+    var res = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(row.PhFile) + '?fields=videoMediaMetadata', { muteHttpExceptions: true, headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() } });
+    var m = res.getResponseCode() === 200 ? (JSON.parse(res.getContentText()).videoMediaMetadata || null) : null;
+    if (!m || !m.width) return { row: row, ready: false }; // Google is still processing it
+    row.PhW = Number(m.width) || 0; row.PhH = Number(m.height) || 0; if (!(Number(row.PhDur) > 0) && m.durationMillis) row.PhDur = Math.round(Number(m.durationMillis) / 1000);
+    locked_(function () { upsertRows_(ss, 'PP_Photos', [row]); });
+    return { row: row, ready: true };
   },
   ppVideoStart: function (ss, p) {
     if (!p.id || !(Number(p.size) > 0)) throw new Error('No video to save.');
