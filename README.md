@@ -1,4 +1,10 @@
-# MansWell · v3.15.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.15.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.15.1 · Viewer: bigger picture, tidier controls
+- The photo or video takes more of the screen; the date is one smaller line.
+- Cover / Open journey / Delete moved into the ⋯ menu at the top right.
+- Zoom button removed: pinch with two fingers (up to 5×) and drag; double-tap still zooms in and out.
+- The film strip holds every photo and video, scrolls left and right, sits at the very bottom and keeps the open one in the middle.
 
 ## 3.15.0 · Cinema viewer for Memories
 - Photos and videos open full screen, edge to edge when their shape suits the screen; a landscape one sits across the middle on a soft glow of its own colours.

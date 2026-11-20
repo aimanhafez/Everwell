@@ -72,10 +72,10 @@ ul.pmom li:before{content:'';position:absolute;left:0;top:14px;width:6px;height:
 .pstp.lock{--s:${K.line2};color:${K.mute}}
 body.pvland #stage{overflow:visible}.pview{position:fixed;inset:0;z-index:60;background:#050507;overflow:hidden;color:#fff;outline:0;font-family:inherit}
 .pview .amb{position:absolute;inset:-60px;background:center/cover no-repeat;filter:blur(46px) saturate(1.25) brightness(.8);opacity:.75;transform:scale(1.15)}
-.pview .im{position:absolute;inset:0;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.pview .im{position:absolute;inset:0;touch-action:none;user-select:none;-webkit-user-select:none}
 .pview .fr{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;animation:pvIn .35s ease both}
 .pview .fr img,.pview .fr video{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;-webkit-user-drag:none;transition:transform .25s ease;background:transparent}
-.pview .fr.cv img,.pview .fr.cv video{object-fit:cover}.pview:not(.land) .fr:not(.cv){bottom:34%}.pview:not(.land) .fr.vd:not(.cv){bottom:46%}.pview .fr.z img{transition:none}
+.pview .fr.cv img,.pview .fr.cv video{object-fit:cover}.pview:not(.land) .fr:not(.cv){bottom:20%}.pview:not(.land) .fr.vd:not(.cv){bottom:29%}.pview .fr.z img{transition:none}
 .pview .fr iframe{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);width:100%;height:min(100%,calc(100vw * 1.78));border:0;background:#000}
 .pview .wait{position:absolute;inset:0;background:center/contain no-repeat;display:grid;place-items:center}.pview .wait span,.pview .vload{font-size:12px;letter-spacing:.5px;padding:8px 14px;border-radius:99px;background:rgba(0,0,0,.5)}.pview .vload{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);white-space:nowrap}.pview .ld{position:absolute;inset:0;display:grid;place-items:center;color:#aaa;font-size:13px}
 @keyframes pvIn{from{opacity:0;transform:scale(1.02)}to{opacity:1;transform:none}}
@@ -86,18 +86,17 @@ body.pvland #stage{overflow:visible}.pview{position:fixed;inset:0;z-index:60;bac
 .pview .svi{display:inline-flex;line-height:0}
 .pview .dots{display:flex;gap:5px;align-items:center}.pview .dots i{width:4px;height:4px;border-radius:2px;background:rgba(255,255,255,.42);transition:all .25s}.pview .dots i.on{width:18px;background:#fff}
 .pview .parr{position:absolute;z-index:3;top:30%;margin-top:-22px;width:44px;height:44px;display:grid;place-items:center;cursor:pointer;opacity:.75;transition:opacity .35s;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}.pview .parr.l{left:2px}.pview .parr.r{right:2px}
-.pview .bot{bottom:0;padding:0 0 calc(18px + env(safe-area-inset-bottom))}
-.pview .tit{padding:0 24px 14px}.pview .ey{font-size:10px;font-weight:600;letter-spacing:3px;opacity:.82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pview .tt{font:400 31px/1.1 Georgia,'Times New Roman',serif;margin:8px 0 2px;text-shadow:0 2px 16px rgba(0,0,0,.35)}.pview.land .tt{font-size:24px}
-.pview .hl{display:block;width:34px;height:1.5px;background:${K.or};margin:11px 0 9px}.pview .dd{font-size:12px;opacity:.86;letter-spacing:.3px}
+.pview .bot{bottom:0;padding:0 0 calc(8px + env(safe-area-inset-bottom))}
+.pview .tit{padding:0 20px 10px}.pview .ey{font-size:8.5px;font-weight:600;letter-spacing:2.4px;opacity:.82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pview .tt{font:400 19px/1.2 Georgia,'Times New Roman',serif;margin:5px 0 0;text-shadow:0 2px 16px rgba(0,0,0,.35)}.pview.land .tt{font-size:18px}
+.pview .hl{display:block;width:34px;height:1.5px;background:${K.or};margin:7px 0 6px;width:24px}.pview .dd{font-size:10.5px;opacity:.86;letter-spacing:.3px}
 .pview .pwhy{margin:0 16px 12px;padding:8px 12px;border-radius:12px;font-size:11.5px;line-height:1.45;background:rgba(255,190,90,.14);color:#FFD9A6;box-shadow:inset 0 0 0 1px rgba(255,190,90,.3)}
-.pview .vbar{padding:0 24px 14px}.pview .vbar input{width:100%;-webkit-appearance:none;appearance:none;height:2px;margin:6px 0;border-radius:1px;background:linear-gradient(90deg,#fff var(--p),rgba(255,255,255,.28) var(--p));outline:0}
+.pview .vbar{padding:0 20px 8px}.pview .vbar input{width:100%;-webkit-appearance:none;appearance:none;height:2px;margin:6px 0;border-radius:1px;background:linear-gradient(90deg,#fff var(--p),rgba(255,255,255,.28) var(--p));outline:0}
 .pview .vbar input::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 10px ${K.or},0 0 0 3px ${oa(.35)}}.pview .vbar input::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:#fff}
 .pview .vbar .rw{display:flex;justify-content:space-between;align-items:center;margin-top:8px}.pview .vbar .rw span{display:flex;gap:16px;align-items:center}.pview .vbar button{background:none;border:0;padding:4px;cursor:pointer;line-height:0}.pview .vbar .tm{font-weight:500;font-size:11px;letter-spacing:1px;font-variant-numeric:tabular-nums}
 .pview .vbig{position:absolute;z-index:2;left:50%;top:30%;transform:translate(-50%,-50%);width:78px;height:78px;border-radius:50%;display:grid;place-items:center;cursor:pointer;padding-left:4px;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:opacity .35s}.pview.hide .vbig{opacity:0}
-.pview .pvst{display:flex;gap:6px;justify-content:center;align-items:flex-end;padding:2px 12px 16px;min-height:62px}.pview .pvst .th{width:34px;height:46px;border-radius:8px;opacity:.5;cursor:pointer;position:relative;display:grid;place-items:center;transition:all .25s}.pview .pvst .th.on{opacity:1;width:42px;height:56px;box-shadow:0 0 0 1.5px #fff,0 6px 16px rgba(0,0,0,.4)}.pview .pvst .th i{filter:drop-shadow(0 1px 2px #000)}
-.pview .bt{display:flex;justify-content:center;gap:34px}.pvb{background:none;border:0;color:#fff;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;font-family:inherit;padding:0;opacity:.92}.pvb span{font-size:9.5px;font-weight:500;letter-spacing:1.6px}.pvb.d span{color:#FFB0BC}
-.pview.land .tit{padding-bottom:8px}.pview.land .parr,.pview.land .vbig{top:50%}.pview.land .pvst{display:none}
+.pview .pvst{display:flex;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:6px 0 4px;touch-action:pan-x}.pview .pvst::-webkit-scrollbar{display:none}.pview .pvst .in{display:flex;gap:5px;align-items:flex-end;margin:0 auto;padding:0 16px;min-height:52px}.pview .pvst .th{flex:none;width:30px;height:42px;border-radius:7px;opacity:.5;cursor:pointer;position:relative;display:grid;place-items:center;transition:all .25s}.pview .pvst .th.on{opacity:1;width:38px;height:52px;box-shadow:0 0 0 1.5px #fff,0 6px 16px rgba(0,0,0,.4)}.pview .pvst .th i{filter:drop-shadow(0 1px 2px #000)}
+.pview.land .tit{padding-bottom:8px}.pview .pmenu{position:absolute;z-index:6;top:calc(62px + env(safe-area-inset-top));right:14px;min-width:190px;padding:6px;border-radius:16px;background:rgba(22,22,26,.74);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 14px 36px rgba(0,0,0,.5);animation:pvIn .2s ease both}.pview .pmenu button{display:flex;gap:12px;align-items:center;width:100%;padding:11px 12px;background:none;border:0;border-radius:10px;color:#fff;font:500 13px/1 inherit;letter-spacing:.3px;cursor:pointer;text-align:left}.pview .pmenu button:active{background:rgba(255,255,255,.08)}.pview .pmenu button.d{color:#FFB0BC}.pview .pmenu hr{border:0;height:1px;background:rgba(255,255,255,.1);margin:4px 8px}.pview.land .parr,.pview.land .vbig{top:50%}.pview.land .pvst{display:none}
 .pgal .pvid{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}.pgal .pvid i{width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center;font-style:normal;font-size:11px}.pgal .pvid b{position:absolute;right:6px;bottom:4px;color:#fff;font-size:10.5px;text-shadow:0 1px 2px #000}
 .pconf{position:absolute;inset:0;z-index:70;display:grid;place-items:center}.pconf .dim{position:absolute;inset:0;background:rgba(0,0,0,.6)}
 .pconf .bx{position:relative;width:310px;background:${K.panel};border-radius:18px;padding:20px;box-shadow:inset 0 0 0 1px ${K.line2};color:${K.text}}
@@ -390,7 +389,7 @@ async function whyBlocked(src, ph) {
 }
 const vt = s => { s = Math.max(0, Math.floor(Number(s) || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 const SV = d => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-const SI = { back: '<path d="M15 5l-7 7 7 7"/>', play: '<path d="M8 5v14l11-7z" fill="#fff"/>', pause: '<path d="M8 5v14M16 5v14" stroke-width="2.4"/>', snd: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9a4 4 0 0 1 0 6"/>', mute: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 10l4 4M21 10l-4 4"/>',
+const SI = { more: '<circle cx="5.5" cy="12" r="1.3" fill="#fff"/><circle cx="12" cy="12" r="1.3" fill="#fff"/><circle cx="18.5" cy="12" r="1.3" fill="#fff"/>', back: '<path d="M15 5l-7 7 7 7"/>', play: '<path d="M8 5v14l11-7z" fill="#fff"/>', pause: '<path d="M8 5v14M16 5v14" stroke-width="2.4"/>', snd: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9a4 4 0 0 1 0 6"/>', mute: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 10l4 4M21 10l-4 4"/>',
   full: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>', star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>', starF: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" fill="#fff"/>',
   zoom: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M11 8.5v5M8.5 11h5"/>', fit: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M8.5 11h5"/>', del: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>', trip: '<path d="M7 17 17 7M9 7h8v8"/>', l: '<path d="M15 5l-7 7 7 7"/>', r: '<path d="M9 5l7 7-7 7"/>' };
 const Sv = (k, sz) => html`<i class="svi" style=${sz ? `width:${sz}px;height:${sz}px` : ''} dangerouslySetInnerHTML=${{ __html: SV(SI[k]).replace(/18/g, String(sz || 18)) }}></i>`;
@@ -444,54 +443,75 @@ function Viewer(l) {
   const eyebrow = [t ? t.TrName : '', dn >= 1 && t && dn <= P.daysOf(t) ? 'Day ' + dn : ''].filter(Boolean).join(' · ').toUpperCase();
   const isCover = t && t.TrCover === v.ph.PhId;
   // gestures: swipe left / right; tap shows or hides everything; double-tap zooms a photo (then drag to look around)
-  const down = e => { if (e.target.closest('.vctl,.pvb,.pvst,.vbig,.parr,.gb')) { v.x0 = null; return; } v.x0 = e.clientX; v.y0 = e.clientY; v.x1 = null; v.pan = v.zoom ? { x: e.clientX, y: e.clientY, px: v.px || 0, py: v.py || 0 } : null; };
-  const moveP = e => { if (v.x0 == null) return; v.x1 = e.clientX; if (v.pan) { v.px = v.pan.px + (e.clientX - v.pan.x); v.py = v.pan.py + (e.clientY - v.pan.y); const el = e.currentTarget.querySelector('img'); if (el) el.style.transform = `translate(${v.px}px,${v.py}px) scale(2.2)`; } };
+  // pinch with two fingers to zoom a photo (1×–5×), drag to look around; double-tap zooms in / back out
+  const zs = () => v.zs || 1, setT = el => { if (el) el.style.transform = zs() > 1 ? `translate(${v.px || 0}px,${v.py || 0}px) scale(${zs()})` : ''; };
+  const pts = v.pts || (v.pts = new Map()), dist = () => { const [p, q] = [...pts.values()]; return Math.hypot(p.x - q.x, p.y - q.y) || 1; };
+  const down = e => {
+    if (v.menu && !e.target.closest('.pmenu,[data-t="viewerMore"]')) { v.menu = false; v.x0 = null; rerender(); return; }
+    if (e.target.closest('.vctl,.pmenu,.pvst,.vbig,.parr,.gb')) { v.x0 = null; return; }
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 2 && !vid) { v.x0 = null; v.pin = { d0: dist(), s0: zs(), px: v.px || 0, py: v.py || 0 }; return; }
+    if (pts.size > 1) return;
+    v.x0 = e.clientX; v.y0 = e.clientY; v.x1 = null; v.pan = zs() > 1 ? { x: e.clientX, y: e.clientY, px: v.px || 0, py: v.py || 0 } : null;
+  };
+  const moveP = e => {
+    if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const el = e.currentTarget.querySelector('.fr img');
+    if (v.pin && pts.size === 2) { const k = Math.min(5, Math.max(1, v.pin.s0 * dist() / v.pin.d0)); v.zs = k; v.px = v.pin.px * k / v.pin.s0; v.py = v.pin.py * k / v.pin.s0; setT(el); return; }
+    if (v.x0 == null) return; v.x1 = e.clientX;
+    if (v.pan) { v.px = v.pan.px + (e.clientX - v.pan.x); v.py = v.pan.py + (e.clientY - v.pan.y); setT(el); }
+  };
   const up = e => {
+    pts.delete(e.pointerId);
+    if (v.pin) { if (pts.size) return; v.pin = null; v.x0 = null; v.pinEnd = Date.now(); if (zs() < 1.08) { v.zs = 1; v.px = 0; v.py = 0; } v.zoom = zs() > 1; rerender(); return; }
     if (v.x0 == null) return; const dx = (e.clientX ?? v.x1 ?? v.x0) - v.x0, dy = (e.clientY ?? v.y0) - v.y0; v.x0 = null;
     if (!v.zoom && Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) { go(dx < 0 ? 1 : -1); return; }
-    if (Math.abs(dx) >= 8 || Math.abs(dy) >= 8) return;
+    if (Math.abs(dx) >= 8 || Math.abs(dy) >= 8 || Date.now() - (v.pinEnd || 0) < 350) return;
     const now = Date.now();
-    if (!vid && now - (v.tap || 0) < 300) { clearTimeout(v.tapT); v.tap = 0; v.zoom = !v.zoom; v.px = 0; v.py = 0; rerender(); return; }
+    if (!vid && now - (v.tap || 0) < 300) { clearTimeout(v.tapT); v.tap = 0; v.zs = zs() > 1 ? 1 : 2.5; v.zoom = v.zs > 1; v.px = 0; v.py = 0; rerender(); return; }
     v.tap = now; clearTimeout(v.tapT); v.tapT = setTimeout(() => { if (l0() === v) { v.hide = !v.hide; rerender(); } }, vid ? 0 : 280);
   };
+  const cancel = e => { pts.delete(e.pointerId); if (v.pin && !pts.size) { v.pin = null; v.zoom = zs() > 1; rerender(); } else if (v.x0 != null && v.x1 != null && !v.zoom) { const dx = v.x1 - v.x0; if (Math.abs(dx) > 45) go(dx < 0 ? 1 : -1); } v.x0 = null; };
   const n0 = Math.max(0, Math.min(at - 3, list.length - 7)), near = list.map((x, i) => [x, i]).slice(n0, n0 + 7);
-  const act = (ic, label, fn, id, cls) => html`<button class=${'pvb' + (cls ? ' ' + cls : '')} onClick=${fn} data-t=${id}>${Sv(ic, 20)}<span>${label}</span></button>`;
   const del = () => confirmAsk(l, vid ? 'Delete this video?' : 'Delete this photo?', 'It is removed from the trip and moved to the bin in your Google Drive.', 'Delete', () => guard(async () => {
     if (!canWrite()) return;
     await PH.remove([v.ph.PhId]); await save({ del: { PP_Photos: [v.ph.PhId] }, up: isCover ? { PP_Trips: [{ ...t, TrCover: '' }] } : {}, log: [{ AuAction: 'Atlas · Photo deleted', AuRef: 'PASSPORT', AuDetail: t ? t.TrName : '' }] });
     close();
   }));
+  const mi = (ic, label, fn, id, cls) => html`<button class=${cls || ''} onClick=${() => { v.menu = false; fn(); }} data-t=${id}>${Sv(ic, 18)}<span>${label}</span></button>`;
+  const menuItems = [
+    t && v.o.cover !== false && !vid ? mi(isCover ? 'starF' : 'star', isCover ? 'Journey cover ✓' : 'Set as journey cover', () => { psave({ up: { PP_Trips: [{ ...t, TrCover: v.ph.PhId }] } }, 'Trip cover', t.TrName); rerender(); }, 'setCover') : null,
+    v.o.onOpenTrip && t ? mi('trip', 'Open journey', () => { close(); v.o.onOpenTrip(t); }, 'openTrip') : null,
+    v.o.del !== false ? mi('del', vid ? 'Delete video' : 'Delete photo', del, 'photoDel', 'd') : null].filter(Boolean);
+  // keep the open one in the middle of the film strip (it scrolls left and right)
+  if (v.scAt !== at) { v.scAt = at; requestAnimationFrame(() => { const sc = document.querySelector('.pview .pvst'), on = sc && sc.querySelector('.th.on'); if (on) sc.scrollTo({ left: on.offsetLeft - sc.clientWidth / 2 + on.offsetWidth / 2, behavior: v.scF ? 'smooth' : 'auto' }); v.scF = 1; }); }
   const st = v.vs || {}, own = vid && !v.useFrame && v.ph.PhShare && DB.driveKey;
   const media = vid ? (own ? VideoEl(v, img)
       : v.ph.PhShare ? html`<iframe src=${'https://drive.google.com/file/d/' + encodeURIComponent(v.ph.PhFile) + '/preview'} allow="autoplay; fullscreen" allowfullscreen data-t="viewerVideo"></iframe>`
       : html`<div class="wait" style=${img ? `background-image:url("${img}")` : ''}><span>${v.err || 'Getting the video ready…'}</span></div>`)
-    : img ? html`<img src=${img} alt="" draggable="false" style=${v.zoom ? `transform:translate(${v.px || 0}px,${v.py || 0}px) scale(2.2)` : ''} data-t="viewerImg" />` : html`<span class="ld">${v.err || 'Loading…'}</span>`;
+    : img ? html`<img src=${img} alt="" draggable="false" style=${zs() > 1 ? `transform:translate(${v.px || 0}px,${v.py || 0}px) scale(${zs()})` : ''} data-t="viewerImg" />` : html`<span class="ld">${v.err || 'Loading…'}</span>`;
   // the app is a phone-width canvas; turned sideways the viewer steps out of it and takes the whole screen at true size
   let box = null; const sg = land && document.getElementById('stage');
   if (sg) { const r = sg.getBoundingClientRect(), k = (r.width / (sg.offsetWidth || 390)) || 1; box = `position:fixed;inset:auto;left:${-r.left / k}px;top:${-r.top / k}px;width:${W}px;height:${H}px;transform-origin:0 0;transform:scale(${1 / k})`; }
   document.body.classList.toggle('pvland', !!box);
   return html`<div class=${'pview' + (v.hide ? ' hide' : '') + (land ? ' land' : '')} style=${box} data-t="viewer" tabindex="0" onKeyDown=${e => { if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); if (e.key === 'Escape') close(); }}>
     <div class="amb" style=${th ? `background-image:url("${th}")` : PH.bg('', v.ph.PhId)}></div>
-    <div class="im" onPointerDown=${down} onPointerMove=${moveP} onPointerUp=${up} onPointerCancel=${() => { if (v.x0 != null && v.x1 != null && !v.zoom) { const dx = v.x1 - v.x0; if (Math.abs(dx) > 45) go(dx < 0 ? 1 : -1); } v.x0 = null; }}>
+    <div class="im" onPointerDown=${down} onPointerMove=${moveP} onPointerUp=${up} onPointerCancel=${cancel}>
       <div class=${'fr' + (vid ? ' vd' : '') + (cover ? ' cv' : '') + (v.zoom ? ' z' : '')} key=${v.ph.PhId}>${media}</div>
       ${own && !st.playing && !v.tried ? html`<span class="vbig" onClick=${() => { const x = document.getElementById('pvVideo'); if (x) x.play().catch(() => {}); }} data-t="viewerPlay">${Sv('play', 26)}</span>` : null}</div>
     <div class="shade"></div>
     <div class="vctl top"><span class="gb" onClick=${close} data-t="viewerClose" aria-label="Back">${Sv('back', 18)}</span>
-      ${list.length > 1 ? html`<div class="dots">${near.map(([, i]) => html`<i class=${i === at ? 'on' : ''}></i>`)}</div>` : html`<span></span>`}<span class="gb ghost"></span></div>
+      ${list.length > 1 ? html`<div class="dots">${near.map(([, i]) => html`<i class=${i === at ? 'on' : ''}></i>`)}</div>` : html`<span></span>`}${menuItems.length ? html`<span class="gb" onClick=${() => { v.menu = !v.menu; rerender(); }} data-t="viewerMore" aria-label="More">${Sv('more', 20)}</span>` : html`<span class="gb ghost"></span>`}</div>
+    ${v.menu && menuItems.length ? html`<div class="pmenu" data-t="viewerMenu">${menuItems}</div>` : null}
     ${at > 0 && !v.zoom ? html`<span class="parr l" onClick=${() => go(-1)} data-t="viewerPrev" aria-label="Previous">${Sv('l', 22)}</span>` : null}${at < list.length - 1 && !v.zoom ? html`<span class="parr r" onClick=${() => go(1)} data-t="viewerNext" aria-label="Next">${Sv('r', 22)}</span>` : null}
     <div class="vctl bot">
       ${vid && v.why ? html`<div class="pwhy" data-t="viewerWhy">${v.why}</div>` : null}
       <div class="tit">${eyebrow ? html`<div class="ey">${eyebrow}</div>` : null}
-        ${tk ? html`<div class="tt">${WD[tk.getDay()]},${land ? ' ' : html`<br/>`}${tk.getDate()} ${MONTHS[tk.getMonth()]}</div>` : null}<i class="hl"></i>
+        ${tk ? html`<div class="tt">${WD[tk.getDay()]}, ${tk.getDate()} ${MONTHS[tk.getMonth()]}</div>` : null}<i class="hl"></i>
         <div class="dd" data-t="viewerPos">${vid ? 'Video · ' + PH.durTxt(v.ph.PhDur) : 'Photo ' + (at + 1) + ' of ' + list.length}${tk ? ' · ' + tk.getFullYear() : ''}${isCover ? ' · Cover' : ''}</div></div>
       ${own ? VideoBar(v) : null}
-      ${list.length > 1 ? html`<div class="pvst" data-t="viewerStrip">${near.map(([x, i]) => html`<span class=${'th' + (i === at ? ' on' : '')} style=${PH.bg(x.PhId, x.PhId)} onClick=${() => openPhoto(l, x, v.o)} data-t=${'vs-' + x.PhId}>${PH.isVideo(x) ? html`<i>${Sv('play', 10)}</i>` : null}</span>`)}</div>` : null}
-      <div class="bt">
-        ${t && v.o.cover !== false && !vid ? act(isCover ? 'starF' : 'star', isCover ? 'COVER ✓' : 'COVER', () => { psave({ up: { PP_Trips: [{ ...t, TrCover: v.ph.PhId }] } }, 'Trip cover', t.TrName); rerender(); }, 'setCover') : null}
-        ${!vid ? act(v.zoom ? 'fit' : 'zoom', v.zoom ? 'FIT' : 'ZOOM', () => { v.zoom = !v.zoom; v.px = 0; v.py = 0; rerender(); }, 'viewerZoom') : null}
-        ${v.o.onOpenTrip && t ? act('trip', 'JOURNEY', () => { close(); v.o.onOpenTrip(t); }, 'openTrip') : null}
-        ${v.o.del !== false ? act('del', 'DELETE', del, 'photoDel', 'd') : null}
-      </div></div></div>`;
+      ${list.length > 1 ? html`<div class="pvst" data-t="viewerStrip"><div class="in">${list.map((x, i) => html`<span class=${'th' + (i === at ? ' on' : '')} style=${PH.bg(x.PhId, x.PhId)} onClick=${() => openPhoto(l, x, v.o)} data-t=${'vs-' + x.PhId}>${PH.isVideo(x) ? html`<i>${Sv('play', 10)}</i>` : null}</span>`)}</div></div>` : null}
+    </div></div>`;
 }
 
 /* ───────── pick a country ───────── */

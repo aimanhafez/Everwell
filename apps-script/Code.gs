@@ -16,6 +16,7 @@
  *
  * Helpers you can run from the editor: setDriveKey(), removeDriveKey(), showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.15.1 · Viewer: bigger picture, ⋯ menu, pinch zoom (app only; same server code).
  * 3.15.0 · Cinema viewer for Memories (no server change since 3.14.7).
  * 3.14.7 · The video viewer checks the Drive key from here too (clearer reason). Paste this Code.gs and Deploy › New version.
  *
@@ -97,7 +98,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.15.0';
+var EW_VERSION = '3.15.1';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
