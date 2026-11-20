@@ -14,7 +14,10 @@
  *   5. Deploy > New deployment > Web app.  Execute as: Me.  Who has access: Anyone.
  *      Copy the Web app URL (it ends with /exec).
  *
- * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
+ * Helpers you can run from the editor: setDriveKey(), removeDriveKey(), showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
+ *
+ * 3.14.5 · MansWell's own video player. Make a second API key (Google Drive API, locked to your MansWell address), paste it on the
+ *   DRIVE_KEY_TO_SAVE line, run setDriveKey(), then empty the line again. Deploy › New version.
  *
  * 3.14.4 · Videos keep their own shape (phone videos stand upright). Paste this Code.gs and Deploy › New version.
  *
@@ -89,7 +92,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.14.4';
+var EW_VERSION = '3.14.5';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -227,7 +230,7 @@ var ACTIONS = {
       imports: readTable_(ss, 'SYS_Imports'),
       payslips: readTable_(ss, 'EW_Payslips'),
       lens: { settings: readTable_(ss, 'LN_Settings'), assets: readTable_(ss, 'LN_Assets'), values: readTable_(ss, 'LN_Values'), goals: readTable_(ss, 'LN_Goals'), budget: readTable_(ss, 'LN_Budget') },
-      logbook: { stops: readTable_(ss, 'LB_Stops'), tracks: readTable_(ss, 'LB_Tracks'), expenses: readTable_(ss, 'LB_Expenses'), budget: readTable_(ss, 'LB_Budget'), rates: readTable_(ss, 'LB_Rates'), results: readTable_(ss, 'LB_Results'), finds: readTable_(ss, 'LB_Finds'), days: readTable_(ss, 'LB_Days'), places: placesUse_() },
+      logbook: { stops: readTable_(ss, 'LB_Stops'), tracks: readTable_(ss, 'LB_Tracks'), expenses: readTable_(ss, 'LB_Expenses'), budget: readTable_(ss, 'LB_Budget'), rates: readTable_(ss, 'LB_Rates'), results: readTable_(ss, 'LB_Results'), finds: readTable_(ss, 'LB_Finds'), days: readTable_(ss, 'LB_Days'), places: placesUse_() }, driveKey: driveKey_(), // only opens videos set to "anyone with the link"; locked to your MansWell address in Google Cloud
       passport: { settings: readTable_(ss, 'PP_Settings'), places: readTable_(ss, 'PP_Places'), trips: readTable_(ss, 'PP_Trips'), stops: readTable_(ss, 'PP_Stops'), photos: readTable_(ss, 'PP_Photos') },
       serverTime: new Date().toISOString()
     };
@@ -588,6 +591,17 @@ function setPlacesKey() {
 /** This month's Google Places count. */
 function placesUsage() { var u = placesUse_(); Logger.log('This month (' + u.m + '): ' + u.ac + ' suggestions, ' + u.det + ' place details. Voyage uses Google until ' + PLACES_CAP + ' of either, then the free search until next month.'); return u; }
 function removePlacesKey() { PropertiesService.getScriptProperties().deleteProperty('PLACES_KEY'); Logger.log('Key removed. Voyage uses the free search.'); }
+/** 3.14.5 · Paste your second key (Google Drive API, locked to your MansWell web address) between the quotes, run setDriveKey,
+ *  then empty the quotes again. Videos then play in MansWell's own player. */
+var DRIVE_KEY_TO_SAVE = '';
+function setDriveKey() {
+  var k = String(DRIVE_KEY_TO_SAVE || '').trim();
+  if (!k) throw new Error('Paste your Drive key between the quotes on the line  var DRIVE_KEY_TO_SAVE = \'\';  then run setDriveKey again.');
+  PropertiesService.getScriptProperties().setProperty('DRIVE_KEY', k);
+  Logger.log('Drive key saved. Reload MansWell: videos now play in its own player. Now empty the quotes on the DRIVE_KEY_TO_SAVE line.');
+}
+function removeDriveKey() { PropertiesService.getScriptProperties().deleteProperty('DRIVE_KEY'); Logger.log('Drive key removed. Videos use Google Drive\'s player.'); }
+function driveKey_() { return PropertiesService.getScriptProperties().getProperty('DRIVE_KEY') || ''; }
 function placesKey_() { return PropertiesService.getScriptProperties().getProperty('PLACES_KEY') || ''; }
 function placesUse_() {
   var m = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM'), u = {};

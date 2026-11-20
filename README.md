@@ -1,4 +1,9 @@
-# MansWell · v3.14.4 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.14.5 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.14.5 · MansWell's own video player
+- Videos play in MansWell's own player: the phone plays the file straight from Drive, filling the frame (no black strip, no Drive buttons). One bar in the theme colour: play / pause, a timeline you can drag, time, sound, full screen. Tap the video to play or pause; swipe and the film strip still move between items.
+- Needs your Drive key once: in Apps Script, paste it between the quotes on `var DRIVE_KEY_TO_SAVE = '';`, choose setDriveKey, Run, then empty the quotes again and Save. Until then (or if the key is blocked) videos use Google Drive's player as before.
+- Upload: all files in Step 1, paste the new Code.gs and Deploy › New version, then setDriveKey.
 
 ## 3.14.4 · Phone videos stand upright
 - The video frame takes the video's own shape: phone recordings play upright and as big as the screen allows (no more small video in a wide box). Turning the phone resizes it.

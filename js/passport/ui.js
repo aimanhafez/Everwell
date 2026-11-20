@@ -81,6 +81,12 @@ ul.pmom li:before{content:'';position:absolute;left:0;top:14px;width:6px;height:
 .pview .fr{position:relative;max-width:100%;max-height:100%;border-radius:20px;overflow:hidden;box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);animation:pvIn .28s ease both;line-height:0}
 .pview .fr img{display:block;max-width:calc(100vw - 28px);max-height:calc(100vh - 330px);max-height:calc(100dvh - 330px);object-fit:contain;pointer-events:none;-webkit-user-drag:none;transition:transform .25s ease}.pview .fr.z{overflow:hidden}.pview .fr.z img{transition:none}
 .pview .fr.vd{flex:none}.pview .fr iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.pview .fr video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.pview .vbig{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}.pview .vbig i{width:66px;height:66px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:24px;padding-left:4px;background:rgba(255,255,255,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.pview .vbar{position:absolute;left:10px;right:10px;bottom:10px;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:16px;background:rgba(10,10,14,.48);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);line-height:1}
+.pview .vbar button{background:none;border:0;color:#fff;font-size:14px;padding:4px;cursor:pointer;min-width:24px}.pview .vbar .tm{font-size:10.5px;white-space:nowrap;opacity:.9;font-variant-numeric:tabular-nums}
+.pview .vbar input{flex:1;min-width:40px;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:linear-gradient(90deg,${K.or} var(--p),rgba(255,255,255,.3) var(--p));outline:0}
+.pview .vbar input::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}.pview .vbar input::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:#fff}
 .pview .wait{position:absolute;inset:0;background:center/cover no-repeat #111;display:grid;place-items:center}.pview .wait span{font-size:12.5px;padding:8px 12px;border-radius:99px;background:rgba(0,0,0,.55)}.pview .ld{color:#aaa;font-size:13px;padding:40px}
 @keyframes pvIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 .pview .cap{position:relative;z-index:2;display:flex;gap:6px;padding:4px 20px 10px;min-height:30px}.pview .chip{font-size:9px;font-weight:800;letter-spacing:1.2px;padding:5px 9px;border-radius:99px;background:${K.or};color:${K.onAcc || '#fff'}}.pview .chip.o{background:rgba(255,255,255,.16);color:#fff}
@@ -342,6 +348,25 @@ export function openPhoto(l, ph, o = {}) {
 }
 /** The Memories viewer: the photo or video in a framed card on its own colours, the journey day, a film strip, swipe / arrows,
  *  double-tap to zoom (photos). Videos play inside, with Google Drive's player. */
+/** MansWell's own video player: the phone plays the file straight from Drive (needs the Drive key), one bar in the theme colour. */
+const vt = s => { s = Math.max(0, Math.floor(Number(s) || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function VideoPlayer(v, poster) {
+  const st = v.vs || (v.vs = { cur: 0, dur: Number(v.ph.PhDur) || 0, playing: false, muted: false, started: false });
+  const el = () => document.getElementById('pvVideo');
+  const upd = e => { const x = e.currentTarget; st.cur = x.currentTime; st.dur = isFinite(x.duration) && x.duration ? x.duration : st.dur; st.playing = !x.paused; rerender(); };
+  const src = 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(v.ph.PhFile) + '?alt=media&key=' + encodeURIComponent(DB.driveKey);
+  const full = () => { const x = el(); if (!x) return; if (x.webkitEnterFullscreen) x.webkitEnterFullscreen(); else if (x.requestFullscreen) x.requestFullscreen(); };
+  return html`<video id="pvVideo" src=${src} poster=${poster || ''} playsinline webkit-playsinline preload="metadata" muted=${st.muted} data-t="viewerVideo"
+      onTimeUpdate=${upd} onPlay=${e => { st.started = true; upd(e); }} onPause=${upd} onLoadedMetadata=${upd} onEnded=${upd}
+      onError=${() => { v.useFrame = true; rerender(); }}></video>
+    ${st.playing ? null : html`<span class="vbig" data-t="viewerPlay"><i>▶</i></span>`}
+    <div class="vbar" data-t="viewerBar" onPointerDown=${e => e.stopPropagation()} onPointerUp=${e => e.stopPropagation()}>
+      <button onClick=${() => { const x = el(); if (x) { if (x.paused) x.play().catch(() => {}); else x.pause(); } }} data-t="vPlay">${st.playing ? '❚❚' : '▶'}</button>
+      <input type="range" min="0" max=${Math.max(1, st.dur)} step="0.05" value=${st.cur} style=${`--p:${st.dur ? st.cur / st.dur * 100 : 0}%`} onInput=${e => { const x = el(); if (x) { x.currentTime = Number(e.target.value); st.cur = x.currentTime; rerender(); } }} data-t="vSeek" />
+      <span class="tm">${vt(st.cur)} / ${vt(st.dur)}</span>
+      <button onClick=${() => { const x = el(); st.muted = !st.muted; if (x) x.muted = st.muted; rerender(); }} data-t="vMute">${st.muted ? '🔇' : '🔊'}</button>
+      <button onClick=${full} data-t="vFull">⛶</button></div>`;
+}
 /** The video frame in the video's own shape (portrait phone videos stand upright), as big as the screen allows. */
 function vidBox(ph) {
   const W = Number(ph.PhW) || 0, H = Number(ph.PhH) || 0, r = W && H ? W / H : 9 / 16; // unknown: most phone videos are upright
@@ -368,6 +393,7 @@ function Viewer(l) {
   const up = e => {
     if (v.x0 == null) return; const dx = (e.clientX ?? v.x1 ?? v.x0) - v.x0, dy = (e.clientY ?? v.y0) - v.y0; v.x0 = null;
     if (!v.zoom && Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) { go(dx < 0 ? 1 : -1); return; }
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 8 && vid && !e.target.closest('.vbar')) { const el = document.getElementById('pvVideo'); if (el) { if (el.paused) el.play().catch(() => {}); else el.pause(); } return; }
     if (Math.abs(dx) < 8 && Math.abs(dy) < 8 && !vid) { const now = Date.now(); if (now - (v.tap || 0) < 320) { v.tap = 0; v.zoom = !v.zoom; v.px = 0; v.py = 0; rerender(); } else v.tap = now; }
   };
   const near = list.map((x, i) => [x, i]).slice(Math.max(0, Math.min(at - 3, list.length - 7)), Math.max(0, Math.min(at - 3, list.length - 7)) + 7);
@@ -383,7 +409,8 @@ function Viewer(l) {
       <div class="ti"><b>${t ? t.TrName : ''}</b><span>${when}</span></div>${list.length > 1 ? html`<span class="cnt" data-t="viewerPos">${at + 1} / ${list.length}</span>` : null}</div>
     <div class="im" onPointerDown=${down} onPointerMove=${moveP} onPointerUp=${up} onPointerCancel=${() => { if (v.x0 != null && v.x1 != null && !v.zoom) { const dx = v.x1 - v.x0; if (Math.abs(dx) > 45) go(dx < 0 ? 1 : -1); } v.x0 = null; }}>
       <div class=${'fr' + (vid ? ' vd' : '') + (v.zoom ? ' z' : '')} key=${v.ph.PhId} style=${vid ? vidBox(v.ph) : ''}>
-        ${vid ? (v.ph.PhShare ? html`<iframe src=${'https://drive.google.com/file/d/' + encodeURIComponent(v.ph.PhFile) + '/preview'} allow="autoplay; fullscreen" allowfullscreen data-t="viewerVideo"></iframe>`
+        ${vid ? (v.ph.PhShare && DB.driveKey && !v.useFrame ? VideoPlayer(v, img)
+          : v.ph.PhShare ? html`<iframe src=${'https://drive.google.com/file/d/' + encodeURIComponent(v.ph.PhFile) + '/preview'} allow="autoplay; fullscreen" allowfullscreen data-t="viewerVideo"></iframe>`
             : html`<div class="wait" style=${img ? `background-image:url("${img}")` : ''}><span>${v.err || 'Getting the video ready…'}</span></div>`)
           : img ? html`<img src=${img} alt="" draggable="false" style=${v.zoom ? `transform:translate(${v.px || 0}px,${v.py || 0}px) scale(2.2)` : ''} data-t="viewerImg" />` : html`<span class="ld">${v.err || 'Loading…'}</span>`}
       </div>
