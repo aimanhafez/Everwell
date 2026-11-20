@@ -1,4 +1,17 @@
-# MansWell · v3.14.6 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.15.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.15.0 · Cinema viewer for Memories
+- Photos and videos open full screen, edge to edge when their shape suits the screen; a landscape one sits across the middle on a soft glow of its own colours.
+- Serif date under the picture: JOURNEY · DAY N, the date, an accent line, and "Photo 4 of 11 · 2026" / "Video · 0:42 · 2026".
+- Dots at the top, line icons with small caps (COVER / ZOOM / DELETE).
+- Videos: hairline timeline with a glowing dot; controls fade 2 s after playing, tap to bring them back.
+- Turn the phone sideways: the picture or video fills the whole screen and the rest fades; tap to show it. Full-screen button does the same for videos.
+- Swipe, film strip, double-tap / pinch zoom kept.
+
+## 3.14.7 · Videos play even when the phone's player is refused
+- If Google refuses the phone's own video player (an iPhone may not send the MansWell address with videos), MansWell now fetches the video itself and plays it from the phone (Loading video · 40%), up to 150 MB.
+- If that also fails, the note under the video now comes from a check done by the Apps Script (key valid? Drive API on? website allowed? video shared?).
+- Upload: all files in Step 1, paste the new Code.gs and Deploy › New version.
 
 ## 3.14.6 · Why a video uses Google's player
 - When Drive refuses the Drive key, the viewer now says why under the video (for example, the key's website doesn't match this address) and plays it with Google's player meanwhile.

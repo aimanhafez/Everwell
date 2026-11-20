@@ -16,6 +16,9 @@
  *
  * Helpers you can run from the editor: setDriveKey(), removeDriveKey(), showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.15.0 · Cinema viewer for Memories (no server change since 3.14.7).
+ * 3.14.7 · The video viewer checks the Drive key from here too (clearer reason). Paste this Code.gs and Deploy › New version.
+ *
  * 3.14.6 · The video viewer says why Drive refused the key (app only; same server code as 3.14.5).
  *
  * 3.14.5 · MansWell's own video player. Make a second API key (Google Drive API, locked to your MansWell address), paste it on the
@@ -94,7 +97,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.14.6';
+var EW_VERSION = '3.15.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -298,6 +301,18 @@ var ACTIONS = {
     row.PhW = Number(m.width) || 0; row.PhH = Number(m.height) || 0; if (!(Number(row.PhDur) > 0) && m.durationMillis) row.PhDur = Math.round(Number(m.durationMillis) / 1000);
     locked_(function () { upsertRows_(ss, 'PP_Photos', [row]); });
     return { row: row, ready: true };
+  },
+  /** Atlas · checks the Drive key and one video from here (with your MansWell address), so the viewer can say what is wrong. */
+  ppVideoCheck: function (ss, p) {
+    var key = driveKey_(); if (!key) return { code: 0, msg: 'no key' };
+    var row = readTable_(ss, 'PP_Photos').filter(function (r) { return r.PhId === String(p.id); })[0];
+    if (!row) return { code: 0, msg: 'not found' };
+    var access = ''; try { access = String(DriveApp.getFileById(row.PhFile).getSharingAccess()); } catch (e) { access = 'unknown'; }
+    var h = p.origin ? { Referer: String(p.origin) + '/' } : {};
+    var res = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(row.PhFile) + '?fields=id,mimeType,size&key=' + encodeURIComponent(key), { muteHttpExceptions: true, headers: h });
+    var code = res.getResponseCode(), msg = '';
+    try { var j = JSON.parse(res.getContentText()); msg = j.error ? String(j.error.message || '') : String(j.mimeType || ''); } catch (e) { msg = String(res.getContentText()).slice(0, 200); }
+    return { code: code, msg: msg, access: access, keyEnd: key.slice(-4) };
   },
   ppVideoStart: function (ss, p) {
     if (!p.id || !(Number(p.size) > 0)) throw new Error('No video to save.');

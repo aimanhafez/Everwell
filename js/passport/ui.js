@@ -70,33 +70,34 @@ ul.pmom li:before{content:'';position:absolute;left:0;top:14px;width:6px;height:
 .pstp:before{content:'';position:absolute;inset:4px;border-radius:50%;border:1px dashed var(--s);opacity:.7}.pstp.sq{border-radius:13px}.pstp.sq:before{border-radius:9px}
 .pstp b{font:800 16px Inter,system-ui;letter-spacing:1px;display:block}.pstp span{font-size:7.5px;font-weight:700;letter-spacing:.8px;display:block}
 .pstp.lock{--s:${K.line2};color:${K.mute}}
-.pview{position:absolute;inset:0;z-index:60;background:#060608;display:flex;flex-direction:column;overflow:hidden;color:#fff;outline:0}
-.pview .amb{position:absolute;inset:-60px;background:center/cover no-repeat;filter:blur(42px) saturate(1.25);opacity:.55;transform:scale(1.15);transition:background-image .3s}
-.pview .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,6,8,.6),rgba(6,6,8,.12) 28%,rgba(6,6,8,.22) 62%,rgba(6,6,8,.9))}
-.pview .top{position:relative;z-index:2;display:flex;align-items:center;gap:10px;padding:16px 16px 6px}
-.pview .gb{width:38px;height:38px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:21px;cursor:pointer;background:rgba(255,255,255,.13);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.pview .ti{flex:1;min-width:0}.pview .ti b{display:block;font:400 19px Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pview .ti span{font-size:11px;opacity:.75;letter-spacing:.2px}
-.pview .cnt{flex:none;font-size:11px;font-weight:700;letter-spacing:1px;padding:6px 10px;border-radius:99px;background:rgba(255,255,255,.13);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
-.pview .im{position:relative;z-index:1;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:10px 14px;touch-action:pan-y;user-select:none}
-.pview .fr{position:relative;max-width:100%;max-height:100%;border-radius:20px;overflow:hidden;box-shadow:0 22px 55px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);animation:pvIn .28s ease both;line-height:0}
-.pview .fr img{display:block;max-width:calc(100vw - 28px);max-height:calc(100vh - 330px);max-height:calc(100dvh - 330px);object-fit:contain;pointer-events:none;-webkit-user-drag:none;transition:transform .25s ease}.pview .fr.z{overflow:hidden}.pview .fr.z img{transition:none}
-.pview .fr.vd{flex:none}.pview .fr iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
-.pview .fr video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
-.pview .vbig{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}.pview .vbig i{width:66px;height:66px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:24px;padding-left:4px;background:rgba(255,255,255,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.pview .vbar{position:absolute;left:10px;right:10px;bottom:10px;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:16px;background:rgba(10,10,14,.48);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);line-height:1}
-.pview .vbar button{background:none;border:0;color:#fff;font-size:14px;padding:4px;cursor:pointer;min-width:24px}.pview .vbar .tm{font-size:10.5px;white-space:nowrap;opacity:.9;font-variant-numeric:tabular-nums}
-.pview .vbar input{flex:1;min-width:40px;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:linear-gradient(90deg,${K.or} var(--p),rgba(255,255,255,.3) var(--p));outline:0}
-.pview .vbar input::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}.pview .vbar input::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:#fff}
-.pview .pwhy{position:relative;z-index:2;margin:0 16px 8px;padding:8px 12px;border-radius:12px;font-size:11.5px;line-height:1.45;background:rgba(255,190,90,.14);color:#FFD9A6;box-shadow:inset 0 0 0 1px rgba(255,190,90,.3)}
-.pview .wait{position:absolute;inset:0;background:center/cover no-repeat #111;display:grid;place-items:center}.pview .wait span{font-size:12.5px;padding:8px 12px;border-radius:99px;background:rgba(0,0,0,.55)}.pview .ld{color:#aaa;font-size:13px;padding:40px}
-@keyframes pvIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
-.pview .cap{position:relative;z-index:2;display:flex;gap:6px;padding:4px 20px 10px;min-height:30px}.pview .chip{font-size:9px;font-weight:800;letter-spacing:1.2px;padding:5px 9px;border-radius:99px;background:${K.or};color:${K.onAcc || '#fff'}}.pview .chip.o{background:rgba(255,255,255,.16);color:#fff}
-.pview .fs{position:relative;z-index:2;display:flex;gap:7px;justify-content:center;align-items:center;padding:4px 12px 14px;min-height:62px}
-.pview .fs .th{width:40px;height:40px;border-radius:10px;opacity:.5;cursor:pointer;position:relative;display:grid;place-items:center;transition:all .2s}.pview .fs .th.on{opacity:1;width:48px;height:48px;box-shadow:0 0 0 2px #fff,0 0 0 4px ${K.or}}
-.pview .fs .th i{font-style:normal;font-size:10px;color:#fff;text-shadow:0 1px 3px #000}
-.pview .bt{position:relative;z-index:2;display:flex;justify-content:center;gap:22px;padding:0 16px 28px}
-.pvb{background:none;border:0;color:#fff;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;font-family:inherit;padding:0}.pvb b{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-weight:400;font-size:18px;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}.pvb span{font-size:10.5px;letter-spacing:.6px;opacity:.85}.pvb.d{color:#FF9AA8}
-.pview .parr{position:absolute;z-index:3;top:50%;margin-top:-19px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);color:#fff;display:grid;place-items:center;font-size:22px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}.pview .parr.l{left:8px}.pview .parr.r{right:8px}
+body.pvland #stage{overflow:visible}.pview{position:fixed;inset:0;z-index:60;background:#050507;overflow:hidden;color:#fff;outline:0;font-family:inherit}
+.pview .amb{position:absolute;inset:-60px;background:center/cover no-repeat;filter:blur(46px) saturate(1.25) brightness(.8);opacity:.75;transform:scale(1.15)}
+.pview .im{position:absolute;inset:0;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.pview .fr{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;animation:pvIn .35s ease both}
+.pview .fr img,.pview .fr video{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;-webkit-user-drag:none;transition:transform .25s ease;background:transparent}
+.pview .fr.cv img,.pview .fr.cv video{object-fit:cover}.pview:not(.land) .fr:not(.cv){bottom:34%}.pview:not(.land) .fr.vd:not(.cv){bottom:46%}.pview .fr.z img{transition:none}
+.pview .fr iframe{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);width:100%;height:min(100%,calc(100vw * 1.78));border:0;background:#000}
+.pview .wait{position:absolute;inset:0;background:center/contain no-repeat;display:grid;place-items:center}.pview .wait span,.pview .vload{font-size:12px;letter-spacing:.5px;padding:8px 14px;border-radius:99px;background:rgba(0,0,0,.5)}.pview .vload{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);white-space:nowrap}.pview .ld{position:absolute;inset:0;display:grid;place-items:center;color:#aaa;font-size:13px}
+@keyframes pvIn{from{opacity:0;transform:scale(1.02)}to{opacity:1;transform:none}}
+.pview .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,0) 20%,rgba(0,0,0,0) 50%,rgba(0,0,0,.84) 100%);transition:opacity .35s}
+.pview .vctl{position:absolute;left:0;right:0;z-index:3;transition:opacity .35s,transform .35s}.pview.hide .vctl,.pview.hide .shade,.pview.hide .parr{opacity:0;pointer-events:none}.pview.hide .vctl.top{transform:translateY(-8px)}.pview.hide .vctl.bot{transform:translateY(8px)}
+.pview .top{top:0;display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 16px 0}
+.pview .gb{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}.pview .gb.ghost{visibility:hidden}
+.pview .svi{display:inline-flex;line-height:0}
+.pview .dots{display:flex;gap:5px;align-items:center}.pview .dots i{width:4px;height:4px;border-radius:2px;background:rgba(255,255,255,.42);transition:all .25s}.pview .dots i.on{width:18px;background:#fff}
+.pview .parr{position:absolute;z-index:3;top:30%;margin-top:-22px;width:44px;height:44px;display:grid;place-items:center;cursor:pointer;opacity:.75;transition:opacity .35s;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}.pview .parr.l{left:2px}.pview .parr.r{right:2px}
+.pview .bot{bottom:0;padding:0 0 calc(18px + env(safe-area-inset-bottom))}
+.pview .tit{padding:0 24px 14px}.pview .ey{font-size:10px;font-weight:600;letter-spacing:3px;opacity:.82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pview .tt{font:400 31px/1.1 Georgia,'Times New Roman',serif;margin:8px 0 2px;text-shadow:0 2px 16px rgba(0,0,0,.35)}.pview.land .tt{font-size:24px}
+.pview .hl{display:block;width:34px;height:1.5px;background:${K.or};margin:11px 0 9px}.pview .dd{font-size:12px;opacity:.86;letter-spacing:.3px}
+.pview .pwhy{margin:0 16px 12px;padding:8px 12px;border-radius:12px;font-size:11.5px;line-height:1.45;background:rgba(255,190,90,.14);color:#FFD9A6;box-shadow:inset 0 0 0 1px rgba(255,190,90,.3)}
+.pview .vbar{padding:0 24px 14px}.pview .vbar input{width:100%;-webkit-appearance:none;appearance:none;height:2px;margin:6px 0;border-radius:1px;background:linear-gradient(90deg,#fff var(--p),rgba(255,255,255,.28) var(--p));outline:0}
+.pview .vbar input::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 10px ${K.or},0 0 0 3px ${oa(.35)}}.pview .vbar input::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:#fff}
+.pview .vbar .rw{display:flex;justify-content:space-between;align-items:center;margin-top:8px}.pview .vbar .rw span{display:flex;gap:16px;align-items:center}.pview .vbar button{background:none;border:0;padding:4px;cursor:pointer;line-height:0}.pview .vbar .tm{font-weight:500;font-size:11px;letter-spacing:1px;font-variant-numeric:tabular-nums}
+.pview .vbig{position:absolute;z-index:2;left:50%;top:30%;transform:translate(-50%,-50%);width:78px;height:78px;border-radius:50%;display:grid;place-items:center;cursor:pointer;padding-left:4px;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:opacity .35s}.pview.hide .vbig{opacity:0}
+.pview .pvst{display:flex;gap:6px;justify-content:center;align-items:flex-end;padding:2px 12px 16px;min-height:62px}.pview .pvst .th{width:34px;height:46px;border-radius:8px;opacity:.5;cursor:pointer;position:relative;display:grid;place-items:center;transition:all .25s}.pview .pvst .th.on{opacity:1;width:42px;height:56px;box-shadow:0 0 0 1.5px #fff,0 6px 16px rgba(0,0,0,.4)}.pview .pvst .th i{filter:drop-shadow(0 1px 2px #000)}
+.pview .bt{display:flex;justify-content:center;gap:34px}.pvb{background:none;border:0;color:#fff;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;font-family:inherit;padding:0;opacity:.92}.pvb span{font-size:9.5px;font-weight:500;letter-spacing:1.6px}.pvb.d span{color:#FFB0BC}
+.pview.land .tit{padding-bottom:8px}.pview.land .parr,.pview.land .vbig{top:50%}.pview.land .pvst{display:none}
 .pgal .pvid{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}.pgal .pvid i{width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center;font-style:normal;font-size:11px}.pgal .pvid b{position:absolute;right:6px;bottom:4px;color:#fff;font-size:10.5px;text-shadow:0 1px 2px #000}
 .pconf{position:absolute;inset:0;z-index:70;display:grid;place-items:center}.pconf .dim{position:absolute;inset:0;background:rgba(0,0,0,.6)}
 .pconf .bx{position:relative;width:310px;background:${K.panel};border-radius:18px;padding:20px;box-shadow:inset 0 0 0 1px ${K.line2};color:${K.text}}
@@ -337,7 +338,8 @@ function Confirm(l) {
 
 /* ───────── photo viewer ───────── */
 export function openPhoto(l, ph, o = {}) {
-  l.pview = { ph, o, src: null, err: '' }; rerender();
+  if (l.pview && l.pview.blob) URL.revokeObjectURL(l.pview.blob);
+  l.pview = { ph, o, src: null, err: '' }; curView = l.pview; rerender();
   if (PH.isVideo(ph)) {
     if (!(Number(ph.PhW) > 0) || !(Number(ph.PhDur) > 0)) api('ppVideoMeta', { id: ph.PhId }, undefined, { quiet: true }).then(r => { if (r && r.ready) { applySaved({ PP_Photos: [r.row] }); if (l.pview && l.pview.ph.PhId === ph.PhId) { l.pview.ph = { ...l.pview.ph, PhW: r.row.PhW, PhH: r.row.PhH, PhDur: r.row.PhDur }; rerender(); } } }).catch(() => {});
     if (!ph.PhShare) api('ppVideoShare', { id: ph.PhId }, undefined, { quiet: true }).then(r => { applySaved({ PP_Photos: [r] }); if (l.pview && l.pview.ph.PhId === ph.PhId) { l.pview.ph = r; rerender(); } }).catch(e => { if (l.pview) { l.pview.err = "Couldn't get the video ready: " + e.message; rerender(); } });
@@ -350,35 +352,68 @@ export function openPhoto(l, ph, o = {}) {
 /** The Memories viewer: the photo or video in a framed card on its own colours, the journey day, a film strip, swipe / arrows,
  *  double-tap to zoom (photos). Videos play inside, with Google Drive's player. */
 /** MansWell's own video player: the phone plays the file straight from Drive (needs the Drive key), one bar in the theme colour. */
-/** Why Drive refused the video (shown under it), e.g. a website rule on the key that doesn't match this address. */
-async function whyBlocked(src) {
+/** Plan B when the phone's player is refused (an iPhone doesn't send the MansWell address with videos): the app fetches the file
+ *  itself (that does send it) and plays it from the phone's memory. Up to 150 MB; otherwise Google's player, with the reason. */
+async function loadBlob(v, src) {
+  v.tried = true; v.pct = 0; rerender();
+  const fail = () => { v.useFrame = true; rerender(); whyBlocked(src, v.ph).then(m => { v.why = m; rerender(); }); };
   try {
-    const r = await fetch(src, { headers: { Range: 'bytes=0-1' } }); if (r.ok) return 'This phone could not play the file itself.';
-    const j = await r.json().catch(() => null), m = (j && j.error && j.error.message) || ('Drive said ' + r.status);
-    if (/referer|referrer/i.test(m)) return 'Your Drive key does not allow this address (' + location.origin + '). In Google Cloud, set its website to ' + location.origin + '/* and wait 5 minutes.';
-    if (/not been used|disabled|not enabled/i.test(m)) return 'Google Drive API is not turned on for this key\'s project. Turn it on in Google Cloud, then wait 5 minutes.';
-    if (/API_KEY_SERVICE_BLOCKED|blocked/i.test(m)) return 'Your Drive key is not allowed to use Google Drive API. Tick Google Drive API in the key\'s API restrictions.';
-    if (/not found|File not found/i.test(m)) return 'Drive can\'t share this video yet. Open it again in a minute.';
-    return 'Drive refused the key: ' + m;
-  } catch (e) { return 'Could not reach Google Drive.'; }
+    const r = await fetch(src); if (!r.ok) throw new Error(String(r.status));
+    const total = Number(r.headers.get('content-length')) || 0, max = 150 * 1048576; if (total > max) throw new Error('too big');
+    const rd = r.body && r.body.getReader ? r.body.getReader() : null, parts = []; let got = 0;
+    if (rd) { for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; if (got > max) throw new Error('too big'); const p = total ? Math.round(got / total * 100) : 0; if (p !== v.pct) { v.pct = p; rerender(); } if (l0() !== v) return; } }
+    const blob = rd ? new Blob(parts, { type: r.headers.get('content-type') || 'video/mp4' }) : await r.blob();
+    if (l0() !== v) return; v.blob = URL.createObjectURL(blob); rerender();
+  } catch (e) { if (l0() === v) fail(); }
+}
+let curView = null; const l0 = () => curView;
+/** Why Drive refused the video (shown under it), e.g. a website rule on the key that doesn't match this address. */
+async function whyBlocked(src, ph) {
+  const tip = m => m;
+  let r = null; try { r = await api('ppVideoCheck', { id: ph.PhId, origin: location.origin }, undefined, { quiet: true }); } catch (e) { /* older Apps Script */ }
+  if (r && r.code) {
+    const m = String(r.msg || '');
+    if (r.access && !/ANYONE_WITH_LINK/.test(r.access) && r.access !== 'unknown') return tip('This video is not shared by link yet (' + r.access + '). Close it and open it again.');
+    if (r.code === 200) return tip('Google accepts your Drive key (…' + r.keyEnd + ') and this video, but the phone\'s video player was refused. The phone probably doesn\'t send the MansWell address with videos: in Google Cloud, set the key\'s Application restrictions to None (keep Google Drive API ticked).');
+    if (/referer|referrer/i.test(m)) return tip('Your Drive key (…' + r.keyEnd + ') does not allow ' + location.origin + '. In Google Cloud, set its website to ' + location.origin + '/* and wait 5 minutes.');
+    if (/not been used|disabled|not enabled/i.test(m)) return tip('Google Drive API is not turned on in the key\'s project. Turn it on, then wait 5 minutes.');
+    if (/API key not valid|invalid/i.test(m)) return tip('The Drive key saved in Apps Script (…' + r.keyEnd + ') is not valid. Copy it again from Google Cloud and run setDriveKey.');
+    if (/blocked/i.test(m)) return tip('Your Drive key (…' + r.keyEnd + ') is not allowed to use Google Drive API. Tick Google Drive API in the key\'s API restrictions.');
+    if (r.code === 404) return tip('Drive can\'t find this video by its link. Close it and open it again in a minute.');
+    return tip('Drive refused the key (' + r.code + '): ' + m);
+  }
+  if (r && r.msg === 'no key') return tip('No Drive key is saved in Apps Script yet. Run setDriveKey.');
+  try {
+    const x = await fetch(src); if (x.ok) return tip('This phone could not play the file itself.');
+    const j = await x.json().catch(() => null); return tip('Drive refused the key: ' + ((j && j.error && j.error.message) || x.status));
+  } catch (e) { return tip('Could not reach Google Drive. Paste the new Code.gs (3.15.0) so MansWell can check the key for you.'); }
 }
 const vt = s => { s = Math.max(0, Math.floor(Number(s) || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
-function VideoPlayer(v, poster) {
-  const st = v.vs || (v.vs = { cur: 0, dur: Number(v.ph.PhDur) || 0, playing: false, muted: false, started: false });
-  const el = () => document.getElementById('pvVideo');
+const SV = d => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const SI = { back: '<path d="M15 5l-7 7 7 7"/>', play: '<path d="M8 5v14l11-7z" fill="#fff"/>', pause: '<path d="M8 5v14M16 5v14" stroke-width="2.4"/>', snd: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9a4 4 0 0 1 0 6"/>', mute: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 10l4 4M21 10l-4 4"/>',
+  full: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>', star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>', starF: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" fill="#fff"/>',
+  zoom: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M11 8.5v5M8.5 11h5"/>', fit: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4M8.5 11h5"/>', del: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>', trip: '<path d="M7 17 17 7M9 7h8v8"/>', l: '<path d="M15 5l-7 7 7 7"/>', r: '<path d="M9 5l7 7-7 7"/>' };
+const Sv = (k, sz) => html`<i class="svi" style=${sz ? `width:${sz}px;height:${sz}px` : ''} dangerouslySetInnerHTML=${{ __html: SV(SI[k]).replace(/18/g, String(sz || 18)) }}></i>`;
+/** The video itself (fills the screen; the bar is drawn with the rest of the controls). */
+function VideoEl(v, poster) {
+  const st = v.vs || (v.vs = { cur: 0, dur: Number(v.ph.PhDur) || 0, playing: false, muted: false });
   const upd = e => { const x = e.currentTarget; st.cur = x.currentTime; st.dur = isFinite(x.duration) && x.duration ? x.duration : st.dur; st.playing = !x.paused; rerender(); };
-  const src = 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(v.ph.PhFile) + '?alt=media&key=' + encodeURIComponent(DB.driveKey);
-  const full = () => { const x = el(); if (!x) return; if (x.webkitEnterFullscreen) x.webkitEnterFullscreen(); else if (x.requestFullscreen) x.requestFullscreen(); };
+  const src0 = 'https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(v.ph.PhFile) + '?alt=media&key=' + encodeURIComponent(DB.driveKey), src = v.blob || src0;
+  const play = e => { upd(e); clearTimeout(v.hideT); v.hideT = setTimeout(() => { if (l0() === v && v.vs.playing) { v.hide = true; rerender(); } }, 2000); }; // the controls fade away while it plays
   return html`<video id="pvVideo" src=${src} poster=${poster || ''} playsinline webkit-playsinline preload="metadata" muted=${st.muted} data-t="viewerVideo"
-      onTimeUpdate=${upd} onPlay=${e => { st.started = true; upd(e); }} onPause=${upd} onLoadedMetadata=${upd} onEnded=${upd}
-      onError=${() => { v.useFrame = true; rerender(); whyBlocked(src).then(m => { v.why = m; rerender(); }); }}></video>
-    ${st.playing ? null : html`<span class="vbig" data-t="viewerPlay"><i>▶</i></span>`}
-    <div class="vbar" data-t="viewerBar" onPointerDown=${e => e.stopPropagation()} onPointerUp=${e => e.stopPropagation()}>
-      <button onClick=${() => { const x = el(); if (x) { if (x.paused) x.play().catch(() => {}); else x.pause(); } }} data-t="vPlay">${st.playing ? '❚❚' : '▶'}</button>
-      <input type="range" min="0" max=${Math.max(1, st.dur)} step="0.05" value=${st.cur} style=${`--p:${st.dur ? st.cur / st.dur * 100 : 0}%`} onInput=${e => { const x = el(); if (x) { x.currentTime = Number(e.target.value); st.cur = x.currentTime; rerender(); } }} data-t="vSeek" />
-      <span class="tm">${vt(st.cur)} / ${vt(st.dur)}</span>
-      <button onClick=${() => { const x = el(); st.muted = !st.muted; if (x) x.muted = st.muted; rerender(); }} data-t="vMute">${st.muted ? '🔇' : '🔊'}</button>
-      <button onClick=${full} data-t="vFull">⛶</button></div>`;
+      onTimeUpdate=${upd} onPlay=${play} onPause=${e => { upd(e); clearTimeout(v.hideT); v.hide = false; rerender(); }} onLoadedMetadata=${upd} onEnded=${e => { upd(e); v.hide = false; rerender(); }}
+      onError=${() => { if (v.blob) { v.useFrame = true; rerender(); return; } if (!v.tried) loadBlob(v, src0); }}></video>
+    ${v.tried && !v.blob ? html`<span class="vload" data-t="viewerLoading">Loading video${v.pct ? ' · ' + v.pct + '%' : '…'}</span>` : null}`;
+}
+function VideoBar(v) {
+  const st = v.vs || { cur: 0, dur: Number(v.ph.PhDur) || 0, playing: false, muted: false };
+  const el = () => document.getElementById('pvVideo');
+  const toggle = () => { const x = el(); if (x) { if (x.paused) x.play().catch(() => {}); else x.pause(); } };
+  const full = () => { const x = el(); if (!x) return; if (x.webkitEnterFullscreen) x.webkitEnterFullscreen(); else if (x.requestFullscreen) x.requestFullscreen(); };
+  return html`<div class="vbar" data-t="viewerBar">
+    <input type="range" min="0" max=${Math.max(1, st.dur)} step="0.05" value=${st.cur} style=${`--p:${st.dur ? st.cur / st.dur * 100 : 0}%`} onInput=${e => { const x = el(); if (x) { x.currentTime = Number(e.target.value); st.cur = x.currentTime; rerender(); } }} data-t="vSeek" />
+    <div class="rw"><span><button onClick=${toggle} data-t="vPlay" aria-label=${st.playing ? 'Pause' : 'Play'}>${Sv(st.playing ? 'pause' : 'play', 16)}</button><b class="tm">${vt(st.cur)} / ${vt(st.dur)}</b></span>
+      <span><button onClick=${() => { const x = el(); st.muted = !st.muted; if (x) x.muted = st.muted; rerender(); }} data-t="vMute" aria-label="Sound">${Sv(st.muted ? 'mute' : 'snd', 17)}</button><button onClick=${full} data-t="vFull" aria-label="Full screen">${Sv('full', 17)}</button></span></div></div>`;
 }
 /** The video frame in the video's own shape (portrait phone videos stand upright), as big as the screen allows. */
 function vidBox(ph) {
@@ -388,55 +423,75 @@ function vidBox(ph) {
   return `width:${Math.round(w)}px;height:${Math.round(h)}px`;
 }
 const WD = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+/** The Memories viewer, cinema style: the photo or video fills the screen (a landscape one sits across the middle on its own
+ *  colours), the journey and day in spaced capitals, the date in serif. Tap to hide or show everything; turn the phone for a
+ *  landscape one. Swipe / film strip / arrows move; double-tap zooms a photo. */
 function Viewer(l) {
   const v = l.pview; if (!v) return null;
-  if (!window.__pvRs) { window.__pvRs = 1; window.addEventListener('resize', () => { if (l.pview) rerender(); }); } // turning the phone resizes the frame
-  const close = () => { l.pview = null; rerender(); };
+  if (!window.__pvRs) { window.__pvRs = 1; window.addEventListener('resize', () => { if (l.pview) rerender(); }); }
+  const close = () => { if (v.blob) URL.revokeObjectURL(v.blob); clearTimeout(v.hideT); document.body.classList.remove('pvland'); l.pview = null; curView = null; rerender(); };
   const t = v.ph.PhTrip && P.trip(v.ph.PhTrip);
   const list = t ? P.photosOf(t.TrId) : [v.ph], at = Math.max(0, list.findIndex(x => x.PhId === v.ph.PhId));
   const go = d => { const n = list[at + d]; if (n) openPhoto(l, n, v.o); };
   const vid = PH.isVideo(v.ph), th = PH.thumb(v.ph.PhId), img = vid ? th : v.src || th;
-  // Day 3 · Wednesday, 29 Apr 2026
+  const W = window.innerWidth || 390, H = window.innerHeight || 800, land = W > H;
+  if (v.hide === undefined) v.hide = land; // sideways: the picture alone; tap for the rest
+  // fill the screen when the shape is close (upright on an upright phone), else show it whole on its own colours
+  const mw = Number(v.ph.PhW) || 0, mh = Number(v.ph.PhH) || 0, cover = mw && mh && Math.abs(mw / mh - W / H) / (W / H) < 0.22;
   const tk = v.ph.PhTaken ? new Date(String(v.ph.PhTaken).slice(0, 10) + 'T00:00:00') : null;
   const dn = tk && t ? Math.round((tk - new Date(String(t.TrStart).slice(0, 10) + 'T00:00:00')) / 864e5) + 1 : 0;
-  const when = tk ? (dn >= 1 && dn <= P.daysOf(t) ? 'Day ' + dn + ' · ' : '') + WD[tk.getDay()] + ', ' + P.fmtDay(v.ph.PhTaken) : '';
-  // gestures: swipe left / right; double-tap zooms a photo (then drag to look around)
-  const down = e => { v.x0 = e.clientX; v.y0 = e.clientY; v.x1 = null; v.pan = v.zoom ? { x: e.clientX, y: e.clientY, px: v.px || 0, py: v.py || 0 } : null; };
+  const eyebrow = [t ? t.TrName : '', dn >= 1 && t && dn <= P.daysOf(t) ? 'Day ' + dn : ''].filter(Boolean).join(' · ').toUpperCase();
+  const isCover = t && t.TrCover === v.ph.PhId;
+  // gestures: swipe left / right; tap shows or hides everything; double-tap zooms a photo (then drag to look around)
+  const down = e => { if (e.target.closest('.vctl,.pvb,.pvst,.vbig,.parr,.gb')) { v.x0 = null; return; } v.x0 = e.clientX; v.y0 = e.clientY; v.x1 = null; v.pan = v.zoom ? { x: e.clientX, y: e.clientY, px: v.px || 0, py: v.py || 0 } : null; };
   const moveP = e => { if (v.x0 == null) return; v.x1 = e.clientX; if (v.pan) { v.px = v.pan.px + (e.clientX - v.pan.x); v.py = v.pan.py + (e.clientY - v.pan.y); const el = e.currentTarget.querySelector('img'); if (el) el.style.transform = `translate(${v.px}px,${v.py}px) scale(2.2)`; } };
   const up = e => {
     if (v.x0 == null) return; const dx = (e.clientX ?? v.x1 ?? v.x0) - v.x0, dy = (e.clientY ?? v.y0) - v.y0; v.x0 = null;
     if (!v.zoom && Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) { go(dx < 0 ? 1 : -1); return; }
-    if (Math.abs(dx) < 8 && Math.abs(dy) < 8 && vid && !e.target.closest('.vbar')) { const el = document.getElementById('pvVideo'); if (el) { if (el.paused) el.play().catch(() => {}); else el.pause(); } return; }
-    if (Math.abs(dx) < 8 && Math.abs(dy) < 8 && !vid) { const now = Date.now(); if (now - (v.tap || 0) < 320) { v.tap = 0; v.zoom = !v.zoom; v.px = 0; v.py = 0; rerender(); } else v.tap = now; }
+    if (Math.abs(dx) >= 8 || Math.abs(dy) >= 8) return;
+    const now = Date.now();
+    if (!vid && now - (v.tap || 0) < 300) { clearTimeout(v.tapT); v.tap = 0; v.zoom = !v.zoom; v.px = 0; v.py = 0; rerender(); return; }
+    v.tap = now; clearTimeout(v.tapT); v.tapT = setTimeout(() => { if (l0() === v) { v.hide = !v.hide; rerender(); } }, vid ? 0 : 280);
   };
-  const near = list.map((x, i) => [x, i]).slice(Math.max(0, Math.min(at - 3, list.length - 7)), Math.max(0, Math.min(at - 3, list.length - 7)) + 7);
-  const act = (ic, label, fn, id, cls) => html`<button class=${'pvb' + (cls ? ' ' + cls : '')} onClick=${fn} data-t=${id}><b>${ic}</b><span>${label}</span></button>`;
+  const n0 = Math.max(0, Math.min(at - 3, list.length - 7)), near = list.map((x, i) => [x, i]).slice(n0, n0 + 7);
+  const act = (ic, label, fn, id, cls) => html`<button class=${'pvb' + (cls ? ' ' + cls : '')} onClick=${fn} data-t=${id}>${Sv(ic, 20)}<span>${label}</span></button>`;
   const del = () => confirmAsk(l, vid ? 'Delete this video?' : 'Delete this photo?', 'It is removed from the trip and moved to the bin in your Google Drive.', 'Delete', () => guard(async () => {
     if (!canWrite()) return;
-    await PH.remove([v.ph.PhId]); await save({ del: { PP_Photos: [v.ph.PhId] }, up: t && t.TrCover === v.ph.PhId ? { PP_Trips: [{ ...t, TrCover: '' }] } : {}, log: [{ AuAction: 'Atlas · Photo deleted', AuRef: 'PASSPORT', AuDetail: t ? t.TrName : '' }] });
+    await PH.remove([v.ph.PhId]); await save({ del: { PP_Photos: [v.ph.PhId] }, up: isCover ? { PP_Trips: [{ ...t, TrCover: '' }] } : {}, log: [{ AuAction: 'Atlas · Photo deleted', AuRef: 'PASSPORT', AuDetail: t ? t.TrName : '' }] });
     close();
   }));
-  return html`<div class="pview" data-t="viewer" tabindex="0" onKeyDown=${e => { if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); if (e.key === 'Escape') close(); }}>
-    <div class="amb" style=${th ? `background-image:url("${th}")` : PH.bg('', v.ph.PhId)}></div><div class="veil"></div>
-    <div class="top"><span class="gb" onClick=${close} data-t="viewerClose">‹</span>
-      <div class="ti"><b>${t ? t.TrName : ''}</b><span>${when}</span></div>${list.length > 1 ? html`<span class="cnt" data-t="viewerPos">${at + 1} / ${list.length}</span>` : null}</div>
+  const st = v.vs || {}, own = vid && !v.useFrame && v.ph.PhShare && DB.driveKey;
+  const media = vid ? (own ? VideoEl(v, img)
+      : v.ph.PhShare ? html`<iframe src=${'https://drive.google.com/file/d/' + encodeURIComponent(v.ph.PhFile) + '/preview'} allow="autoplay; fullscreen" allowfullscreen data-t="viewerVideo"></iframe>`
+      : html`<div class="wait" style=${img ? `background-image:url("${img}")` : ''}><span>${v.err || 'Getting the video ready…'}</span></div>`)
+    : img ? html`<img src=${img} alt="" draggable="false" style=${v.zoom ? `transform:translate(${v.px || 0}px,${v.py || 0}px) scale(2.2)` : ''} data-t="viewerImg" />` : html`<span class="ld">${v.err || 'Loading…'}</span>`;
+  // the app is a phone-width canvas; turned sideways the viewer steps out of it and takes the whole screen at true size
+  let box = null; const sg = land && document.getElementById('stage');
+  if (sg) { const r = sg.getBoundingClientRect(), k = (r.width / (sg.offsetWidth || 390)) || 1; box = `position:fixed;inset:auto;left:${-r.left / k}px;top:${-r.top / k}px;width:${W}px;height:${H}px;transform-origin:0 0;transform:scale(${1 / k})`; }
+  document.body.classList.toggle('pvland', !!box);
+  return html`<div class=${'pview' + (v.hide ? ' hide' : '') + (land ? ' land' : '')} style=${box} data-t="viewer" tabindex="0" onKeyDown=${e => { if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); if (e.key === 'Escape') close(); }}>
+    <div class="amb" style=${th ? `background-image:url("${th}")` : PH.bg('', v.ph.PhId)}></div>
     <div class="im" onPointerDown=${down} onPointerMove=${moveP} onPointerUp=${up} onPointerCancel=${() => { if (v.x0 != null && v.x1 != null && !v.zoom) { const dx = v.x1 - v.x0; if (Math.abs(dx) > 45) go(dx < 0 ? 1 : -1); } v.x0 = null; }}>
-      <div class=${'fr' + (vid ? ' vd' : '') + (v.zoom ? ' z' : '')} key=${v.ph.PhId} style=${vid ? vidBox(v.ph) : ''}>
-        ${vid ? (v.ph.PhShare && DB.driveKey && !v.useFrame ? VideoPlayer(v, img)
-          : v.ph.PhShare ? html`<iframe src=${'https://drive.google.com/file/d/' + encodeURIComponent(v.ph.PhFile) + '/preview'} allow="autoplay; fullscreen" allowfullscreen data-t="viewerVideo"></iframe>`
-            : html`<div class="wait" style=${img ? `background-image:url("${img}")` : ''}><span>${v.err || 'Getting the video ready…'}</span></div>`)
-          : img ? html`<img src=${img} alt="" draggable="false" style=${v.zoom ? `transform:translate(${v.px || 0}px,${v.py || 0}px) scale(2.2)` : ''} data-t="viewerImg" />` : html`<span class="ld">${v.err || 'Loading…'}</span>`}
-      </div>
-      ${at > 0 && !v.zoom ? html`<span class="parr l" onClick=${() => go(-1)} data-t="viewerPrev">‹</span>` : null}${at < list.length - 1 && !v.zoom ? html`<span class="parr r" onClick=${() => go(1)} data-t="viewerNext">›</span>` : null}</div>
-    ${vid && v.why ? html`<div class="pwhy" data-t="viewerWhy">${v.why}</div>` : null}
-    <div class="cap"><span class="chip">${vid ? 'VIDEO · ' + PH.durTxt(v.ph.PhDur) : 'PHOTO'}</span>${t && t.TrCover === v.ph.PhId ? html`<span class="chip o">COVER</span>` : null}</div>
-    ${list.length > 1 ? html`<div class="fs" data-t="viewerStrip">${near.map(([x, i]) => html`<span class=${'th' + (i === at ? ' on' : '')} style=${PH.bg(x.PhId, x.PhId)} onClick=${() => openPhoto(l, x, v.o)} data-t=${'vs-' + x.PhId}>${PH.isVideo(x) ? html`<i>▶</i>` : null}</span>`)}</div>` : null}
-    <div class="bt">
-      ${t && v.o.cover !== false && !vid ? act('★', t.TrCover === v.ph.PhId ? 'Cover ✓' : 'Cover', () => { psave({ up: { PP_Trips: [{ ...t, TrCover: v.ph.PhId }] } }, 'Trip cover', t.TrName); rerender(); }, 'setCover') : null}
-      ${!vid ? act('⤢', v.zoom ? 'Fit' : 'Zoom', () => { v.zoom = !v.zoom; v.px = 0; v.py = 0; rerender(); }, 'viewerZoom') : null}
-      ${v.o.onOpenTrip && t ? act('↗', 'Journey', () => { close(); v.o.onOpenTrip(t); }, 'openTrip') : null}
-      ${v.o.del !== false ? act('🗑', 'Delete', del, 'photoDel', 'd') : null}
-    </div></div>`;
+      <div class=${'fr' + (vid ? ' vd' : '') + (cover ? ' cv' : '') + (v.zoom ? ' z' : '')} key=${v.ph.PhId}>${media}</div>
+      ${own && !st.playing && !v.tried ? html`<span class="vbig" onClick=${() => { const x = document.getElementById('pvVideo'); if (x) x.play().catch(() => {}); }} data-t="viewerPlay">${Sv('play', 26)}</span>` : null}</div>
+    <div class="shade"></div>
+    <div class="vctl top"><span class="gb" onClick=${close} data-t="viewerClose" aria-label="Back">${Sv('back', 18)}</span>
+      ${list.length > 1 ? html`<div class="dots">${near.map(([, i]) => html`<i class=${i === at ? 'on' : ''}></i>`)}</div>` : html`<span></span>`}<span class="gb ghost"></span></div>
+    ${at > 0 && !v.zoom ? html`<span class="parr l" onClick=${() => go(-1)} data-t="viewerPrev" aria-label="Previous">${Sv('l', 22)}</span>` : null}${at < list.length - 1 && !v.zoom ? html`<span class="parr r" onClick=${() => go(1)} data-t="viewerNext" aria-label="Next">${Sv('r', 22)}</span>` : null}
+    <div class="vctl bot">
+      ${vid && v.why ? html`<div class="pwhy" data-t="viewerWhy">${v.why}</div>` : null}
+      <div class="tit">${eyebrow ? html`<div class="ey">${eyebrow}</div>` : null}
+        ${tk ? html`<div class="tt">${WD[tk.getDay()]},${land ? ' ' : html`<br/>`}${tk.getDate()} ${MONTHS[tk.getMonth()]}</div>` : null}<i class="hl"></i>
+        <div class="dd" data-t="viewerPos">${vid ? 'Video · ' + PH.durTxt(v.ph.PhDur) : 'Photo ' + (at + 1) + ' of ' + list.length}${tk ? ' · ' + tk.getFullYear() : ''}${isCover ? ' · Cover' : ''}</div></div>
+      ${own ? VideoBar(v) : null}
+      ${list.length > 1 ? html`<div class="pvst" data-t="viewerStrip">${near.map(([x, i]) => html`<span class=${'th' + (i === at ? ' on' : '')} style=${PH.bg(x.PhId, x.PhId)} onClick=${() => openPhoto(l, x, v.o)} data-t=${'vs-' + x.PhId}>${PH.isVideo(x) ? html`<i>${Sv('play', 10)}</i>` : null}</span>`)}</div>` : null}
+      <div class="bt">
+        ${t && v.o.cover !== false && !vid ? act(isCover ? 'starF' : 'star', isCover ? 'COVER ✓' : 'COVER', () => { psave({ up: { PP_Trips: [{ ...t, TrCover: v.ph.PhId }] } }, 'Trip cover', t.TrName); rerender(); }, 'setCover') : null}
+        ${!vid ? act(v.zoom ? 'fit' : 'zoom', v.zoom ? 'FIT' : 'ZOOM', () => { v.zoom = !v.zoom; v.px = 0; v.py = 0; rerender(); }, 'viewerZoom') : null}
+        ${v.o.onOpenTrip && t ? act('trip', 'JOURNEY', () => { close(); v.o.onOpenTrip(t); }, 'openTrip') : null}
+        ${v.o.del !== false ? act('del', 'DELETE', del, 'photoDel', 'd') : null}
+      </div></div></div>`;
 }
 
 /* ───────── pick a country ───────── */

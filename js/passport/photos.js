@@ -100,7 +100,7 @@ export const MAX_VIDEO_S = 125, MAX_VIDEO_MB = 500;
  *  so every step has a time limit and falls back: no frame → a plain preview; no length → the video still saves. */
 const plainThumb = () => { const c = document.createElement('canvas'); c.width = 360; c.height = 240; const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 360, 240);
   gr.addColorStop(0, '#2B1E4A'); gr.addColorStop(0.55, '#7B3FE4'); gr.addColorStop(1, '#E2367A'); g.fillStyle = gr; g.fillRect(0, 0, 360, 240);
-  g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.arc(180, 120, 34, 0, 7); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.moveTo(168, 102); g.lineTo(198, 120); g.lineTo(168, 138); g.fill(); return c.toDataURL('image/jpeg', 0.7); };
+  return c.toDataURL('image/jpeg', 0.7); }; // plain colours (the tile and the viewer add their own ▶)
 const once = (el, evs, ms) => new Promise(res => { let t = null; const done = ok => { clearTimeout(t); evs.forEach(e => el.removeEventListener(e, on)); res(ok); }, on = () => done(true); evs.forEach(e => el.addEventListener(e, on)); t = setTimeout(() => done(false), ms); });
 async function videoInfo(file) {
   const u = URL.createObjectURL(file), v = document.createElement('video');
