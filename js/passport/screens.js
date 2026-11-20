@@ -107,7 +107,7 @@ export const scrPpTrip = {
       const seq = photos.reduce((m, p) => Math.max(m, p.PhSeq || 0), 0), imgs = files.filter(f => !/^video\//.test(f.type)), vids = files.filter(f => /^video\//.test(f.type));
       const left = x => (x === null ? '' : x < 60 ? ' · about ' + Math.max(5, Math.round(x / 5) * 5) + ' s left' : ' · about ' + Math.round(x / 60) + ' min left');
       if (imgs.length) await PH.upload(imgs, { trip: t.TrId, folder, seq, onStep: (i, n, x) => { l.up = n ? { t: 'Saving ' + i + ' of ' + n + left(x), p: i / n } : ''; rerender(); } });
-      if (vids.length) await PH.uploadVideos(vids, { trip: t.TrId, folder, seq: seq + imgs.length, onStep: tx => { l.up = tx ? { t: tx, p: null } : ''; rerender(); } });
+      if (vids.length) await PH.uploadVideos(vids, { trip: t.TrId, folder, seq: seq + imgs.length, onStep: (tx, fr) => { l.up = tx ? { t: tx, p: fr || 0 } : ''; rerender(); } });
     };
     const addCover = async e => {
       const files = [...(e.target.files || [])].slice(0, 1); e.target.value = ''; if (!files.length || !canWrite()) return;

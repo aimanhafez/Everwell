@@ -1,4 +1,14 @@
-# MansWell · v3.14.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.14.2 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.14.2 · Faster videos
+- Videos now go from the phone straight to your Google Drive in 16 MB parts (before, every 4 MB went through the Apps Script first). The bar moves while it sends and shows "120 of 480 MB · about 3 min left".
+- If the phone can't reach Drive that way, the rest goes through the Apps Script as before, from where it stopped.
+- Videos that are too long or too big are listed in one message at the end instead of one by one.
+- Upload: all files in Step 1, paste the new Code.gs and Deploy › New version.
+
+## 3.14.1 · Videos from iPhone
+- Fixed "That video took too long to open" on iPhone (e.g. DJI clips): the phone is given more ways and time to read the video; if it still can't show a frame, the video saves anyway with a plain preview (its length may then show as 0:00).
+- Upload: all files in Step 1. Code.gs: version number only.
 
 ## 3.14.0 · Atlas: stamps per visit, milestones, highlights, faster photos, videos
 - Odyssey: Borderless gives one stamp per visit (Thailand in 2019 and 2024 = two stamps). Favourite country is the top 5 journeys by your score (the country big, the journey's name small). Most spent shows the top 5 (the budget sentence is gone). Country overview: "/ day" sits under distance and ground cost. Milestones are four groups (Countries, World, On the road, Journey type) that open when tapped.

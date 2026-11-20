@@ -16,6 +16,10 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.14.2 · Videos go from the phone straight to Drive (much faster); paste this Code.gs and Deploy › New version.
+ *
+ * 3.14.1 · Videos from iPhone: no more "took too long to open" (app only; same server code as 3.14.0).
+ *
  * 3.14.0 · Atlas: photos save 3 at a time; videos in Memories (sent to Drive in parts; PP_Photos gets PhKind and PhDur by itself).
  *   Paste this Code.gs and Deploy › New version.
  *
@@ -80,7 +84,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.14.0';
+var EW_VERSION = '3.14.2';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -269,20 +273,29 @@ var ACTIONS = {
   ppVideoStart: function (ss, p) {
     if (!p.id || !(Number(p.size) > 0)) throw new Error('No video to save.');
     var folder = locked_(function () { return ppFolder_(String(p.folder || 'Photos')); });
-    var res = UrlFetchApp.fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', { method: 'post', contentType: 'application/json; charset=UTF-8', muteHttpExceptions: true,
-      headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken(), 'X-Upload-Content-Type': String(p.mime || 'video/mp4'), 'X-Upload-Content-Length': String(Number(p.size)) },
-      payload: JSON.stringify({ name: String(p.id) + '.' + (String(p.ext || 'mp4').replace(/[^a-z0-9]/gi, '') || 'mp4'), parents: [folder.getId()] }) });
+    var open = function (origin) {
+      var h = { Authorization: 'Bearer ' + ScriptApp.getOAuthToken(), 'X-Upload-Content-Type': String(p.mime || 'video/mp4'), 'X-Upload-Content-Length': String(Number(p.size)) };
+      if (origin) h.Origin = String(origin); // lets the phone send the parts straight to Drive
+      return UrlFetchApp.fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', { method: 'post', contentType: 'application/json; charset=UTF-8', muteHttpExceptions: true, headers: h,
+        payload: JSON.stringify({ name: String(p.id) + '.' + (String(p.ext || 'mp4').replace(/[^a-z0-9]/gi, '') || 'mp4'), parents: [folder.getId()] }) });
+    };
+    var res; try { res = open(p.origin); } catch (e) { res = open(''); }
     var h = res.getHeaders(), url = h.Location || h.location;
     if (res.getResponseCode() >= 300 || !url) throw driveErr_(new Error('Drive did not accept the video (' + res.getResponseCode() + '). ' + String(res.getContentText()).slice(0, 160)));
     CacheService.getScriptCache().put('vid_' + p.id, url, 21600);
-    return { ok: true };
+    return { ok: true, url: url }; // 3.14.2: the phone sends the video straight to this Drive address (faster); parts through here are the fallback
   },
   ppVideoPart: function (ss, p) {
     var url = CacheService.getScriptCache().get('vid_' + p.id); if (!url) throw new Error('The video upload expired. Add the video again.');
-    var bytes = Utilities.base64Decode(String(p.data || '')), start = Number(p.start) || 0, total = Number(p.total) || 0, end = start + bytes.length - 1;
-    var res = UrlFetchApp.fetch(url, { method: 'put', muteHttpExceptions: true, contentType: String(p.mime || 'video/mp4'), headers: { 'Content-Range': 'bytes ' + start + '-' + end + '/' + total }, payload: bytes });
+    var total = Number(p.total) || 0, res;
+    if (p.query) { // how far did the upload get? (after the phone sent parts straight to Drive)
+      res = UrlFetchApp.fetch(url, { method: 'put', muteHttpExceptions: true, headers: { 'Content-Range': 'bytes */' + total } });
+    } else {
+      var bytes = Utilities.base64Decode(String(p.data || '')), start = Number(p.start) || 0, end = start + bytes.length - 1;
+      res = UrlFetchApp.fetch(url, { method: 'put', muteHttpExceptions: true, contentType: String(p.mime || 'video/mp4'), headers: { 'Content-Range': 'bytes ' + start + '-' + end + '/' + total }, payload: bytes });
+    }
     var code = res.getResponseCode();
-    if (code === 308) return { more: true };
+    if (code === 308) { var rg = /bytes=0-(\d+)/.exec(String((res.getHeaders() || {}).Range || (res.getHeaders() || {}).range || '')); return { more: true, next: rg ? Number(rg[1]) + 1 : 0 }; }
     if (code !== 200 && code !== 201) throw new Error('Drive stopped the video upload (' + code + ').');
     var fileId = JSON.parse(res.getContentText()).id;
     var row = { PhId: String(p.id), PhTrip: String(p.trip || ''), PhFile: fileId, PhW: Number(p.w) || 0, PhH: Number(p.h) || 0, PhTaken: String(p.taken || ''), PhCap: '', PhSeq: Number(p.seq) || 0, PhKind: 'video', PhDur: Number(p.dur) || 0 };

@@ -96,40 +96,85 @@ export async function upload(files, o) {
 }
 /* videos: a still frame for the preview, then the file goes to Drive in 4 MB parts */
 export const MAX_VIDEO_S = 125, MAX_VIDEO_MB = 500;
-function videoInfo(file) {
-  return new Promise((res, rej) => {
-    const u = URL.createObjectURL(file), v = document.createElement('video'); v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = u;
-    const fail = () => { URL.revokeObjectURL(u); rej(new Error('That file is not a video this phone can read.')); };
-    v.onerror = fail;
-    v.onloadedmetadata = () => { v.currentTime = Math.min(0.5, (v.duration || 1) / 3); };
-    v.onseeked = () => { try { const r = Math.min(1, 360 / Math.max(v.videoWidth, v.videoHeight)), cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(v.videoWidth * r)); cv.height = Math.max(1, Math.round(v.videoHeight * r));
-      cv.getContext('2d').drawImage(v, 0, 0, cv.width, cv.height); res({ dur: v.duration || 0, w: v.videoWidth, h: v.videoHeight, thumb: cv.toDataURL('image/jpeg', 0.7) }); } catch (e) { rej(e); } finally { URL.revokeObjectURL(u); } };
-    setTimeout(() => rej(new Error('That video took too long to open.')), 20000);
-  });
+/** Length, size and a still frame of a video. Phones differ a lot here (an iPhone often won't open a video it isn't playing),
+ *  so every step has a time limit and falls back: no frame → a plain preview; no length → the video still saves. */
+const plainThumb = () => { const c = document.createElement('canvas'); c.width = 360; c.height = 240; const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 360, 240);
+  gr.addColorStop(0, '#2B1E4A'); gr.addColorStop(0.55, '#7B3FE4'); gr.addColorStop(1, '#E2367A'); g.fillStyle = gr; g.fillRect(0, 0, 360, 240);
+  g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.arc(180, 120, 34, 0, 7); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.moveTo(168, 102); g.lineTo(198, 120); g.lineTo(168, 138); g.fill(); return c.toDataURL('image/jpeg', 0.7); };
+const once = (el, evs, ms) => new Promise(res => { let t = null; const done = ok => { clearTimeout(t); evs.forEach(e => el.removeEventListener(e, on)); res(ok); }, on = () => done(true); evs.forEach(e => el.addEventListener(e, on)); t = setTimeout(() => done(false), ms); });
+async function videoInfo(file) {
+  const u = URL.createObjectURL(file), v = document.createElement('video');
+  v.muted = true; v.defaultMuted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.setAttribute('muted', ''); v.preload = 'auto';
+  v.style.cssText = 'position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none';
+  document.body.appendChild(v); v.src = u; try { v.load(); } catch (e) { /* older browsers */ }
+  const out = { dur: 0, w: 0, h: 0, thumb: '' };
+  try {
+    if (await once(v, ['loadedmetadata', 'error'], 9000) && !v.error) {
+      out.dur = isFinite(v.duration) ? v.duration : 0; out.w = v.videoWidth; out.h = v.videoHeight;
+      // a frame to draw: seek a little in; if the phone won't, play for a moment
+      let ok = v.readyState >= 2 || await once(v, ['loadeddata'], 3000);
+      try { v.currentTime = Math.min(0.5, (out.dur || 1) / 3); ok = await once(v, ['seeked'], 4000); } catch (e) { ok = false; }
+      if (!ok) { try { const pl = v.play(); if (pl && pl.then) await Promise.race([pl, new Promise(r => setTimeout(r, 3000))]); ok = await once(v, ['timeupdate'], 3000); v.pause(); } catch (e) { ok = false; } }
+      if (v.videoWidth) {
+        const r = Math.min(1, 360 / Math.max(v.videoWidth, v.videoHeight)), cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(v.videoWidth * r)); cv.height = Math.max(1, Math.round(v.videoHeight * r));
+        try { cv.getContext('2d').drawImage(v, 0, 0, cv.width, cv.height); const d = cv.toDataURL('image/jpeg', 0.7); if (d.length > 3000) out.thumb = d; } catch (e) { /* frame not drawable (some HDR videos) */ }
+      }
+    }
+  } finally { v.removeAttribute('src'); try { v.load(); } catch (e) { /* */ } v.remove(); URL.revokeObjectURL(u); }
+  if (!out.thumb) out.thumb = plainThumb();
+  return out;
 }
 const b64 = buf => { const u = new Uint8Array(buf); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
-/** Upload videos one by one (each in parts). onStep(text) reports progress. */
+/** Send one part straight to Drive's upload address. Resolves 'more' (308), 'done' (200/201) or rejects (blocked / network). */
+function putPart(url, blob, start, total, onBytes) {
+  return new Promise((res, rej) => {
+    const x = new XMLHttpRequest(); x.open('PUT', url); x.timeout = 180000;
+    x.setRequestHeader('Content-Range', 'bytes ' + start + '-' + (start + blob.size - 1) + '/' + total);
+    x.upload.onprogress = e => onBytes && onBytes(start + e.loaded);
+    x.onload = () => (x.status === 308 ? res('more') : x.status === 200 || x.status === 201 ? res('done') : rej(new Error('Drive said ' + x.status)));
+    x.onerror = () => rej(new Error('blocked')); x.ontimeout = () => rej(new Error('timed out'));
+    x.send(blob);
+  });
+}
+const mb = n => (n / 1048576 >= 100 ? Math.round(n / 1048576) : (n / 1048576).toFixed(1)) + ' MB';
+const eta = s => (s < 60 ? 'about ' + Math.max(5, Math.round(s / 5) * 5) + ' s left' : 'about ' + Math.round(s / 60) + ' min left');
+/** Upload videos one by one. Each goes straight from the phone to your Drive in 16 MB parts (no detour), with live progress;
+ *  if the phone can't reach Drive that way, the rest goes through the Apps Script in 4 MB parts. onStep(text, fraction) reports progress. */
 export async function uploadVideos(files, o) {
   if (!navigator.onLine) { Notify('Videos need the internet to save to your Drive.', 'error'); return []; }
-  const rows = [], PART = 4 * 1024 * 1024;
+  const rows = [], skipped = [], failed = [], DIRECT = 16 * 1024 * 1024, PART = 4 * 1024 * 1024;
   for (let k = 0; k < files.length; k++) {
-    const f = files[k];
+    const f = files[k], tag = 'Saving video ' + (k + 1) + ' of ' + files.length;
     try {
-      if (f.size > MAX_VIDEO_MB * 1024 * 1024) throw new Error('it is over ' + MAX_VIDEO_MB + ' MB');
-      const info = await videoInfo(f); if (info.dur > MAX_VIDEO_S) throw new Error('it is longer than 2 minutes');
+      if (f.size > MAX_VIDEO_MB * 1024 * 1024) { skipped.push(f.name); continue; }
+      o.onStep && o.onStep(tag + ' · getting it ready…', 0);
+      const info = await videoInfo(f);
+      if (info.dur > MAX_VIDEO_S || (!info.dur && f.size > 400 * 1024 * 1024)) { skipped.push(f.name); continue; }
       const id = newPhotoId().replace('PH-', 'VD-'), ext = (f.name.split('.').pop() || 'mp4').toLowerCase(), taken = f.lastModified ? new Date(f.lastModified).toISOString().slice(0, 10) : '';
-      await api('ppVideoStart', { id, folder: o.folder, size: f.size, mime: f.type || 'video/mp4', ext }, undefined, { quiet: true });
-      let row = null;
-      for (let at = 0; at < f.size; at += PART) {
-        o.onStep && o.onStep('Saving video ' + (k + 1) + ' of ' + files.length + ' · ' + Math.round(at / f.size * 100) + '%');
-        const data = b64(await f.slice(at, Math.min(f.size, at + PART)).arrayBuffer());
-        const r = await api('ppVideoPart', { id, data, start: at, total: f.size, mime: f.type || 'video/mp4', trip: o.trip, w: info.w, h: info.h, taken, seq: (o.seq || 0) + k + 1, dur: Math.round(info.dur), thumb: info.thumb }, undefined, { quiet: true });
-        if (r && r.row) row = r.row;
+      const meta = { id, total: f.size, mime: f.type || 'video/mp4', trip: o.trip, w: info.w, h: info.h, taken, seq: (o.seq || 0) + k + 1, dur: Math.round(info.dur), thumb: info.thumb };
+      const st = await api('ppVideoStart', { id, folder: o.folder, size: f.size, mime: meta.mime, ext, origin: location.origin }, undefined, { quiet: true });
+      const t0 = Date.now(), show = sent => { const el = (Date.now() - t0) / 1000, left = sent > 0 ? el / sent * (f.size - sent) : 0; o.onStep && o.onStep(tag + ' · ' + mb(sent) + ' of ' + mb(f.size) + (sent > 0 && el > 3 ? ' · ' + eta(left) : ''), sent / f.size); };
+      show(0);
+      // 1 · straight to Drive
+      let at = 0;
+      if (st && st.url) {
+        try { for (; at < f.size; at += DIRECT) { const r = await putPart(st.url, f.slice(at, Math.min(f.size, at + DIRECT)), at, f.size, show); if (r === 'done') { at = f.size; break; } } } catch (e) { /* blocked or dropped: carry on below from where Drive got to */ }
       }
-      if (row) { mem.set(id, info.thumb); cachePut(keyT(id), info.thumb); applySaved({ PP_Photos: [row] }); rows.push(row); }
-    } catch (e) { Notify("Couldn't save " + f.name + ': ' + e.message, 'error'); }
+      // 2 · ask how far it got (and save the row if it is complete); finish through the Apps Script if needed
+      let r = await api('ppVideoPart', { ...meta, query: true }, undefined, { quiet: true });
+      let next = r && r.row ? f.size : (r && r.next) || 0;
+      while (!(r && r.row) && next < f.size) {
+        show(next);
+        const data = b64(await f.slice(next, Math.min(f.size, next + PART)).arrayBuffer());
+        r = await api('ppVideoPart', { ...meta, data, start: next }, undefined, { quiet: true });
+        next = r && r.row ? f.size : (r && r.next) || next + PART;
+      }
+      if (r && r.row) { mem.set(id, info.thumb); cachePut(keyT(id), info.thumb); applySaved({ PP_Photos: [r.row] }); rows.push(r.row); rerender(); }
+    } catch (e) { failed.push(f.name + ' (' + e.message + ')'); }
   }
-  o.onStep && o.onStep('');
+  o.onStep && o.onStep('', 0);
+  if (skipped.length) Notify(skipped.length + (skipped.length === 1 ? ' video was' : ' videos were') + ' not saved: longer than 2 minutes or too big. Trim ' + (skipped.length === 1 ? 'it' : 'them') + ' on the phone and add again.', 'error');
+  else if (failed.length) Notify("Couldn't save " + failed.length + (failed.length === 1 ? ' video: ' : ' videos, e.g. ') + failed[0], 'error');
   rerender();
   return rows;
 }
