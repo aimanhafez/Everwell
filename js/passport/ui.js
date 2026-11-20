@@ -87,6 +87,7 @@ ul.pmom li:before{content:'';position:absolute;left:0;top:14px;width:6px;height:
 .pview .vbar button{background:none;border:0;color:#fff;font-size:14px;padding:4px;cursor:pointer;min-width:24px}.pview .vbar .tm{font-size:10.5px;white-space:nowrap;opacity:.9;font-variant-numeric:tabular-nums}
 .pview .vbar input{flex:1;min-width:40px;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:linear-gradient(90deg,${K.or} var(--p),rgba(255,255,255,.3) var(--p));outline:0}
 .pview .vbar input::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}.pview .vbar input::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:#fff}
+.pview .pwhy{position:relative;z-index:2;margin:0 16px 8px;padding:8px 12px;border-radius:12px;font-size:11.5px;line-height:1.45;background:rgba(255,190,90,.14);color:#FFD9A6;box-shadow:inset 0 0 0 1px rgba(255,190,90,.3)}
 .pview .wait{position:absolute;inset:0;background:center/cover no-repeat #111;display:grid;place-items:center}.pview .wait span{font-size:12.5px;padding:8px 12px;border-radius:99px;background:rgba(0,0,0,.55)}.pview .ld{color:#aaa;font-size:13px;padding:40px}
 @keyframes pvIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 .pview .cap{position:relative;z-index:2;display:flex;gap:6px;padding:4px 20px 10px;min-height:30px}.pview .chip{font-size:9px;font-weight:800;letter-spacing:1.2px;padding:5px 9px;border-radius:99px;background:${K.or};color:${K.onAcc || '#fff'}}.pview .chip.o{background:rgba(255,255,255,.16);color:#fff}
@@ -349,6 +350,18 @@ export function openPhoto(l, ph, o = {}) {
 /** The Memories viewer: the photo or video in a framed card on its own colours, the journey day, a film strip, swipe / arrows,
  *  double-tap to zoom (photos). Videos play inside, with Google Drive's player. */
 /** MansWell's own video player: the phone plays the file straight from Drive (needs the Drive key), one bar in the theme colour. */
+/** Why Drive refused the video (shown under it), e.g. a website rule on the key that doesn't match this address. */
+async function whyBlocked(src) {
+  try {
+    const r = await fetch(src, { headers: { Range: 'bytes=0-1' } }); if (r.ok) return 'This phone could not play the file itself.';
+    const j = await r.json().catch(() => null), m = (j && j.error && j.error.message) || ('Drive said ' + r.status);
+    if (/referer|referrer/i.test(m)) return 'Your Drive key does not allow this address (' + location.origin + '). In Google Cloud, set its website to ' + location.origin + '/* and wait 5 minutes.';
+    if (/not been used|disabled|not enabled/i.test(m)) return 'Google Drive API is not turned on for this key\'s project. Turn it on in Google Cloud, then wait 5 minutes.';
+    if (/API_KEY_SERVICE_BLOCKED|blocked/i.test(m)) return 'Your Drive key is not allowed to use Google Drive API. Tick Google Drive API in the key\'s API restrictions.';
+    if (/not found|File not found/i.test(m)) return 'Drive can\'t share this video yet. Open it again in a minute.';
+    return 'Drive refused the key: ' + m;
+  } catch (e) { return 'Could not reach Google Drive.'; }
+}
 const vt = s => { s = Math.max(0, Math.floor(Number(s) || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 function VideoPlayer(v, poster) {
   const st = v.vs || (v.vs = { cur: 0, dur: Number(v.ph.PhDur) || 0, playing: false, muted: false, started: false });
@@ -358,7 +371,7 @@ function VideoPlayer(v, poster) {
   const full = () => { const x = el(); if (!x) return; if (x.webkitEnterFullscreen) x.webkitEnterFullscreen(); else if (x.requestFullscreen) x.requestFullscreen(); };
   return html`<video id="pvVideo" src=${src} poster=${poster || ''} playsinline webkit-playsinline preload="metadata" muted=${st.muted} data-t="viewerVideo"
       onTimeUpdate=${upd} onPlay=${e => { st.started = true; upd(e); }} onPause=${upd} onLoadedMetadata=${upd} onEnded=${upd}
-      onError=${() => { v.useFrame = true; rerender(); }}></video>
+      onError=${() => { v.useFrame = true; rerender(); whyBlocked(src).then(m => { v.why = m; rerender(); }); }}></video>
     ${st.playing ? null : html`<span class="vbig" data-t="viewerPlay"><i>▶</i></span>`}
     <div class="vbar" data-t="viewerBar" onPointerDown=${e => e.stopPropagation()} onPointerUp=${e => e.stopPropagation()}>
       <button onClick=${() => { const x = el(); if (x) { if (x.paused) x.play().catch(() => {}); else x.pause(); } }} data-t="vPlay">${st.playing ? '❚❚' : '▶'}</button>
@@ -415,6 +428,7 @@ function Viewer(l) {
           : img ? html`<img src=${img} alt="" draggable="false" style=${v.zoom ? `transform:translate(${v.px || 0}px,${v.py || 0}px) scale(2.2)` : ''} data-t="viewerImg" />` : html`<span class="ld">${v.err || 'Loading…'}</span>`}
       </div>
       ${at > 0 && !v.zoom ? html`<span class="parr l" onClick=${() => go(-1)} data-t="viewerPrev">‹</span>` : null}${at < list.length - 1 && !v.zoom ? html`<span class="parr r" onClick=${() => go(1)} data-t="viewerNext">›</span>` : null}</div>
+    ${vid && v.why ? html`<div class="pwhy" data-t="viewerWhy">${v.why}</div>` : null}
     <div class="cap"><span class="chip">${vid ? 'VIDEO · ' + PH.durTxt(v.ph.PhDur) : 'PHOTO'}</span>${t && t.TrCover === v.ph.PhId ? html`<span class="chip o">COVER</span>` : null}</div>
     ${list.length > 1 ? html`<div class="fs" data-t="viewerStrip">${near.map(([x, i]) => html`<span class=${'th' + (i === at ? ' on' : '')} style=${PH.bg(x.PhId, x.PhId)} onClick=${() => openPhoto(l, x, v.o)} data-t=${'vs-' + x.PhId}>${PH.isVideo(x) ? html`<i>▶</i>` : null}</span>`)}</div>` : null}
     <div class="bt">

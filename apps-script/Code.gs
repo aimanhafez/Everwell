@@ -16,6 +16,8 @@
  *
  * Helpers you can run from the editor: setDriveKey(), removeDriveKey(), showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.14.6 · The video viewer says why Drive refused the key (app only; same server code as 3.14.5).
+ *
  * 3.14.5 · MansWell's own video player. Make a second API key (Google Drive API, locked to your MansWell address), paste it on the
  *   DRIVE_KEY_TO_SAVE line, run setDriveKey(), then empty the line again. Deploy › New version.
  *
@@ -92,7 +94,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.14.5';
+var EW_VERSION = '3.14.6';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {

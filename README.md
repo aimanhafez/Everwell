@@ -1,4 +1,8 @@
-# MansWell · v3.14.5 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.14.6 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.14.6 · Why a video uses Google's player
+- When Drive refuses the Drive key, the viewer now says why under the video (for example, the key's website doesn't match this address) and plays it with Google's player meanwhile.
+- Upload: all files in Step 1. Code.gs: version number only.
 
 ## 3.14.5 · MansWell's own video player
 - Videos play in MansWell's own player: the phone plays the file straight from Drive, filling the frame (no black strip, no Drive buttons). One bar in the theme colour: play / pause, a timeline you can drag, time, sound, full screen. Tap the video to play or pause; swipe and the film strip still move between items.
