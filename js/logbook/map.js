@@ -136,7 +136,9 @@ export function RouteMap(o) {
     ${g.ready ? html`<path d=${g.land} fill="#0D0F13" stroke="#1C2027" stroke-width=".8" fill-rule="evenodd" /><path d=${g.lit} fill="#181C23" stroke="#3B424D" stroke-width="1.3" fill-rule="evenodd" />`
       : html`<text x=${w / 2} y=${h / 2} text-anchor="middle" font-size="11" fill="#556">Loading map…</text>`}
     ${g.prov ? html`<path d=${g.prov} fill="none" stroke="rgba(160,170,185,.17)" stroke-width=".7" />` : null}
-    ${route}${pinEls}${labs}
+    ${route}${pinEls}${labs}${o.mark ? (() => { const [mx, myy] = P2(v, Number(o.mark.lat), Number(o.mark.lng)), nm = String(o.mark.label || ''), fs = 10 * s1, tw = (textW(nm, 10) + 12) * s1, bx = Math.max(3, Math.min(w - 3 - tw, mx - tw / 2)), by = myy - 34 * s1 < 3 ? myy + 14 * s1 : myy - 34 * s1;
+      return html`<g data-t="mapMark" style="pointer-events:none"><circle cx=${mx} cy=${myy} r=${14 * s1} fill=${accent()} opacity=".28" filter=${`url(#${fid}b)`} /><circle cx=${mx} cy=${myy} r=${7.5 * s1} fill="#fff" /><circle cx=${mx} cy=${myy} r=${4.5 * s1} fill=${accent()} />
+        ${nm ? html`<rect x=${bx} y=${by} width=${tw} height=${18 * s1} rx=${6 * s1} fill="rgba(9,11,15,.88)" stroke=${accent()} stroke-width=${s1} /><text x=${bx + 6 * s1} y=${by + 12.6 * s1} font-size=${fs} font-weight="700" fill="#fff">${nm}</text>` : null}</g>`; })() : null}
   </svg>`;
   return { svg, view: v, empty: !all.length };
 }

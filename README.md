@@ -1,4 +1,11 @@
-# MansWell · v3.13.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.14.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.14.0 · Atlas: stamps per visit, milestones, highlights, faster photos, videos
+- Odyssey: Borderless gives one stamp per visit (Thailand in 2019 and 2024 = two stamps). Favourite country is the top 5 journeys by your score (the country big, the journey's name small). Most spent shows the top 5 (the budget sentence is gone). Country overview: "/ day" sits under distance and ground cost. Milestones are four groups (Countries, World, On the road, Journey type) that open when tapped.
+- Journey page: Highlights from Voyage › Discovery (only when the journey has finds; tap one to see it on the map, with your verdict). The six number cards are the same height. "Rated in Voyage › Discovery" is gone.
+- Memories: photos save 3 at a time and as lighter files, with a progress bar and time left. Videos (up to 2 minutes) go to your Drive in parts, show a still frame and play from Drive. In the viewer, swipe left / right or tap the arrows (7 / 35). The count shows photos and videos.
+- Journeys list cards no longer show the photo count. Wanderlist: "Visited before, no journey to write up" is gone. Voyage › Discovery: the star hint is gone.
+- Upload: all files in Step 1, paste the new Code.gs (PP_Photos gets PhKind and PhDur by itself) and Deploy › New version.
 
 ## 3.13.0 · 219 countries
 - 14 more countries: Faroe Islands, Gibraltar, Isle of Man, Jersey, Guernsey, Åland, Svalbard, Bermuda, Aruba, Curaçao, Cayman Islands, Guam, French Polynesia, New Caledonia. Each has its flag, map spot (a dot on the world map, its shape when zoomed), Visited / Wanderlist and its currency in Voyage. Svalbard is drawn apart from Norway.

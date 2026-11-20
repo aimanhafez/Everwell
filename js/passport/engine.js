@@ -76,7 +76,7 @@ export const isosOf = id => stopsOf(id).map(s => s.StIso);
 export const tripsIn = iso => { const ids = new Set(DB.ppStops.filter(s => s.StIso === iso).map(s => s.StTrip)); return trips().filter(t => ids.has(t.TrId)); };
 export const place = iso => DB.ppPlaces.find(p => p.PlIso === iso) || null;
 export const photosOf = id => DB.ppPhotos.filter(p => p.PhTrip === id).sort((a, b) => (a.PhSeq || 0) - (b.PhSeq || 0) || (a.PhId < b.PhId ? -1 : 1));
-export const coverOf = t => (t && t.TrCover && DB.ppPhotos.find(p => p.PhId === t.TrCover)) || photosOf(t && t.TrId)[0] || null;
+export const coverOf = t => (t && t.TrCover && DB.ppPhotos.find(p => p.PhId === t.TrCover && p.PhKind !== 'video')) || photosOf(t && t.TrId).find(p => p.PhKind !== 'video') || null;
 
 /** iso → 'visited' | 'wish' | 'none' (home is 'home' for the map only) */
 let memo = { sig: '', st: null };
@@ -118,6 +118,13 @@ export function stats() {
 /** Countries in the order you first went there (for stamps and milestones). */
 export function firstVisits() {
   return visitedList().map(c => ({ c, at: firstVisit(c.iso) || '9999' })).sort((a, b) => a.at.localeCompare(b.at) || a.c.name.localeCompare(b.c.name));
+}
+/** Borderless: one stamp per visit: each journey to a country, plus countries marked visited without a journey. Oldest first. */
+export function stamps() {
+  const home = homeIso(), out = [], byTrip = new Set();
+  for (const t of trips()) for (const iso of new Set(isosOf(t.TrId))) { const c = BY[iso]; if (!c || c.legacy || iso === home) continue; out.push({ c, at: String(t.TrStart || '9999'), trip: t }); byTrip.add(iso); }
+  for (const p of DB.ppPlaces) { const c = BY[p.PlIso]; if (p.PlStatus === 'been' && c && !c.legacy && p.PlIso !== home && !byTrip.has(p.PlIso)) out.push({ c, at: String(p.PlFirst || '9999') }); }
+  return out.sort((a, b) => a.at.localeCompare(b.at) || a.c.name.localeCompare(b.c.name));
 }
 const MS = [['first', 'First Light', 'Your first country', 1], ['wayfarer', 'Wayfarer', '5 countries', 5], ['nomad', 'Nomad Soul', '10 countries', 10], ['carto', 'Cartographer', '25 countries', 25]];
 export function milestones() {

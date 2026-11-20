@@ -5,7 +5,8 @@ import * as P from './engine.js';
 import * as I from './insights.js';
 import * as L from '../logbook/engine.js';
 import { Ico } from '../logbook/icons.js';
-import { RouteCard, routeCardCss } from '../logbook/map.js';
+import { RouteCard, RouteMap, routeCardCss, fit } from '../logbook/map.js';
+import * as PH from './photos.js';
 
 const oa = a => `rgba(${K.accRGB || '255,106,0'},${a})`;
 const Flag = (iso, h = 16) => (iso ? html`<img class="pfl" src=${P.flagUrl(iso)} alt="" style=${`width:${Math.round(h * 4 / 3)}px;height:${h}px`} />` : null);
@@ -24,9 +25,17 @@ export const css = () => routeCardCss() + `
 .asme .b{position:relative;height:5px;border-radius:4px;background:${K.field};margin-top:6px}.asme .b i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:linear-gradient(90deg,${oa(.4)},${K.or})}.asme .b u{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-2px;border-radius:2px;background:${K.light ? K.text : '#fff'};box-shadow:0 0 6px ${oa(.9)}}.asme .p{font-size:10px;color:${K.or};font-weight:700;text-align:right;margin-top:3px}
 .asbd{display:grid;grid-template-columns:1fr 1fr;gap:8px}.asbg{border-radius:14px;padding:12px 8px 10px;text-align:center;background:linear-gradient(180deg,${oa(.1)},${K.card2});box-shadow:inset 0 0 0 1.5px ${oa(.7)};border-top:4px solid ${K.or}}
 .asbg.off{opacity:.5;filter:saturate(.5)}.asbg .ci{width:34px;height:34px;border-radius:50%;margin:0 auto 6px;display:grid;place-items:center;background:${oa(.16)}}.asbg .k{font-size:9.5px;font-weight:800;letter-spacing:.6px;color:${K.or}}.asbg b{display:block;font-size:16px;margin:4px 0 5px;color:${K.text}}
-.astb{font-size:12px}.astb .hd,.astb .tr{display:grid;grid-template-columns:1.55fr .45fr .45fr .9fr .95fr .8fr .7fr;gap:4px;align-items:center}.astb .hd{font-size:7.5px;font-weight:800;letter-spacing:.4px;color:${K.sub};background:${K.field};border-radius:9px;padding:8px 7px;margin-top:8px}
+.astb{font-size:12px}
+.astb.ast5 .hd,.astb.ast5 .tr{grid-template-columns:1.6fr .5fr .5fr 1.1fr 1.15fr;align-items:start}.astb.ast5 .hd{align-items:center}.astb.ast5 .tr .cn{padding-top:1px}.astb.ast5 .tr b{display:block;font-weight:600;white-space:nowrap}.astb.ast5 .tr i{display:block;font-style:normal;font-size:9.5px;color:${K.sub};margin-top:2px;white-space:nowrap}
+.ashl{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:8px -2px 0;padding:0 2px 2px}.ashl::-webkit-scrollbar{display:none}.ashl .c{flex:none;width:148px;border-radius:14px;overflow:hidden;background:${K.card2};box-shadow:inset 0 0 0 1px ${K.line};cursor:pointer}.ashl .c.on{box-shadow:inset 0 0 0 2px ${K.or}}
+.ashl .im{height:84px;position:relative}.ashl .k{position:absolute;left:7px;top:7px;font-size:8px;font-weight:800;letter-spacing:.8px;color:#fff;background:rgba(0,0,0,.42);border-radius:99px;padding:3px 7px}.ashl .pn{position:absolute;right:7px;bottom:6px;line-height:0}.ashl .tx{padding:8px 9px 9px}.ashl .tx b{display:block;font-size:12.5px;color:${K.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ashl .tx small{display:block;font-size:10.5px;color:${K.sub};margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ashm{margin-top:10px;border-radius:14px;overflow:hidden;background:#07080B}.ashv{margin-top:10px;padding-top:10px;border-top:1px solid ${K.sep}}.ashv .q{font:italic 400 14px Georgia,serif;color:${K.text}}.ashv .b{font-size:11.5px;color:${K.sub};margin-top:5px}.ashv .b b{color:${K.or}}
+.asfv .cn{min-width:0;display:flex;flex-direction:column}.asfv .cn b{font-size:14px;font-weight:700;color:${K.text}}.asfv .cn small{font-size:11px;color:${K.sub};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.asmg{border-top:1px solid ${K.sep}}.asmg:first-of-type{border-top:0}.asmg .hd{display:grid;grid-template-columns:36px 1fr 14px;gap:10px;align-items:center;padding:10px 0;cursor:pointer}
+.asmg .gi{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:11.5px;font-weight:800;color:${K.or};background:${oa(.12)}}.asmg .t{font:400 16px Georgia,serif;color:${K.text}}.asmg .s{font-size:11px;color:${K.sub};margin-top:2px}.asmg em{font-style:normal;color:${K.mute};text-align:right}
+.asmg .it{margin:0 0 8px 18px;padding-left:12px;border-left:2px solid ${K.sep}}.asmg .it .lr{padding:8px 0}.astb .hd,.astb .tr{display:grid;grid-template-columns:1.55fr .45fr .45fr .9fr .95fr .8fr .7fr;gap:4px;align-items:center}.astb .hd{font-size:7.5px;font-weight:800;letter-spacing:.4px;color:${K.sub};background:${K.field};border-radius:9px;padding:8px 7px;margin-top:8px}
 .astb .hd span:not(:first-child),.astb .tr span:not(:first-child){text-align:right}.astb .tr{padding:10px 7px;border-bottom:1px solid ${K.sep};font-weight:700;color:${K.text};font-size:11.5px}.astb .tr:last-child{border-bottom:0}.astb .tr small{color:${K.sub};font-size:8px;font-weight:500}.astb .cn{display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden;white-space:nowrap}
-.ask6{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 12px 10px}.ask6 div{border-radius:13px;background:${K.surface || K.card};box-shadow:inset 0 0 0 1px ${K.hair || K.line};text-align:center;padding:11px 4px 9px;min-width:0}
+.ask6{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:6px;margin:0 12px 10px}.ask6 div{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:13px;background:${K.surface || K.card};box-shadow:inset 0 0 0 1px ${K.hair || K.line};text-align:center;padding:11px 4px 9px;min-width:0}
 .ask6 b{display:block;font:700 17px Georgia,serif;margin-top:5px;color:${K.text};white-space:nowrap}.ask6 span{display:block;font-size:8.5px;font-weight:800;letter-spacing:.8px;color:${K.sub};margin-top:5px}.ask6 em{display:block;font-style:normal;font-size:9px;font-weight:700;color:${K.or};margin-top:3px}
 .asro{margin:0 12px 10px;border-radius:14px;background:${K.surface || K.card};box-shadow:inset 0 0 0 1px ${K.hair || K.line};padding:11px 10px;overflow-x:auto;scrollbar-width:none}.asro::-webkit-scrollbar{display:none}
 .asro .ln{position:relative;display:flex;gap:2px;margin-top:10px;min-width:max-content}.asro .ln:before{content:'';position:absolute;left:18px;right:18px;top:7px;height:2px;background:${K.or}}
@@ -59,8 +68,17 @@ export function StatCards() {
 }
 export function Favourites() {
   const f = I.favourites();
-  return Card('FAVOURITE COUNTRY', f.length ? f.map((x, i) => html`<div class="asrk" data-t=${'fav-' + x.iso}><span>${i + 1}</span>${Flag(x.iso, 18)}<span>${P.BY[x.iso].name}</span><span class="r"><b>${x.v.toFixed(1)}</b>${Stars(x.v)}</span></div>`)
+  return Card('FAVOURITE COUNTRY', f.length ? f.map((x, i) => html`<div class="asrk asfv" data-t=${'fav-' + x.iso + (f.findIndex(y => y.iso === x.iso) === i ? '' : '-' + i)}><span>${i + 1}</span>${Flag(x.iso, 18)}<span class="cn"><b>${P.BY[x.iso].name}</b><small>${x.t.TrName}</small></span><span class="r"><b>${x.v.toFixed(1)}</b>${Stars(x.v)}</span></div>`)
     : html`<div class="lnote" style="margin-top:6px">Give your journeys a score in Voyage › Discovery.</div>`, 'oFav');
+}
+/** Milestones: four group rows; tap one to open its steps. */
+export function Milestones(l) {
+  const G = I.milestones(), all = G.reduce((s, g) => s + g.items.length, 0), done = G.reduce((s, g) => s + g.done, 0);
+  return Card('MILESTONES · ' + done + ' OF ' + all, G.map(g => { const open = l.msOpen === g.id; return html`<div class="asmg" data-t=${'msg-' + g.id}>
+      <div class="hd" onClick=${() => { l.msOpen = open ? '' : g.id; rerender(); }}><span class="gi">${g.done}/${g.items.length}</span><div style="min-width:0"><div class="t">${g.name}</div><div class="s">${g.sub}</div></div><em>${open ? '▾' : '›'}</em></div>
+      ${open ? html`<div class="it">${g.items.map(m => html`<div class="lr" data-t=${'ms-' + m.id}><div class="lib" style=${m.done ? `background:${K.or};color:${K.onAcc}` : `background:${K.field};color:${K.mute};box-shadow:inset 0 0 0 1.5px ${K.line2}`}><b style="font-size:10px">${m.done ? '✓' : '·'}</b></div>
+          <div><div class="t" style="font:400 15px Georgia,serif">${m.name}</div><div class="s">${m.desc}</div>${m.done ? null : html`<div class="lbar" style="margin-top:6px"><i style=${`width:${m.have / m.need * 100}%;background:${K.or}`}></i></div>`}</div>
+          <div class="r" style=${m.done ? `color:${K.grn}` : ''}>${m.done ? '✓' : m.show(m.have)}</div></div>`)}</div>` : null}</div>`; }), 'oMs');
 }
 export function MostSpent(open) {
   const m = I.mostSpent();
@@ -68,7 +86,7 @@ export function MostSpent(open) {
   return Card('MOST SPENT', m.length ? html`${m.map((x, i) => { const over = x.diff !== null && x.diff > 0; return html`<div class="asme" style="cursor:pointer" onClick=${() => open(x.t.TrId)} data-t=${'ms-' + x.t.TrId}><span>${i + 1}</span>${Flag(x.iso, 18)}<div style="min-width:0"><div class="t"><span>${x.t.TrName}</span><b>${L.RM(x.v)}</b></div>
       <div class="b"><i style=${`width:${x.b ? Math.min(100, x.v / x.b / sc * 100).toFixed(1) : 100}%;${over ? `background:${K.red}` : ''}`}></i>${x.b ? html`<u style=${`left:${(100 / sc).toFixed(1)}%`}></u>` : null}</div>
       <div class="p" style=${x.diff === null ? `color:${K.sub}` : `color:${over ? K.red : K.grn}`} data-t=${'msPct-' + x.t.TrId}>${x.diff === null ? 'no budget set' : (over ? '+' : '−') + Math.abs(x.diff).toFixed(1) + '% ' + (over ? 'over' : 'under') + ' budget (' + L.RM(x.b) + ')'}</div></div></div>`; })}
-      <div class="lnote" style="margin-top:6px">The line is that journey's budget in Voyage.</div>`
+`
     : html`<div class="lnote" style="margin-top:6px">Add expenses in Voyage to see where the money went.</div>`, 'oMost');
 }
 export function Badges() {
@@ -97,9 +115,8 @@ export function Rides(l) {
 /* ───────── Journeys ───────── */
 export function CountryTable() {
   const rows = I.countryOverview(); if (!rows.length) return null;
-  return Card('COUNTRY EXPERIENCE OVERVIEW', html`<div class="astb"><div class="hd"><span>COUNTRY</span><span>TRIPS</span><span>DAYS</span><span>DISTANCE</span><span>GROUND COST</span><span>G.COST / DAY</span><span>DIST. / DAY</span></div>
-    ${rows.map(r => html`<div class="tr" data-t=${'cx-' + r.iso}><span class="cn">${Flag(r.iso, 13)}${P.BY[r.iso].name}</span><span>${r.trips}</span><span>${r.days}</span><span>${L.n0(r.km)}<small>km</small></span><span><small>RM</small>${L.n0(r.cost)}</span>
-      <span><small>RM</small>${r.days ? L.n0(r.cost / r.days) : 0}</span><span>${r.days ? L.n0(r.km / r.days) : 0}<small>km</small></span></div>`)}</div>`, 'jCountries');
+  return Card('COUNTRY EXPERIENCE OVERVIEW', html`<div class="astb ast5"><div class="hd"><span>COUNTRY</span><span>TRIPS</span><span>DAYS</span><span>DISTANCE</span><span>GROUND COST</span></div>
+    ${rows.map(r => html`<div class="tr" data-t=${'cx-' + r.iso}><span class="cn">${Flag(r.iso, 13)}${P.BY[r.iso].name}</span><span>${r.trips}</span><span>${r.days}</span><span><b>${L.n0(r.km)}<small>km</small></b><i>${r.days ? L.n0(r.km / r.days) : 0} km / day</i></span><span><b><small>RM</small>${L.n0(r.cost)}</b><i>RM ${r.days ? L.n0(r.cost / r.days) : 0} / day</i></span></div>`)}</div>`, 'jCountries');
 }
 
 /* ───────── one journey ───────── */
@@ -119,13 +136,29 @@ export function JourneyRoute(id) {
     <div class="asro" data-t="tRouteOv"><span class="lcap" style=${`color:${K.text};font-weight:800;letter-spacing:.8px`}>ROUTE OVERVIEW</span>
       <div class="ln">${j.days.map(d => html`<div class="d" data-t=${'ro-' + d.n}><i class=${d.first ? 's' : d.last ? 'e' : ''}></i><b>${d.end || '—'}</b><span>Day ${d.n}</span><span>${d.km ? L.n0(d.km) + ' km' : '–'}</span></div>`)}</div></div>`;
 }
+/** Highlights: the journey's Discovery finds as cards (only when it has some). Tap one → the map shows where it is. */
+const hlSel = {};
+export function Highlights(id) {
+  const fs = L.finds(id); if (!fs.length) return null;
+  const t = P.trip(id), r = L.result(id) || {}, back = (L.BACK.find(b => b[0] === r.RsBack) || [])[1] || '';
+  const dayDate = n => { const d = new Date(String(t.TrStart).slice(0, 10) + 'T00:00:00'); d.setDate(d.getDate() + Number(n) - 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  const photoOf = f => { const ps = P.photosOf(id).filter(p => p.PhKind !== 'video'); const m = f.FdDay ? ps.find(p => p.PhTaken === dayDate(f.FdDay)) : null; return m ? m.PhId : ''; };
+  const sel = fs.find(f => f.FdId === hlSel[id] && (Number(f.FdLat) || Number(f.FdLng)));
+  const pin = sel ? [Number(sel.FdLat), Number(sel.FdLng)] : null;
+  return Card('HIGHLIGHTS', html`<div class="ashl">${fs.map(f => { const ph = photoOf(f), on = sel && sel.FdId === f.FdId, has = Number(f.FdLat) || Number(f.FdLng);
+      return html`<div class=${'c' + (on ? ' on' : '')} data-t=${'hl-' + f.FdId} onClick=${() => { hlSel[id] = on || !has ? '' : f.FdId; rerender(); }}>
+        <div class="im" style=${PH.bg(ph, f.FdId)}><span class="k">${L.FIND[f.FdKind].n.toUpperCase()}</span>${has ? html`<span class="pn">${Ico('pin', 13, '#fff')}</span>` : null}</div>
+        <div class="tx"><b>${f.FdName}</b><small>${[f.FdWhere, f.FdDay ? 'Day ' + f.FdDay : ''].filter(Boolean).join(' · ')}</small></div></div>`; })}</div>
+    ${pin ? html`<div class="ashm" data-t="hlMap">${RouteMap({ id, days: L.days(t).map(d => d.n), w: 366, h: 210, view: fit([pin], 366, 210, 0.2, 0.6), labels: false, key: 'hlMapSvg', mark: { lat: pin[0], lng: pin[1], label: sel.FdName } }).svg}</div>` : null}
+    ${r.RsVerdict || back ? html`<div class="ashv">${r.RsVerdict ? html`<div class="q">“${r.RsVerdict}”</div>` : null}${back ? html`<div class="b">Would go back: <b>${back}</b></div>` : null}</div>` : null}`, 'tHighlights');
+}
 /** Travel insights: your Trail Marks from Voyage › Discovery, view only. */
 export function TravelInsights(id) {
   const r = L.result(id) || {}; if (!L.RATINGS.some(([k]) => Number(r[k]) > 0)) return null;
   return html`<div class="lc asti" data-t="tInsights"><span class="lcap" style=${`display:block;color:${K.text};font-weight:800;letter-spacing:.8px;margin-bottom:10px`}>TRAVEL INSIGHTS</span>
     <div class="hh"><span>METRIC</span><span>RATE</span></div>
     ${L.RATINGS.map(([k, n, ic]) => html`<div class="mr" data-t=${'ti-' + k}>${Ico(ic, 22)}<span class="nm">${n.toUpperCase()}</span>${Stars(Number(r[k]) || 0)}</div>`)}
-    <div class="lnote" style="margin-top:4px">Rated in Voyage › Discovery.</div></div>`;
+</div>`;
 }
 export function DailySpending(id) {
   const g = I.groundByDay(id); if (!g.some(x => x.v)) return null;

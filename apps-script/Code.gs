@@ -16,6 +16,9 @@
  *
  * Helpers you can run from the editor: showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.14.0 · Atlas: photos save 3 at a time; videos in Memories (sent to Drive in parts; PP_Photos gets PhKind and PhDur by itself).
+ *   Paste this Code.gs and Deploy › New version.
+ *
  * 3.13.0 · 219 countries: 14 more (Faroe Islands, Gibraltar …) and Taiwan, Hong Kong … now count as countries (app only; same server code).
  *
  * 3.12.0 · England, Scotland, Wales and Northern Ireland as four countries (app only; same server code as 3.11.1).
@@ -77,7 +80,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.13.0';
+var EW_VERSION = '3.14.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -104,7 +107,7 @@ var TABLES = {
   PP_Places: { key: 'PlIso', cols: { PlIso: 's', PlStatus: 's', PlPri: 's', PlYear: 'n', PlWhy: 's', PlSee: 's', PlNote: 's', PlSeq: 'n', PlPhoto: 's', PlAdded: 'd', PlFirst: 's', PlTier: 's', PlGo: 's', PlGoYear: 'n', PlGoDays: 'n', PlDream: 's' } },
   PP_Trips: { key: 'TrId', cols: { TrId: 's', TrName: 's', TrStart: 'd', TrEnd: 'd', TrWith: 's', TrDesc: 's', TrMoments: 's', TrNotes: 's', TrRoute: 's', TrCover: 's', TrAdded: 't', TrPlan: 's' } },
   PP_Stops: { key: 'StKey', cols: { StKey: 's', StTrip: 's', StIso: 's', StDays: 'n', StSeq: 'n', StRoute: 's' } },
-  PP_Photos: { key: 'PhId', cols: { PhId: 's', PhTrip: 's', PhFile: 's', PhW: 'n', PhH: 'n', PhTaken: 'd', PhCap: 's', PhSeq: 'n' } },
+  PP_Photos: { key: 'PhId', cols: { PhId: 's', PhTrip: 's', PhFile: 's', PhW: 'n', PhH: 'n', PhTaken: 'd', PhCap: 's', PhSeq: 'n', PhKind: 's', PhDur: 'n' } },
   PP_Thumbs: { key: 'ThId', cols: { ThId: 's', ThData: 's' } },
   // MansWell Voyage (was Logbook): the detail of each Atlas journey (linked by its TrId). Travel only.
   LB_Stops: { key: 'LpId', cols: { LpId: 's', LpTrip: 's', LpDay: 'n', LpSeq: 'n', LpPlace: 's', LpCity: 's', LpCountry: 's', LpArr: 's', LpStay: 'n', LpMode: 's', LpKm: 'n', LpMin: 'n', LpNote: 's', LpLat: 'n', LpLng: 'n', LpAddr: 's', LpProv: 's', LpBorder: 's' } },
@@ -116,7 +119,7 @@ var TABLES = {
   LB_Days: { key: 'DyKey', cols: { DyKey: 's', DyTrip: 's', DyDay: 'n', DyStory: 's', DyMood: 's' } },
   LB_Finds: { key: 'FdId', cols: { FdId: 's', FdTrip: 's', FdKind: 's', FdName: 's', FdWhere: 's', FdDay: 'n', FdNote: 's', FdLat: 'n', FdLng: 'n', FdSeq: 'n', FdProv: 's' } }
 };
-var WRITE_ACTIONS = ['commit', 'startFresh', 'ppPhotoUp', 'ppPhotoDel', 'lbRoute', 'lbGpxSave'];
+var WRITE_ACTIONS = ['commit', 'startFresh', 'ppPhotoDel', 'lbRoute', 'lbGpxSave']; // photo and video uploads lock only around the Sheet (Drive saves run side by side)
 
 // Starter categories (the same idea as your SharePoint EW_Categories list). Edit them in the app.
 var SEED_CATEGORIES = [
@@ -255,14 +258,37 @@ var ACTIONS = {
   /** Passport · save one photo: the full photo goes to Drive, a small preview to PP_Thumbs, its row to PP_Photos. */
   ppPhotoUp: function (ss, p) {
     if (!p.id || !p.data) throw new Error('No photo to save.');
-    ensureTables_(ss);
     var blob = Utilities.newBlob(Utilities.base64Decode(String(p.data)), 'image/jpeg', String(p.id) + '.jpg');
-    var file;
-    try { file = ppFolder_(String(p.folder || 'Photos')).createFile(blob); } catch (e) { throw driveErr_(e); }
-    var row = { PhId: String(p.id), PhTrip: String(p.trip || ''), PhFile: file.getId(), PhW: Number(p.w) || 0, PhH: Number(p.h) || 0, PhTaken: String(p.taken || ''), PhCap: String(p.cap || ''), PhSeq: Number(p.seq) || 0 };
-    upsertRows_(ss, 'PP_Photos', [row]);
-    if (p.thumb) upsertRows_(ss, 'PP_Thumbs', [{ ThId: row.PhId, ThData: String(p.thumb) }]);
+    var folder = locked_(function () { return ppFolder_(String(p.folder || 'Photos')); }), file;
+    try { file = folder.createFile(blob); } catch (e) { throw driveErr_(e); }
+    var row = { PhId: String(p.id), PhTrip: String(p.trip || ''), PhFile: file.getId(), PhW: Number(p.w) || 0, PhH: Number(p.h) || 0, PhTaken: String(p.taken || ''), PhCap: String(p.cap || ''), PhSeq: Number(p.seq) || 0, PhKind: '', PhDur: 0 };
+    locked_(function () { ensureTables_(ss); upsertRows_(ss, 'PP_Photos', [row]); if (p.thumb) upsertRows_(ss, 'PP_Thumbs', [{ ThId: row.PhId, ThData: String(p.thumb) }]); });
     return row;
+  },
+  /** Atlas · a video, sent in parts: start opens a Drive upload, each part is added, the last one saves the row (3.14). */
+  ppVideoStart: function (ss, p) {
+    if (!p.id || !(Number(p.size) > 0)) throw new Error('No video to save.');
+    var folder = locked_(function () { return ppFolder_(String(p.folder || 'Photos')); });
+    var res = UrlFetchApp.fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', { method: 'post', contentType: 'application/json; charset=UTF-8', muteHttpExceptions: true,
+      headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken(), 'X-Upload-Content-Type': String(p.mime || 'video/mp4'), 'X-Upload-Content-Length': String(Number(p.size)) },
+      payload: JSON.stringify({ name: String(p.id) + '.' + (String(p.ext || 'mp4').replace(/[^a-z0-9]/gi, '') || 'mp4'), parents: [folder.getId()] }) });
+    var h = res.getHeaders(), url = h.Location || h.location;
+    if (res.getResponseCode() >= 300 || !url) throw driveErr_(new Error('Drive did not accept the video (' + res.getResponseCode() + '). ' + String(res.getContentText()).slice(0, 160)));
+    CacheService.getScriptCache().put('vid_' + p.id, url, 21600);
+    return { ok: true };
+  },
+  ppVideoPart: function (ss, p) {
+    var url = CacheService.getScriptCache().get('vid_' + p.id); if (!url) throw new Error('The video upload expired. Add the video again.');
+    var bytes = Utilities.base64Decode(String(p.data || '')), start = Number(p.start) || 0, total = Number(p.total) || 0, end = start + bytes.length - 1;
+    var res = UrlFetchApp.fetch(url, { method: 'put', muteHttpExceptions: true, contentType: String(p.mime || 'video/mp4'), headers: { 'Content-Range': 'bytes ' + start + '-' + end + '/' + total }, payload: bytes });
+    var code = res.getResponseCode();
+    if (code === 308) return { more: true };
+    if (code !== 200 && code !== 201) throw new Error('Drive stopped the video upload (' + code + ').');
+    var fileId = JSON.parse(res.getContentText()).id;
+    var row = { PhId: String(p.id), PhTrip: String(p.trip || ''), PhFile: fileId, PhW: Number(p.w) || 0, PhH: Number(p.h) || 0, PhTaken: String(p.taken || ''), PhCap: '', PhSeq: Number(p.seq) || 0, PhKind: 'video', PhDur: Number(p.dur) || 0 };
+    locked_(function () { ensureTables_(ss); upsertRows_(ss, 'PP_Photos', [row]); if (p.thumb) upsertRows_(ss, 'PP_Thumbs', [{ ThId: row.PhId, ThData: String(p.thumb) }]); });
+    CacheService.getScriptCache().remove('vid_' + p.id);
+    return { row: row };
   },
   /** Passport · small previews for a list of photos. */
   ppThumbs: function (ss, p) {
@@ -489,6 +515,8 @@ function driveErr_(e) {
   if (/permission|authoriz|scope/i.test(m)) return new Error('Google Drive is not approved yet. Open Apps Script, choose setupPassport and press Run, approve Drive, then try again.');
   return e;
 }
+/** Run fn while holding the script lock (Sheet writes, folder creation). */
+function locked_(fn) { var lk = LockService.getScriptLock(); lk.waitLock(25000); try { return fn(); } finally { lk.releaseLock(); } }
 function ppFolder_(name) {
   var root = ppRoot_();
   var clean = String(name || 'Photos').replace(/[\\/:*?"<>|]/g, ' ').slice(0, 80);

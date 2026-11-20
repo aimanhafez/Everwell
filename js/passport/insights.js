@@ -53,12 +53,15 @@ export function totals() {
 export function favourites() {
   const by = {};
   for (const t of pastTrips()) { const v = L.overall(t.TrId); if (!v) continue; for (const iso of new Set(P.isosOf(t.TrId))) { if (iso === P.homeIso()) continue; (by[iso] = by[iso] || []).push(v); } }
-  return Object.entries(by).map(([iso, a]) => ({ iso, v: a.reduce((s, x) => s + x, 0) / a.length })).sort((a, b) => b.v - a.v || P.BY[a.iso].name.localeCompare(P.BY[b.iso].name)).slice(0, 3);
+  void by;
+  // by journey: each scored journey once, under its main country (the country big, the journey's name small)
+  return pastTrips().map(t => ({ t, iso: mainIso(t.TrId), v: L.overall(t.TrId) })).filter(x => x.v && x.iso && x.iso !== P.homeIso())
+    .sort((a, b) => b.v - a.v || String(b.t.TrStart).localeCompare(String(a.t.TrStart))).slice(0, 5);
 }
 /** The journeys you spent most on, each against its own Voyage budget. */
 export function mostSpent() {
   const xs = pastTrips().map(t => ({ t, v: L.spend(t.TrId).tot, b: L.budget(t.TrId).tot })).filter(a => a.v > 0);
-  return xs.sort((a, b) => b.v - a.v).slice(0, 3).map(a => ({ ...a, iso: mainIso(a.t.TrId), diff: a.b ? (a.v / a.b - 1) * 100 : null }));
+  return xs.sort((a, b) => b.v - a.v).slice(0, 5).map(a => ({ ...a, iso: mainIso(a.t.TrId), diff: a.b ? (a.v / a.b - 1) * 100 : null }));
 }
 const best = (arr, f) => arr.reduce((b, x) => (f(x) > (b ? f(b) : 0) ? x : b), null);
 /** Six badges. */
@@ -97,4 +100,19 @@ export function journey(id) {
   const dayRows = L.days(t).map(d => { const l = L.stops(id, d.n); return { n: d.n, end: l.length ? (l[l.length - 1].LpCity || l[l.length - 1].LpProv || l[l.length - 1].LpPlace) : '', km: L.dayKm(id, d.n), first: d.n === 1, last: d.n === L.days(t).length }; });
   const cat = non => L.CATS.map(c => ({ c, v: L.expenses(id).filter(e => e.ExCat === c.k && L.isNon(e) === non).reduce((s, e) => s + L.myrOf(e), 0) })).filter(a => a.v > 0).sort((a, b) => b.v - a.v);
   return { x, b, sp, days: dayRows, ground: groundByDay(id), gcat: cat(false), ncat: cat(true), has: x.stops > 0 || sp.n > 0 || x.overall > 0 };
+}
+
+/** Milestones in four groups (tap a group to see its steps): countries, continents, km on the motorbike, who you travel with. */
+export function milestones() {
+  const n = P.firstVisits().length, s = P.stats(), km = Math.round(rides().all.reduce((a, r) => a + r.km, 0)), ts = pastTrips();
+  const w = k => ts.filter(t => P.withList(t).includes(k)).length;
+  const step = (id, name, desc, need, have, show) => ({ id, name, desc, need, have: Math.min(have, need), done: have >= need, show: show || (h => Math.min(h, need).toLocaleString('en-US') + '/' + need.toLocaleString('en-US')) });
+  const G = [
+    { id: 'countries', name: 'Countries', have: n, unit: c => (c === 1 ? '1 country' : c + ' countries'), items: [step('first', 'First Light', '1 country', 1, n), step('wayfarer', 'Wayfarer', '5 countries', 5, n), step('nomad', 'Nomad Soul', '10 countries', 10, n), step('carto', 'Cartographer', '25 countries', 25, n), step('bearer', 'Atlas Bearer', '50 countries', 50, n)] },
+    { id: 'world', name: 'World', have: s.conts, unit: c => (c === 1 ? '1 continent' : c + ' continents'), items: [step('shores', 'Two Shores', '2 continents', 2, s.conts), step('far', 'Far Horizons', '4 continents', 4, s.conts), step('seven', 'Seven Horizons', 'All 7 continents', 7, s.conts)] },
+    { id: 'road', name: 'On the road', have: km, unit: c => c.toLocaleString('en-US') + ' km by motorbike', items: [step('k1', 'First Thousand', '1,000 km', 1000, km), step('k5', 'Long Rider', '5,000 km', 5000, km), step('k10', 'Iron Butt', '10,000 km', 10000, km), step('k40', 'Around the World', '40,075 km', 40075, km, h => Math.floor(Math.min(h, 40075) / 40075 * 100) + '%')] },
+    { id: 'type', name: 'Journey type', have: null, unit: () => w('Solo') + ' solo · ' + w('Family') + ' family · ' + w('Friends') + ' friends · ' + w('Partner') + ' partner',
+      items: [step('solo', 'Solo Spirit', '5 solo journeys', 5, w('Solo')), step('fam', 'Family Ties', '5 family journeys', 5, w('Family')), step('friends', 'Good Company', '5 with friends', 5, w('Friends')), step('partner', 'Two of Us', '5 with a partner', 5, w('Partner'))] }];
+  G.forEach(g => { g.done = g.items.filter(i => i.done).length; const nx = g.items.find(i => !i.done); g.sub = g.unit(g.have) + (g.have !== null && nx ? ' · next: ' + nx.name + ' at ' + nx.desc.replace(/ (countries|continents)$/, '') : ''); });
+  return G;
 }

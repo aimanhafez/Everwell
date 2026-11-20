@@ -203,7 +203,7 @@ export const scrLbResults = {
       <div class="lbhero" data-t="lbDiscHero"><div class="k">THE JOURNEY'S SCORE · YOUR RATING</div>
         <div class="v"><b data-t="lbScore">${ov ? (ov % 1 ? ov.toFixed(1) : ov) : '—'}</b><span>/ 5</span></div>
         <div class="s">${Stars(id, 'RsOverall', ov, { big: true, c: K.heroText || '#fff' })}</div>
-        ${r.RsVerdict ? html`<div class="q">“${r.RsVerdict}”</div>` : html`<div class="q2">Tap a star to give the journey its score. Tap it again for a half.</div>`}</div>
+        ${r.RsVerdict ? html`<div class="q">“${r.RsVerdict}”</div>` : null}</div>
       ${Sect('Trail Marks')}
       <div class="lc lbmt" data-t="lbRate"><div class="hh"><span>METRIC</span><span>RATE</span></div>
         ${L.RATINGS.map(([k, n, ic]) => html`<div class="mr">${Ico(ic, 22)}<span class="n">${n.toUpperCase()}</span>${Stars(id, k, Number(r[k]) || 0)}</div>`)}</div>

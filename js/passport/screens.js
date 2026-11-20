@@ -17,7 +17,7 @@ const PRI = { H: 'High', M: 'Medium', L: 'Low' };
 /* ───────── Odyssey ───────── */
 function Stamp(l, x) {
   const s = P.stampOf(x.c.iso), at = x.at !== '9999' ? x.at : '';
-  return html`<div class=${'pstp' + (s.sq ? ' sq' : '')} style=${`--s:${s.color};--r:${s.rot}deg`} onClick=${() => openCountry(l, x.c.iso)} data-t=${'stamp-' + x.c.iso} title=${x.c.name}>
+  return html`<div class=${'pstp' + (s.sq ? ' sq' : '')} style=${`--s:${s.color};--r:${s.rot}deg`} onClick=${() => openCountry(l, x.c.iso)} data-t=${'stamp-' + x.c.iso + (x.trip ? '-' + x.trip.TrId : '')} title=${x.c.name + (x.trip ? ' · ' + x.trip.TrName : '')}>
     <div>${Flag(x.c.iso, 14)}<b>${x.c.iso}</b><span>${at ? MONS[Number(at.slice(5, 7)) - 1] + ' ' + at.slice(0, 4) : 'VISITED'}</span></div></div>`;
 }
 const StPillSm = iso => { const st = iso === P.homeIso() ? 'home' : P.status(iso), n = st === 'visited' ? P.tripsIn(iso).length : 0; return html`<span class=${'pst ' + st} data-t=${'st-' + iso}>${{ visited: 'Visited', wish: 'Wanderlist', none: 'Not yet', home: 'Home' }[st]}${n > 1 ? ' ×' + n : ''}</span>`; };
@@ -37,9 +37,9 @@ function PickCard(l, iso) {
 }
 export const scrPpOverview = {
   view(l) {
-    const s = P.stats(), ts = P.trips(), ms = P.milestones(), fx = P.facts(), gw = P.going();
+    const s = P.stats(), ts = P.trips(), fx = P.facts(), gw = P.going();
     const empty = !ts.length && !DB.ppPlaces.length;
-    const fv = P.firstVisits(), shownSt = l.allSt ? fv : fv.slice(0, 8);
+    const fv = P.stamps(), shownSt = l.allSt ? fv : fv.slice(0, 8);
     const q = l.q || '', sug = q.trim() && !l.sel ? P.search(q).slice(0, 5) : [];
     const pick = iso => { l.sel = iso; l.q = P.BY[iso].name; focusMap('odyssey', iso); rerender(); };
     return Page(l, 0, html`
@@ -66,12 +66,7 @@ export const scrPpOverview = {
       ${S.CountryTable()}
       ${S.Badges()}
       ${S.Rides(l)}
-      ${Sect('Milestones', ms.filter(m => m.done).length + ' of ' + ms.length)}
-      <div class="lc" data-t="oMs">${ms.map((m, i) => html`<div class="lr" style=${i ? '' : 'border-top:0;padding-top:2px'} data-t=${'ms-' + m.id}>
-          <div class="lib" style=${m.done ? `background:${K.or};color:${K.onAcc}` : `background:${K.field};color:${K.mute};box-shadow:inset 0 0 0 1.5px ${K.line2}`}><b style="font-size:11.5px">${m.need}</b></div>
-          <div><div class="t" style="font:400 16px Georgia,serif">${m.name}</div><div class="s">${m.desc}${m.done && m.by ? ' · reached in ' + m.by.name : ''}${!m.done && m.next ? ' · next: ' + m.next : !m.done ? ' · ' + (m.need - m.have) + ' to go' : ''}</div>
-            ${m.done ? null : html`<div class="lbar" style="margin-top:7px"><i style=${`width:${m.have / m.need * 100}%;background:${K.or}`}></i></div>`}</div>
-          <div class="r" style=${m.done ? `color:${K.grn}` : ''}>${m.done ? '✓' : m.have + '/' + m.need}</div></div>`)}</div>
+      ${S.Milestones(l)}
     `, 'ppOverview');
   }
 };
@@ -91,7 +86,7 @@ export const scrPpJourneys = {
         : !list.length ? html`<div class="lc lempty">No journeys match these filters.</div>`
         : byYear.map(g => { const cs = new Set(g.ts.flatMap(t => P.isosOf(t.TrId))); return html`<div class="pyr" data-t=${'jYr-' + g.y}><b>${g.y}</b><span>${plural(g.ts.length, 'JOURNEY')} · ${g.ts.reduce((s, t) => s + P.daysOf(t), 0)} DAYS · ${plural(cs.size, 'COUNTRY')}</span></div>
           ${g.ts.map(t => html`<div class="ptrip" onClick=${() => openTrip(t.TrId)} data-t=${'jTrip-' + t.TrId}><div class="ph" style=${coverHd(t)}><span class="fl">${tripFlags(t.TrId, 15)}</span></div>
-            <div class="tx"><b>${t.TrName}</b><div class="s">${tripLine(t)}${P.isosOf(t.TrId).length > 1 ? ' · ' + countries(P.isosOf(t.TrId).length) : ''}${P.photosOf(t.TrId).length ? ' · ' + plural(P.photosOf(t.TrId).length, 'photo') : ''}</div></div></div>`)}`; })}
+            <div class="tx"><b>${t.TrName}</b><div class="s">${tripLine(t)}${P.isosOf(t.TrId).length > 1 ? ' · ' + countries(P.isosOf(t.TrId).length) : ''}</div></div></div>`)}`; })}
     `, 'ppJourneys');
   }
 };
@@ -102,18 +97,21 @@ export const scrPpTrip = {
     const t = P.trip(G.ppTrip);
     if (!t) return Page(l, 1, html`<div class="lc lempty">This journey was deleted.<div style="margin-top:10px"><button class="lbtn" onClick=${() => go('scrPpJourneys')}>Back to Journeys</button></div></div>`, 'ppTrip');
     if (l.tid !== t.TrId) { l.tid = t.TrId; l.allPh = false; }
-    const route = P.routeOf(t), photos = P.photosOf(t.TrId), d = P.daysOf(t);
+    const route = P.routeOf(t), photos = P.photosOf(t.TrId), d = P.daysOf(t), nVid = photos.filter(PH.isVideo).length, cnt = [plural(photos.length - nVid, 'photo'), nVid ? plural(nVid, 'video') : ''].filter(Boolean).join(' · ');
     const isNew = iso => { const ts = P.tripsIn(iso); const pl = P.place(iso); return ts.length && ts[ts.length - 1].TrId === t.TrId && !(pl && pl.PlStatus === 'been' && pl.PlFirst && pl.PlFirst < t.TrStart); };
     const nNew = route.filter(r => isNew(r.iso)).length;
     const moments = String(t.TrMoments || '').split('\n').map(s => s.trim()).filter(Boolean);
     const folder = P.yearOf(t.TrStart) + ' · ' + t.TrName;
     const add = async e => {
       const files = [...(e.target.files || [])]; e.target.value = ''; if (!files.length || !canWrite()) return;
-      await PH.upload(files, { trip: t.TrId, folder, seq: photos.reduce((m, p) => Math.max(m, p.PhSeq || 0), 0), onStep: (i, n) => { l.up = i ? 'Saving photo ' + i + ' of ' + n + ' to your Drive…' : ''; rerender(); } });
+      const seq = photos.reduce((m, p) => Math.max(m, p.PhSeq || 0), 0), imgs = files.filter(f => !/^video\//.test(f.type)), vids = files.filter(f => /^video\//.test(f.type));
+      const left = x => (x === null ? '' : x < 60 ? ' · about ' + Math.max(5, Math.round(x / 5) * 5) + ' s left' : ' · about ' + Math.round(x / 60) + ' min left');
+      if (imgs.length) await PH.upload(imgs, { trip: t.TrId, folder, seq, onStep: (i, n, x) => { l.up = n ? { t: 'Saving ' + i + ' of ' + n + left(x), p: i / n } : ''; rerender(); } });
+      if (vids.length) await PH.uploadVideos(vids, { trip: t.TrId, folder, seq: seq + imgs.length, onStep: tx => { l.up = tx ? { t: tx, p: null } : ''; rerender(); } });
     };
     const addCover = async e => {
       const files = [...(e.target.files || [])].slice(0, 1); e.target.value = ''; if (!files.length || !canWrite()) return;
-      const rows = await PH.upload(files, { trip: t.TrId, folder, seq: 0, onStep: (i) => { l.up = i ? 'Saving your cover photo to Drive…' : ''; rerender(); } });
+      const rows = await PH.upload(files, { trip: t.TrId, folder, seq: 0, onStep: (i, n) => { l.up = n ? { t: 'Saving your cover photo to Drive…', p: null } : ''; rerender(); } });
       if (rows[0]) psave({ up: { PP_Trips: [{ ...P.trip(t.TrId), TrCover: rows[0].PhId }] } }, 'Journey cover', t.TrName);
     };
     const hasCover = !!P.coverOf(t), cv = (P.coverOf(t) || {}).PhId;
@@ -132,16 +130,17 @@ export const scrPpTrip = {
       <style>${S.css()}</style>
       ${S.JourneyNumbers(t.TrId)}
       ${S.JourneyRoute(t.TrId)}
+      ${S.Highlights(t.TrId)}
       ${S.DailySpending(t.TrId)}
       ${S.ExpenseSplit(t.TrId)}
       ${I.journey(t.TrId).has ? null : html`<div class="lc" data-t="tVoyageHint"><b style=${`color:${K.text}`}>The rest comes from Voyage</b><div class="lnote" style="margin-top:4px">Add this journey's itinerary, expenses and score in Voyage to see the route map, daily spending and expenses here.</div>
         <button class="lbtn o on" style="margin-top:10px" onClick=${() => { G.lbTrip = t.TrId; store.set('lb_trip', t.TrId); NAV.stack = []; Navigate('scrLbItinerary'); }} data-t="tToVoyage">Open in Voyage</button></div>`}
       ${t.TrNotes ? html`<div class="lc">${Cap('My notes')}<div class="lnote" style="margin-top:6px;white-space:pre-wrap;font-size:12.5px">${t.TrNotes}</div></div>` : null}
-      ${Sect('Memories', photos.length > 9 ? (l.allPh ? 'Show 9' : 'See all ' + photos.length) : plural(photos.length, 'photo'), photos.length > 9 ? () => { l.allPh = !l.allPh; rerender(); } : null, 'tSeeAll')}
-      ${l.up ? html`<div class="pprog" data-t="tUp">${l.up}</div>` : null}
-      <div class="pgal" data-t="tGal">${shown.map((p, i) => { const last = !l.allPh && i === 8 && more > 0; return html`<div class=${(cv === p.PhId ? 'cv' : '') + (last ? ' more' : '')} data-m=${'+' + more} style=${PH.bg(p.PhId, p.PhId)} onClick=${() => { if (last) { l.allPh = true; rerender(); } else openPhoto(l, p); }} data-t=${'ph-' + p.PhId}></div>`; })}
-        ${photos.length < 9 || l.allPh ? html`<label class="add" data-t="tAddPh">${DB.ppOk ? html`<span>+ Add<br/>photos</span><input class="pfile" type="file" accept="image/*" multiple onChange=${add} data-t="tFile" />` : html`<span style="font-size:10.5px">Update the Apps Script to add photos</span>`}</label>` : null}</div>
-      ${photos.length >= 9 && !l.allPh && DB.ppOk ? html`<div style="margin:-4px 12px 12px"><label class="lbtn" style="width:100%;padding:10px" data-t="tAddPh2">+ Add photos<input class="pfile" type="file" accept="image/*" multiple onChange=${add} data-t="tFile2" /></label></div>` : null}
+      ${Sect('Memories', photos.length > 9 ? (l.allPh ? 'Show 9 · ' : 'See all · ') + cnt : cnt, photos.length > 9 ? () => { l.allPh = !l.allPh; rerender(); } : null, 'tSeeAll')}
+      ${l.up ? html`<div class="pprog" data-t="tUp">${l.up.t}${l.up.p !== null ? html`<div class="lbar" style="margin-top:7px"><i style=${`width:${Math.round(l.up.p * 100)}%;background:${K.or}`}></i></div>` : null}</div>` : null}
+      <div class="pgal" data-t="tGal">${shown.map((p, i) => { const last = !l.allPh && i === 8 && more > 0; return html`<div class=${(cv === p.PhId ? 'cv' : '') + (last ? ' more' : '')} data-m=${'+' + more} style=${PH.bg(p.PhId, p.PhId)} onClick=${() => { if (last) { l.allPh = true; rerender(); } else openPhoto(l, p); }} data-t=${'ph-' + p.PhId}>${PH.isVideo(p) && !last ? html`<span class="pvid"><i>▶</i><b>${PH.durTxt(p.PhDur)}</b></span>` : null}</div>`; })}
+        ${photos.length < 9 || l.allPh ? html`<label class="add" data-t="tAddPh">${DB.ppOk ? html`<span>+ Add photos<br/>or videos</span><input class="pfile" type="file" accept="image/*,video/*" multiple onChange=${add} data-t="tFile" />` : html`<span style="font-size:10.5px">Update the Apps Script to add photos</span>`}</label>` : null}</div>
+      ${photos.length >= 9 && !l.allPh && DB.ppOk ? html`<div style="margin:-4px 12px 12px"><label class="lbtn" style="width:100%;padding:10px" data-t="tAddPh2">+ Add photos or videos<input class="pfile" type="file" accept="image/*,video/*" multiple onChange=${add} data-t="tFile2" /></label></div>` : null}
       ${S.TravelInsights(t.TrId)}
       <div style="display:flex;gap:8px;margin:6px 12px 18px"><button class="lbtn" style="flex:1;padding:12px" onClick=${() => openTripEdit(l, t)} data-t="tEdit2">Edit journey</button><button class="lbtnd" style="flex:1" onClick=${() => deleteTrip(l, t)} data-t="tDelete">Delete journey</button></div>
     `, 'ppTrip');
@@ -150,12 +149,11 @@ export const scrPpTrip = {
 
 /* ───────── Wanderlist: + Add → Dreaming → Confirm → Going ───────── */
 function wishActions(l, d) {
-  const nm = P.dreamName(d), one = d.isos.length === 1 ? d.places[0] : null;
+  const nm = P.dreamName(d);
   openSheet(l, { title: nm, body: () => html`<div data-t="wishActions" style="display:flex;flex-direction:column;gap:9px;padding-bottom:6px">
     <button class="lbtnf" onClick=${() => { closeSheet(l); openGoing(l, d); }} data-t="waGoing">Confirm I'm going</button>
     <button class="lbtn" style="padding:12px" onClick=${() => { closeSheet(l); openDream(l, d); }} data-t="waEdit">Edit priority, tier, places</button>
     <button class="lbtn" style="padding:12px" onClick=${() => { closeSheet(l); openTripEdit(l, null, { isos: d.isos }); }} data-t="waTrip">I went: add the journey</button>
-    ${one ? html`<button class="lbtn" style="padding:12px" onClick=${() => { closeSheet(l); psave({ up: { PP_Places: [{ ...one, PlStatus: 'been', PlGo: '', PlDream: '' }] } }, 'Visited before', nm); }} data-t="waBeen">Visited before, no journey to write up</button>` : null}
     <button class="lbtnd" onClick=${() => { closeSheet(l); confirmAsk(l, 'Delete ' + nm + '?', 'It leaves your Wanderlist with its tier, places and notes.', 'Delete', () => psave({ up: { PP_Places: d.places.map(p => ({ ...p, ...CLEAR })) } }, 'Wanderlist removed', nm)); }} data-t="waRemove">Delete</button>
   </div>` });
 }

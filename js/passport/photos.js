@@ -68,31 +68,74 @@ function draw(img, max, q) {
 }
 export async function prepare(file) {
   const img = await loadImg(file);
-  const big = draw(img, 1600, 0.82);
+  const big = draw(img, 1440, 0.8); // a lighter file: about a third smaller, still sharp on a phone
   let t = null; for (const [m, q] of [[360, 0.72], [320, 0.62], [260, 0.55], [200, 0.5]]) { t = draw(img, m, q); if (t.url.length < 45000) break; }
   const taken = file.lastModified ? new Date(file.lastModified).toISOString().slice(0, 10) : '';
   return { data: big.url.split(',')[1], thumb: t.url, w: big.w, h: big.h, taken };
 }
 export const newPhotoId = () => 'PH-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
-/** Upload photos one by one. onStep(i, n) reports progress. Returns the saved rows. */
+/** Upload photos, 3 at a time. onStep(done, n, secsLeft) reports progress. Returns the saved rows (in the order picked). */
 export async function upload(files, o) {
   if (!navigator.onLine) { Notify('Photos need the internet to save to your Drive. Try again when you are online.', 'error'); return []; }
-  const rows = [];
-  for (let i = 0; i < files.length; i++) {
-    o.onStep && o.onStep(i + 1, files.length);
-    try {
-      const p = await prepare(files[i]), id = newPhotoId();
-      const row = await api('ppPhotoUp', { id, trip: o.trip, folder: o.folder, data: p.data, thumb: p.thumb, w: p.w, h: p.h, taken: p.taken, seq: (o.seq || 0) + i + 1 }, undefined, { quiet: true });
-      mem.set(id, p.thumb); cachePut(keyT(id), p.thumb);
-      const fullUrl = 'data:image/jpeg;base64,' + p.data; memF.set(id, fullUrl); cachePut(keyF(id), fullUrl);
-      applySaved({ PP_Photos: [row] }); rows.push(row);
-    } catch (e) { Notify(/setupPassport/.test(e.message) ? e.message : "Couldn't save a photo: " + e.message, 'error'); if (/setupPassport/.test(e.message)) break; }
-  }
+  const rows = new Array(files.length), t0 = Date.now(); let next = 0, done = 0, stop = false;
+  const step = () => { const el = (Date.now() - t0) / 1000, left = done ? Math.round(el / done * (files.length - done)) : null; o.onStep && o.onStep(done, files.length, left); };
+  step();
+  const one = async i => {
+    const p = await prepare(files[i]), id = newPhotoId();
+    const row = await api('ppPhotoUp', { id, trip: o.trip, folder: o.folder, data: p.data, thumb: p.thumb, w: p.w, h: p.h, taken: p.taken, seq: (o.seq || 0) + i + 1 }, undefined, { quiet: true });
+    mem.set(id, p.thumb); cachePut(keyT(id), p.thumb);
+    const fullUrl = 'data:image/jpeg;base64,' + p.data; memF.set(id, fullUrl); cachePut(keyF(id), fullUrl);
+    applySaved({ PP_Photos: [row] }); rows[i] = row;
+  };
+  const worker = async () => { while (!stop && next < files.length) { const i = next++; try { await one(i); } catch (e) { Notify(/setupPassport/.test(e.message) ? e.message : "Couldn't save a photo: " + e.message, 'error'); if (/setupPassport/.test(e.message)) stop = true; } done++; step(); rerender(); } };
+  await Promise.all([worker(), worker(), worker()]);
   o.onStep && o.onStep(0, 0);
+  rerender();
+  return rows.filter(Boolean);
+}
+/* videos: a still frame for the preview, then the file goes to Drive in 4 MB parts */
+export const MAX_VIDEO_S = 125, MAX_VIDEO_MB = 500;
+function videoInfo(file) {
+  return new Promise((res, rej) => {
+    const u = URL.createObjectURL(file), v = document.createElement('video'); v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = u;
+    const fail = () => { URL.revokeObjectURL(u); rej(new Error('That file is not a video this phone can read.')); };
+    v.onerror = fail;
+    v.onloadedmetadata = () => { v.currentTime = Math.min(0.5, (v.duration || 1) / 3); };
+    v.onseeked = () => { try { const r = Math.min(1, 360 / Math.max(v.videoWidth, v.videoHeight)), cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(v.videoWidth * r)); cv.height = Math.max(1, Math.round(v.videoHeight * r));
+      cv.getContext('2d').drawImage(v, 0, 0, cv.width, cv.height); res({ dur: v.duration || 0, w: v.videoWidth, h: v.videoHeight, thumb: cv.toDataURL('image/jpeg', 0.7) }); } catch (e) { rej(e); } finally { URL.revokeObjectURL(u); } };
+    setTimeout(() => rej(new Error('That video took too long to open.')), 20000);
+  });
+}
+const b64 = buf => { const u = new Uint8Array(buf); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+/** Upload videos one by one (each in parts). onStep(text) reports progress. */
+export async function uploadVideos(files, o) {
+  if (!navigator.onLine) { Notify('Videos need the internet to save to your Drive.', 'error'); return []; }
+  const rows = [], PART = 4 * 1024 * 1024;
+  for (let k = 0; k < files.length; k++) {
+    const f = files[k];
+    try {
+      if (f.size > MAX_VIDEO_MB * 1024 * 1024) throw new Error('it is over ' + MAX_VIDEO_MB + ' MB');
+      const info = await videoInfo(f); if (info.dur > MAX_VIDEO_S) throw new Error('it is longer than 2 minutes');
+      const id = newPhotoId().replace('PH-', 'VD-'), ext = (f.name.split('.').pop() || 'mp4').toLowerCase(), taken = f.lastModified ? new Date(f.lastModified).toISOString().slice(0, 10) : '';
+      await api('ppVideoStart', { id, folder: o.folder, size: f.size, mime: f.type || 'video/mp4', ext }, undefined, { quiet: true });
+      let row = null;
+      for (let at = 0; at < f.size; at += PART) {
+        o.onStep && o.onStep('Saving video ' + (k + 1) + ' of ' + files.length + ' · ' + Math.round(at / f.size * 100) + '%');
+        const data = b64(await f.slice(at, Math.min(f.size, at + PART)).arrayBuffer());
+        const r = await api('ppVideoPart', { id, data, start: at, total: f.size, mime: f.type || 'video/mp4', trip: o.trip, w: info.w, h: info.h, taken, seq: (o.seq || 0) + k + 1, dur: Math.round(info.dur), thumb: info.thumb }, undefined, { quiet: true });
+        if (r && r.row) row = r.row;
+      }
+      if (row) { mem.set(id, info.thumb); cachePut(keyT(id), info.thumb); applySaved({ PP_Photos: [row] }); rows.push(row); }
+    } catch (e) { Notify("Couldn't save " + f.name + ': ' + e.message, 'error'); }
+  }
+  o.onStep && o.onStep('');
   rerender();
   return rows;
 }
+export const isVideo = p => p && p.PhKind === 'video';
+export const durTxt = s => { s = Math.round(Number(s) || 0); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+export const driveUrl = p => 'https://drive.google.com/file/d/' + encodeURIComponent(p.PhFile) + '/view';
 /** Delete photos from Drive and the Sheet (needs the internet). */
 export async function remove(ids) {
   if (!ids.length) return;

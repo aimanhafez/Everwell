@@ -71,6 +71,9 @@ ul.pmom li:before{content:'';position:absolute;left:0;top:14px;width:6px;height:
 .pstp b{font:800 16px Inter,system-ui;letter-spacing:1px;display:block}.pstp span{font-size:7.5px;font-weight:700;letter-spacing:.8px;display:block}
 .pstp.lock{--s:${K.line2};color:${K.mute}}
 .pview{position:absolute;inset:0;z-index:60;background:rgba(0,0,0,.94);display:flex;flex-direction:column}
+.pview .im{position:relative;touch-action:pan-y;user-select:none}.pview .im img{pointer-events:none;-webkit-user-drag:none}.parr{position:absolute;top:50%;margin-top:-19px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center;font-size:22px;cursor:pointer;backdrop-filter:blur(6px)}.parr.l{left:10px}.parr.r{right:10px}
+.pplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;color:#fff;text-decoration:none;font-size:12.5px;font-weight:700}.pplay i{width:64px;height:64px;border-radius:50%;background:rgba(0,0,0,.5);display:grid;place-items:center;font-style:normal;font-size:24px;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.pgal .pvid{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}.pgal .pvid i{width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center;font-style:normal;font-size:11px}.pgal .pvid b{position:absolute;right:6px;bottom:4px;color:#fff;font-size:10.5px;text-shadow:0 1px 2px #000}
 .pview .top{display:flex;justify-content:space-between;align-items:center;padding:16px 16px 8px;color:#fff;font-size:14px}.pview .top span{cursor:pointer;padding:6px}
 .pview .im{flex:1;display:grid;place-items:center;padding:6px}.pview .im img{max-width:100%;max-height:100%;border-radius:6px}
 .pview .bt{display:flex;gap:8px;padding:12px 16px 30px}.pview .bt button{flex:1;padding:12px;border-radius:12px;border:0;font:600 13px inherit;font-family:inherit;background:rgba(255,255,255,.1);color:#fff;cursor:pointer}.pview .bt button.d{color:#FF7A7E}
@@ -314,22 +317,32 @@ function Confirm(l) {
 /* ───────── photo viewer ───────── */
 export function openPhoto(l, ph, o = {}) {
   l.pview = { ph, o, src: null, err: '' }; rerender();
+  if (PH.isVideo(ph)) return;
+  const ls = ph.PhTrip ? P.photosOf(ph.PhTrip) : [], i = ls.findIndex(x => x.PhId === ph.PhId); // the next and previous photos load in the background, so swiping is quick
+  setTimeout(() => [ls[i + 1], ls[i - 1]].forEach(n => { if (n && !PH.isVideo(n)) PH.full(n.PhId).catch(() => {}); }), 400);
   PH.full(ph.PhId).then(s => { if (l.pview && l.pview.ph === ph) { l.pview.src = s; rerender(); } }).catch(e => { if (l.pview) { l.pview.err = e.message; rerender(); } });
 }
 function Viewer(l) {
   const v = l.pview; if (!v) return null;
   const close = () => { l.pview = null; rerender(); };
   const t = v.ph.PhTrip && P.trip(v.ph.PhTrip);
-  const prev = v.src || PH.thumb(v.ph.PhId);
-  return html`<div class="pview" data-t="viewer">
-    <div class="top"><span onClick=${close} data-t="viewerClose">‹ Back</span><span style="font-size:12px;opacity:.8">${t ? t.TrName : ''}${v.ph.PhTaken ? ' · ' + P.fmtDay(v.ph.PhTaken) : ''}</span></div>
-    <div class="im">${prev ? html`<img src=${prev} alt="" />` : html`<span style="color:#aaa;font-size:13px">${v.err || 'Loading…'}</span>`}</div>
+  const list = t ? P.photosOf(t.TrId) : [v.ph], at = Math.max(0, list.findIndex(x => x.PhId === v.ph.PhId));
+  const go = d => { const n = list[at + d]; if (n) openPhoto(l, n, v.o); };
+  const vid = PH.isVideo(v.ph), prev = vid ? PH.thumb(v.ph.PhId) : v.src || PH.thumb(v.ph.PhId);
+  const ts = e => { v.x0 = e.clientX; v.x1 = null; }, te = e => { if (v.x0 == null) return; const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX, dx = x - v.x0; v.x0 = null; if (Math.abs(dx) > 45) go(dx < 0 ? 1 : -1); };
+  return html`<div class="pview" data-t="viewer" tabindex="0" onKeyDown=${e => { if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); if (e.key === 'Escape') close(); }}>
+    <div class="top"><span onClick=${close} data-t="viewerClose">‹ Back</span><span style="font-size:12px;opacity:.8">${t ? t.TrName : ''}${v.ph.PhTaken ? ' · ' + P.fmtDay(v.ph.PhTaken) : ''}${list.length > 1 ? html` · <b data-t="viewerPos">${at + 1} / ${list.length}</b>` : null}</span></div>
+    <div class="im" onPointerDown=${ts} onPointerMove=${e => { if (v.x0 != null) v.x1 = e.clientX; }} onPointerUp=${te} onPointerCancel=${() => { if (v.x0 != null && v.x1 != null) te({ clientX: v.x1 }); v.x0 = null; }}>
+      ${prev ? html`<img src=${prev} alt="" draggable="false" />` : html`<span style="color:#aaa;font-size:13px">${v.err || 'Loading…'}</span>`}
+      ${vid ? html`<a class="pplay" href=${PH.driveUrl(v.ph)} target="_blank" rel="noopener" data-t="viewerPlay"><i>▶</i><span>Play · ${PH.durTxt(v.ph.PhDur)}</span></a>` : null}
+      ${at > 0 ? html`<span class="parr l" onClick=${() => go(-1)} data-t="viewerPrev">‹</span>` : null}${at < list.length - 1 ? html`<span class="parr r" onClick=${() => go(1)} data-t="viewerNext">›</span>` : null}</div>
     <div class="bt">
-      ${t && v.o.cover !== false ? html`<button onClick=${() => { psave({ up: { PP_Trips: [{ ...t, TrCover: v.ph.PhId }] } }, 'Trip cover', t.TrName); close(); }} data-t="setCover">${t.TrCover === v.ph.PhId ? '✓ Cover' : 'Set as cover'}</button>` : null}
+      ${t && v.o.cover !== false && !vid ? html`<button onClick=${() => { psave({ up: { PP_Trips: [{ ...t, TrCover: v.ph.PhId }] } }, 'Trip cover', t.TrName); close(); }} data-t="setCover">${t.TrCover === v.ph.PhId ? '✓ Cover' : 'Set as cover'}</button>` : null}
       ${v.o.onOpenTrip && t ? html`<button onClick=${() => { close(); v.o.onOpenTrip(t); }} data-t="openTrip">Open trip</button>` : null}
-      ${v.o.del !== false ? html`<button class="d" data-t="photoDel" onClick=${() => confirmAsk(l, 'Delete this photo?', 'It is removed from the trip and moved to the bin in your Google Drive.', 'Delete', () => guard(async () => {
+      ${v.o.del !== false ? html`<button class="d" data-t="photoDel" onClick=${() => confirmAsk(l, vid ? 'Delete this video?' : 'Delete this photo?', 'It is removed from the trip and moved to the bin in your Google Drive.', 'Delete', () => guard(async () => {
         if (!canWrite()) return;
-        await PH.remove([v.ph.PhId]); await save({ del: { PP_Photos: [v.ph.PhId] }, up: t && t.TrCover === v.ph.PhId ? { PP_Trips: [{ ...t, TrCover: '' }] } : {}, log: [{ AuAction: 'Atlas · Photo deleted', AuRef: 'PASSPORT', AuDetail: t ? t.TrName : '' }] }); close();
+        await PH.remove([v.ph.PhId]); await save({ del: { PP_Photos: [v.ph.PhId] }, up: t && t.TrCover === v.ph.PhId ? { PP_Trips: [{ ...t, TrCover: '' }] } : {}, log: [{ AuAction: 'Atlas · Photo deleted', AuRef: 'PASSPORT', AuDetail: t ? t.TrName : '' }] });
+        close();
       }))}>Delete</button>` : null}
     </div></div>`;
 }
