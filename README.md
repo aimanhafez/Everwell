@@ -1,4 +1,10 @@
-# MansWell · v3.15.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.16.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.16.0 · New main page (Maison)
+- MansWell logo and name at the top, today's date and "Good morning / afternoon / evening, Aiman".
+- Serif headline "All your dreams, one door." with a thin accent line and the sync status (tap to sync).
+- Pocket, Lens, Atlas and Voyage as four numbered jewel-colour cards (no figures, no pictures); colours follow each of the 5 themes. Cards fade up on opening.
+- Keep (coming soon) is a thin line at the bottom. The motto and version moved into Settings.
 
 ## 3.15.1 · Viewer: bigger picture, tidier controls
 - The photo or video takes more of the screen; the date is one smaller line.

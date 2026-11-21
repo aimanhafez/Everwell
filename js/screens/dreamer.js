@@ -1,4 +1,4 @@
-// MansWell — main page (v3.0.2). One door, rooms as full-width cards: Pocket (where money is recorded), Lens (where it is understood), more rooms to come.
+// MansWell — main page (v3.16 Maison). Logo, date + greeting, serif headline, four jewel room cards: Pocket (where money is recorded), Lens (where it is understood), more rooms to come.
 // Pocket theme. Only reads data; the rooms open their own screens.
 import { html, K, DB, NAV, Navigate, Notify, rerender, oa, VERSION, Today, PLABEL, PSTART, PEND, Year, Month, flowSplit, store, SYNC, SURFACE, HAIR, n2, fmtD, ta } from '../core.js';
 import { syncNow } from '../shared.js';
@@ -23,35 +23,40 @@ const ICON = {
 };
 const ic = (n, c, s) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="${c}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`;
 const SOON = [['Keep', 'Renewals, servicing and warranties', '#E9B949', 'bell']];
+/* the four room cards: deep jewel gradients that follow the app theme (start, middle, end) */
+const ROOMS = {
+  ember: [['#1b1410', '#5a2a08', '#ff6a00'], ['#121418', '#2a3340', '#55708a'], ['#1e1216', '#5a2238', '#b04a6a'], ['#0c1a22', '#1d4c5c', '#3f8aa6']],
+  ivory: [['#2a1513', '#5e221e', '#8c2f2a'], ['#1f2a24', '#35503f', '#6b8a6f'], ['#3a2a18', '#7a5a30', '#b8925a'], ['#16222e', '#2c4458', '#5d7d96']],
+  sapphire: [['#1a1608', '#5a4a20', '#d4b676'], ['#0e1830', '#1e3260', '#3f5fa8'], ['#1a1028', '#3a2458', '#7a5aa8'], ['#08202a', '#14485a', '#2f8aa0']],
+  rose: [['#3a1d27', '#7c2d4a', '#d6457a'], ['#2c2a3a', '#55456e', '#a07ab8'], ['#5a2440', '#b65a6e', '#f0a483'], ['#16323f', '#2a6a7d', '#6aa8c7']],
+  graphite: [['#0e0e10', '#2c2c30', '#6a6a70'], ['#121214', '#303034', '#58585e'], ['#161618', '#38383c', '#7a7a80'], ['#0c0c0e', '#26262a', '#4e4e54']]
+};
+const grad = c => `background:linear-gradient(135deg,${c[0]},${c[1]} 60%,${c[2]})`;
+const WDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const greet = h => h < 5 ? 'Good evening' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
 const RMx = v => (v < 0 ? '−' : '') + 'RM ' + n2(Math.abs(v));
 
 const css = () => `
-.mw{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;color:${K.text}}.mw::-webkit-scrollbar{display:none}
-.mw .glow{position:absolute;left:0;right:0;top:0;height:440px;background:${K.light ? `radial-gradient(120% 90% at 85% 0%,${K.glow},transparent 70%)` : K.mainGlow ? K.mainGlow : `linear-gradient(180deg,#2B1508 0%,rgba(13,15,18,.55) 72%,${K.bg} 100%)`};pointer-events:none}
-.mw .glow::after{content:"";position:absolute;inset:0;background-image:linear-gradient(${oa(.05)} 1px,transparent 1px),linear-gradient(90deg,${oa(.05)} 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:linear-gradient(180deg,#000,transparent 92%);mask-image:linear-gradient(180deg,#000,transparent 92%)}
-.mw .in{position:relative;padding:22px 20px 30px}
+.mw{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;color:${K.text};background:${K.bg}}.mw::-webkit-scrollbar{display:none}
+.mw .in{position:relative;padding:24px 24px 0}
 .mw .top{display:flex;justify-content:space-between;align-items:center}
-.mw .lg{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;letter-spacing:-.3px}.mw .lg i{color:${K.or};font-style:normal}
-.mw .gear{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:${ta(.04)};box-shadow:inset 0 0 0 1px ${ta(.08)};cursor:pointer}
-.mw .pill{display:inline-flex;align-items:center;gap:8px;margin-top:30px;padding:6px 12px;border-radius:99px;background:${K.light ? ta(.05) : 'rgba(0,0,0,.35)'};box-shadow:inset 0 0 0 1px ${ta(.09)};font-size:11px;color:${K.sub};cursor:pointer}
-.mw .pill b{width:6px;height:6px;border-radius:50%;background:${K.or};box-shadow:0 0 8px ${K.or}}
-.mw h1{margin:16px 0 0;font-size:34px;line-height:1.12;font-weight:700;letter-spacing:-.8px}.mw h1 span{color:${K.or}}
-.mw .lead{margin-top:14px;font-size:16px;line-height:1.5;color:${K.sub}}
-.mw .cta{display:inline-flex;align-items:center;gap:10px;margin-top:22px;padding:11px 18px;border-radius:12px;background:${K.or};color:${K.ctaText || K.onAcc};font-weight:600;font-size:14.5px;cursor:pointer}
-.mw .list{position:relative;padding:4px 16px 0}
-.mw .cap{margin:18px 4px 12px;font-size:10.5px;font-weight:600;letter-spacing:2px;color:${K.sub}}
-.mw .card{position:relative;background:${SURFACE};border-radius:16px;box-shadow:inset 0 0 0 1px ${ta(.08)},inset 0 1px 0 ${ta(.035)};padding:22px 24px 22px;margin-bottom:14px;cursor:pointer}
-.mw .card:active{filter:brightness(1.08)}
-.mw .tile{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 13%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 34%,transparent)}
-.mw .lk{position:absolute;top:24px;right:24px;line-height:0}
-.mw .card h4{margin:26px 0 0;font-size:19px;font-weight:600}
-.mw .card p{margin:8px 0 0;font-size:14px;color:${K.sub}}
-.mw .stats{display:grid;grid-template-columns:1fr 1fr;margin-top:16px;border-top:1px solid ${K.sep}}
-.mw .stats div{padding:12px 0 0;min-width:0}.mw .stats div+div{padding-left:16px;border-left:1px solid ${K.sep}}
-.mw .stats span{font-size:9.5px;font-weight:600;letter-spacing:1.6px;color:${K.sub}}.mw .stats b{display:block;margin-top:4px;font-size:15px;font-weight:600}
-.mw .soon .blur{filter:blur(5px) saturate(.75);opacity:.55;pointer-events:none}
-.mw .soonbox{position:absolute;right:20px;bottom:20px;display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:10px;background:${ta(.05)};box-shadow:inset 0 0 0 1px ${ta(.12)};font-size:12.5px;font-weight:600;color:${K.sub}}
-.mw .ft{text-align:center;padding:30px 0 40px;font-size:12.5px;color:${K.mute}}.mw .ft small{display:block;margin-top:6px;font-size:10px;letter-spacing:2px;color:${K.line2}}
+.mw .lg{display:flex;align-items:center;gap:11px}.mw .lg>span:last-child{font:400 23px/1 Georgia,'Times New Roman',serif;letter-spacing:-.2px}.mw .lg i{color:${K.or};font-style:normal}
+.mw .gear{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;box-shadow:inset 0 0 0 1px ${K.line};cursor:pointer}
+.mw .k{font-size:10px;font-weight:600;letter-spacing:2.6px;text-transform:uppercase}
+.mw .dt{margin-top:36px;color:${K.sub}}.mw .gr{margin-top:8px;color:${K.or}}
+.mw h1{margin:12px 0 0;font:400 41px/1.04 Georgia,'Times New Roman',serif;letter-spacing:-.4px}.mw h1 i{color:${K.or}}
+.mw .rule{display:flex;align-items:center;gap:10px;margin-top:20px;color:${K.mute};cursor:pointer}
+.mw .rule>b{flex:1;height:1px;background:linear-gradient(90deg,${K.or},transparent)}
+.mw .sync{font-size:10.5px;letter-spacing:.4px;display:flex;align-items:center;gap:6px;color:${K.sub}}.mw .sync i{width:6px;height:6px;border-radius:50%;background:var(--sc)}
+.mw .list{position:relative;padding:20px 16px 0;display:flex;flex-direction:column;gap:10px}
+.mw .rm{position:relative;border-radius:22px;overflow:hidden;height:106px;padding:18px 20px;display:flex;flex-direction:column;justify-content:flex-end;color:#fff;cursor:pointer;box-shadow:0 10px 26px rgba(0,0,0,${K.light ? '.14' : '.35'});animation:mwUp .5s cubic-bezier(.2,.7,.2,1) both;transition:transform .15s}
+.mw .rm:active{transform:scale(.985)}
+.mw .rm .no{position:absolute;top:16px;left:20px;font:italic 12px Georgia,serif;opacity:.8}
+.mw .rm .ar{position:absolute;top:14px;right:16px;width:28px;height:28px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.45);display:grid;place-items:center;line-height:0}
+.mw .rm h4{margin:0;font:400 27px/1 Georgia,'Times New Roman',serif}.mw .rm p{margin:6px 0 0;font-size:11px;opacity:.84;letter-spacing:.2px}
+@keyframes mwUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.mw .keep{margin:12px 16px 0;padding:12px 4px calc(28px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;align-items:center;color:${K.mute};border-top:1px solid ${K.line};cursor:pointer}
+.mw .keep span:first-child{font:italic 13px Georgia,serif}.mw .keep .k{letter-spacing:2px;font-size:9.5px}
 `;
 function syncedText() {
   if (SYNC.outbox.length) return navigator.onLine ? 'Saving to Google…' : 'Offline · will sync';
@@ -77,6 +82,7 @@ function Settings() {
       <div class="row2" onClick=${() => { panel = false; Navigate('scrMore'); }} data-t="mainPocketSettings"><div><b>Pocket settings</b><span>Accounts, categories, tracking period, backup</span></div><em>›</em></div>
       <div class="row2" onClick=${() => { panel = false; NAV.stack = []; Navigate('scrLensSettings'); }} data-t="mainLensSettings"><div><b>Lens settings</b><span>Opening balances, savings rule, status levels</span></div><em>›</em></div>
       <div class="row2" onClick=${() => { panel = false; G.ppOpenSettings = true; NAV.stack = []; Navigate('scrPpOverview'); }} data-t="mainPassportSettings"><div><b>Atlas settings</b><span>Home country, where your photos are kept</span></div><em>›</em></div>
+      <div class="ft" data-t="mainVersion">Live well today. Build well for tomorrow.<small>MANSWELL · V${VERSION}</small></div>
     </div></div>`;
 }
 const setCss = () => `.mset{position:fixed;inset:0;z-index:70}.mset .dimx{position:absolute;inset:0;background:rgba(0,0,0,.55)}
@@ -90,7 +96,8 @@ const setCss = () => `.mset{position:fixed;inset:0;z-index:70}.mset .dimx{positi
 .mset .tt b{display:block;font-size:14px}.mset .tt span{display:block;font-size:11.5px;color:${K.sub};margin-top:2px;line-height:1.35}
 .mset .ck{color:${K.or};font-weight:700;font-size:16px}
 .mset .row2{display:flex;justify-content:space-between;align-items:center;padding:14px 4px;border-top:1px solid ${K.sep};cursor:pointer;margin-top:6px}
-.mset .row2 b{display:block;font-size:14.5px}.mset .row2 span{display:block;font-size:11.5px;color:${K.sub};margin-top:2px}.mset .row2 em{font-style:normal;color:${K.or};font-size:20px}`;
+.mset .row2 b{display:block;font-size:14.5px}.mset .row2 span{display:block;font-size:11.5px;color:${K.sub};margin-top:2px}.mset .row2 em{font-style:normal;color:${K.or};font-size:20px}
+.mset .ft{text-align:center;padding:22px 0 4px;font:italic 12.5px Georgia,serif;color:${K.mute};border-top:1px solid ${K.sep};margin-top:6px}.mset .ft small{display:block;margin-top:6px;font:600 9.5px -apple-system,sans-serif;letter-spacing:2px;color:${K.mute}}`;
 
 export const scrDreamer = {
   view() {
@@ -99,45 +106,26 @@ export const scrDreamer = {
     const openPassport = () => { NAV.stack = []; Navigate('scrPpOverview'); };
     const openLogbook = () => { NAV.stack = []; Navigate('scrLbJourneys'); };
     const soon = () => Notify('More rooms are on the way.', 'info');
-    const lb = PLABEL(Today()), sp = flowSplit(PSTART(Year(lb), Month(lb)), PEND(Year(lb), Month(lb)));
-    const sweep = DB.accounts.find(a => a.AccId === SWEEP_ID);
-    const last = E.kAdd(E.curKey(), -1), lm = E.month(last);
-    const yr = E.pnlYear(E.kY(E.curKey()));
-    const rate = lm.active && lm.rate !== null ? lm.rate : null;
+    const now = new Date(), pal = ROOMS[appTheme()] || ROOMS.ember, busy = SYNC.outbox.length;
+    const room = (i, t, n, sub, fn, id) => html`<div class="rm" style=${grad(pal[i]) + `;animation-delay:${80 + i * 70}ms`} data-t=${id} role="button" aria-label=${n} onClick=${fn}>
+        <span class="no">0${i + 1}</span><span class="ar" dangerouslySetInnerHTML=${{ __html: ic('arrow', '#fff', 13) }}></span><h4>${n}</h4><p>${sub}</p></div>`;
     return html`<div class="mw" data-t="dreamerMain">
       <style>${css()}</style>
-      <div class="glow"></div>
       <div class="in">
         <div class="top"><div class="lg"><span dangerouslySetInnerHTML=${{ __html: logoTile(36, 10) }}></span><span>MansWell<i>.</i></span></div>
-          <div class="gear" data-t="mainSettings" role="button" aria-label="Settings" onClick=${() => { panel = true; rerender(); }} dangerouslySetInnerHTML=${{ __html: ic('gear', K.sub, 19) }}></div></div>
-        <div class="pill" data-t="mainSync" onClick=${() => syncNow()}><b></b><span>${syncedText()}</span><span dangerouslySetInnerHTML=${{ __html: ic('sync', K.sub, 12) }}></span></div>
-        <h1>All your dreams,<br/><span>one door.</span></h1>
-        <div class="lead">Pocket records your money. Lens helps you understand it. Atlas keeps your travels, Voyage every detail of them.</div>
-        <div class="cta" data-t="openPocket" role="button" onClick=${openPocket}><span style="line-height:0" dangerouslySetInnerHTML=${{ __html: ic('signin', K.ctaText || K.onAcc, 18) }}></span>Open Pocket</div>
+          <div class="gear" data-t="mainSettings" role="button" aria-label="Settings" onClick=${() => { panel = true; rerender(); }} dangerouslySetInnerHTML=${{ __html: ic('gear', K.sub, 17) }}></div></div>
+        <div class="k dt" data-t="mainDate">${WDAY[now.getDay()]} · ${now.getDate()} ${MON[now.getMonth()]}</div>
+        <div class="k gr" data-t="mainGreet">${greet(now.getHours())}, Aiman</div>
+        <h1>All your dreams,<br/><i>one door.</i></h1>
+        <div class="rule" data-t="mainSync" onClick=${() => syncNow()}><b></b><span class="sync" style=${'--sc:' + (busy ? (navigator.onLine ? K.gold : K.mute) : '#3DBE84')}><i></i>${syncedText()}</span></div>
       </div>
       <div class="list">
-        <div class="cap">ROOMS · 4 OF 5 OPEN</div>
-        <div class="card" data-t="mod-pocket" role="button" aria-label="Pocket" onClick=${openPocket}>
-          <div class="tile" style="--c:#FF8A3D" dangerouslySetInnerHTML=${{ __html: ic('wallet', '#FF8A3D', 26) }}></div><span class="lk" dangerouslySetInnerHTML=${{ __html: ic('arrow', K.or, 24) }}></span>
-          <h4>Pocket</h4><p>Accounts, transactions and balance sweep</p>
-        </div>
-        <div class="card" data-t="mod-lens" role="button" aria-label="Lens" onClick=${openLens}>
-          <div class="tile" style="--c:#3DDC84" dangerouslySetInnerHTML=${{ __html: ic('aperture', '#3DDC84', 26) }}></div><span class="lk" dangerouslySetInnerHTML=${{ __html: ic('arrow', K.or, 24) }}></span>
-          <h4>Lens</h4><p>P&L, savings & assets, plan and budget</p>
-        </div>
-        <div class="card" data-t="mod-passport" role="button" aria-label="Atlas" onClick=${openPassport}>
-          <div class="tile" style="--c:#E2367A" dangerouslySetInnerHTML=${{ __html: ic('plane', '#E2367A', 26) }}></div><span class="lk" dangerouslySetInnerHTML=${{ __html: ic('arrow', K.or, 24) }}></span>
-          <h4>Atlas</h4><p>Your odyssey, journeys and wanderlist</p>
-        </div>
-        <div class="card" data-t="mod-logbook" role="button" aria-label="Voyage" onClick=${openLogbook}>
-          <div class="tile" style="--c:#6AA8FF" dangerouslySetInnerHTML=${{ __html: ic('book', '#6AA8FF', 26) }}></div><span class="lk" dangerouslySetInnerHTML=${{ __html: ic('arrow', K.or, 24) }}></span>
-          <h4>Voyage</h4><p>Itinerary, GPX track, expenses and discoveries</p>
-        </div>
-        ${SOON.map(([n, sub, c, g], i) => html`<div class="card soon" data-t=${'mod-soon-' + (i + 1)} role="button" aria-label="Coming soon" onClick=${soon}>
-          <div class="blur"><div class="tile" style=${'--c:' + c} dangerouslySetInnerHTML=${{ __html: ic(g, c, 26) }}></div><h4>${n}</h4><p>${sub}</p></div>
-          <span class="soonbox"><span style="line-height:0" dangerouslySetInnerHTML=${{ __html: ic('lock', K.sub, 14) }}></span>Soon</span></div>`)}
+        ${room(0, 'p', 'Pocket', 'Accounts · transactions · sweep', openPocket, 'mod-pocket')}
+        ${room(1, 'l', 'Lens', 'P&L · savings · plan · budget', openLens, 'mod-lens')}
+        ${room(2, 'a', 'Atlas', 'Odyssey · journeys · wanderlist', openPassport, 'mod-passport')}
+        ${room(3, 'v', 'Voyage', 'Itinerary · expenses · discovery', openLogbook, 'mod-logbook')}
       </div>
-      <div class="ft">Live well today. Build well for tomorrow.<small>MANSWELL · V${VERSION}</small></div>
+      ${SOON.map(([n], i) => html`<div class="keep" data-t=${'mod-soon-' + (i + 1)} role="button" aria-label="Coming soon" onClick=${soon}><span>0${5 + i} · ${n}</span><span class="k">Soon</span></div>`)}
       ${panel ? Settings() : null}
     </div>`;
   }
