@@ -1,4 +1,9 @@
-# MansWell · v3.17.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.17.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.17.1 · Main page polish
+- Greeting on one line in a smaller serif.
+- Bigger, taller room cards; the names row under the dots is gone (tap a dot to jump).
+- "Synced …" at the bottom left and the version at the bottom right.
 
 ## 3.17.0 · Lookbook main page + PIN for financial rooms
 - Main page: a deep stage in your theme with one tall glass card per room (gold emblem, serif name); swipe or tap a name to move, tap the card to enter. Opens on the room you used last.

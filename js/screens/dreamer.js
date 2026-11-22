@@ -69,21 +69,22 @@ const css = L => `
 .mw .gear{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:${L.chip};box-shadow:inset 0 0 0 1px ${L.chipLine}}
 .mw .k{font-size:9.5px;font-weight:600;letter-spacing:2.6px;text-transform:uppercase}
 .mw .hero{padding:30px 26px 0}.mw .dt{color:${L.sub}}
-.mw h1{margin:10px 0 0;font:400 36px/1.06 Georgia,'Times New Roman',serif;letter-spacing:-.4px}.mw h1 i{color:${L.acc}}
+.mw h1{margin:10px 0 0;font:400 25px/1.1 Georgia,'Times New Roman',serif;letter-spacing:-.2px;white-space:nowrap}.mw h1 i{color:${L.acc}}
 .mw .tag{font:italic 14px Georgia,serif;color:${L.sub};margin-top:10px}
-.mw .car{position:relative;height:372px;margin-top:auto;padding-top:28px;touch-action:pan-y;user-select:none;-webkit-user-select:none}
-.mw .cd{position:absolute;left:81px;top:6px;width:228px;height:360px;border-radius:26px;padding:22px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;cursor:pointer;
+.mw .car{position:relative;height:536px;margin-top:auto;padding-top:28px;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.mw .cd{position:absolute;left:58px;top:6px;width:274px;height:518px;border-radius:30px;padding:24px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;cursor:pointer;
   background:${L.glass};box-shadow:inset 0 0 0 1px ${L.goldLine},0 30px 60px rgba(0,0,0,${L.dark ? '.42' : '.14'});transition:transform .5s cubic-bezier(.2,.75,.2,1),opacity .5s;will-change:transform}
 .mw .cd:before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,${L.dark ? '.18' : '.7'}),transparent 40%);pointer-events:none}
 .mw .car.drag .cd{transition:none}
 .mw .cd .tp{display:flex;justify-content:space-between;align-items:center;min-height:15px;position:relative}.mw .cd .tp .k{font-size:8.5px;letter-spacing:2.2px;color:${L.gold}}
-.mw .cd .emb{align-self:center;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;position:relative;box-shadow:inset 0 0 0 1px ${L.goldLine},0 0 44px ${L.glowSoft}}
-.mw .cd h4{margin:0;font:400 34px/1 Georgia,'Times New Roman',serif;position:relative}.mw .cd p{margin:8px 0 0;font:italic 13px Georgia,serif;color:${L.sub};position:relative}
+.mw .cd .emb{align-self:center;width:118px;height:118px;border-radius:50%;display:grid;place-items:center;position:relative;box-shadow:inset 0 0 0 1px ${L.goldLine},0 0 44px ${L.glowSoft}}
+.mw .cd h4{margin:0;font:400 40px/1 Georgia,'Times New Roman',serif;position:relative}.mw .cd p{margin:8px 0 0;font:italic 13px Georgia,serif;color:${L.sub};position:relative}
 .mw .cd .go{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid ${mix(L.tx, .18)};position:relative}.mw .cd .go .k{color:${L.sub}}
 .mw .cd.soon .emb,.mw .cd.soon h4{opacity:.5}
-.mw .dots{display:flex;justify-content:center;gap:6px;margin-top:14px}.mw .dots i{width:5px;height:5px;border-radius:3px;background:${mix(L.tx, .3)};transition:all .35s}.mw .dots i.on{width:22px;background:${L.gold}}
+.mw .dots{display:flex;justify-content:center;gap:4px;margin-top:16px}.mw .dots span{padding:6px 3px;cursor:pointer;display:flex}.mw .dots i{width:5px;height:5px;border-radius:3px;background:${mix(L.tx, .3)};transition:all .35s}.mw .dots i.on{width:22px;background:${L.gold}}
 .mw .names{display:flex;justify-content:center;gap:18px;margin-top:14px;font:400 14px Georgia,serif;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}.mw .names span{color:${mix(L.tx, .45)};cursor:pointer;padding:4px 0;transition:color .3s}.mw .names span.on{color:${L.tx}}.mw .names span.dim{opacity:.6}
-.mw .sync{text-align:center;font:italic 12px Georgia,serif;color:${mix(L.tx, .5)};padding:18px 0 calc(26px + env(safe-area-inset-bottom,0px));cursor:pointer}
+.mw .foot{display:flex;justify-content:space-between;align-items:center;padding:14px 22px calc(12px + env(safe-area-inset-bottom,0px))}
+.mw .sync{font:italic 11.5px Georgia,serif;color:${mix(L.tx, .5)};cursor:pointer}.mw .ver{font-size:8.5px;font-weight:600;letter-spacing:2px;color:${mix(L.tx, .4)}}
 .mw .sync i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--sc);margin-right:7px;vertical-align:middle}
 @keyframes mwUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}.mw .hero,.mw .car{animation:mwUp .6s cubic-bezier(.2,.7,.2,1) both}.mw .car{animation-delay:.08s}
 `;
@@ -129,7 +130,7 @@ const setCss = () => `.mset{position:fixed;inset:0;z-index:70}.mset .dimx{positi
 .mset .ft{text-align:center;padding:22px 0 4px;font:italic 12.5px Georgia,serif;color:${K.mute};border-top:1px solid ${K.sep};margin-top:6px}.mset .ft small{display:block;margin-top:6px;font:600 9.5px -apple-system,sans-serif;letter-spacing:2px;color:${K.mute}}`;
 
 /* card pose: centre card, neighbours smaller and dimmer, the rest off stage (off = position from the open card) */
-const pose = (off, dx) => `translateX(${off * 251 + dx}px) scale(${off === 0 && !dx ? 1 : Math.abs(off) >= 1 ? .86 : .93})`;
+const pose = (off, dx) => `translateX(${off * 292 + dx}px) scale(${off === 0 && !dx ? 1 : Math.abs(off) >= 1 ? .86 : .93})`;
 
 export const scrDreamer = {
   view() {
@@ -159,13 +160,12 @@ export const scrDreamer = {
           ${RMS.map((r, i) => html`<div class=${'cd' + (r.soon ? ' soon' : '')} style=${`transform:${pose(i - at, 0)};opacity:${Math.abs(i - at) > 1 ? 0 : i === at ? 1 : .5};z-index:${5 - Math.abs(i - at)}`}
               data-t=${'mod-' + r.id} role="button" aria-label=${r.name} onClick=${() => tap(r, i)}>
             <div class="tp"><span class="k">${r.grp}</span>${r.soon ? null : html`<span style="line-height:0" dangerouslySetInnerHTML=${{ __html: ic(r.pin ? 'lock' : 'arrow', L.gold, 14, 1.5) }}></span>`}</div>
-            <div class="emb" dangerouslySetInnerHTML=${{ __html: ic(r.ic, L.gold, 42, 1.1) }}></div>
+            <div class="emb" dangerouslySetInnerHTML=${{ __html: ic(r.ic, L.gold, 50, 1) }}></div>
             <div><h4>${r.name}</h4><p>${r.sub}</p>
               <div class="go"><span class="k">${r.soon ? 'In development' : r.pin ? 'Enter · PIN' : 'Enter'}</span><span style="line-height:0" dangerouslySetInnerHTML=${{ __html: ic(r.soon ? 'lock' : 'arrow', r.soon ? L.sub : L.tx, 15, 1.5) }}></span></div></div></div>`)}
         </div>
-        <div class="dots">${RMS.map((r, i) => html`<i class=${i === at ? 'on' : ''}></i>`)}</div>
-        <div class="names">${RMS.map((r, i) => html`<span class=${(i === at ? 'on' : '') + (r.soon ? ' dim' : '')} onClick=${() => to(i)} data-t=${'nav-' + r.id}>${r.name}</span>`)}</div>
-        <div class="sync" data-t="mainSync" onClick=${() => syncNow()} style=${'--sc:' + (busy ? (navigator.onLine ? L.gold : L.sub) : '#3DBE84')}><i></i>${syncedText()}</div>
+        <div class="dots">${RMS.map((r, i) => html`<span class=${i === at ? 'on' : ''} onClick=${() => to(i)} data-t=${'nav-' + r.id} aria-label=${r.name}><i class=${i === at ? 'on' : ''}></i></span>`)}</div>
+        <div class="foot"><span class="sync" data-t="mainSync" onClick=${() => syncNow()} style=${'--sc:' + (busy ? (navigator.onLine ? L.gold : L.sub) : '#3DBE84')}><i></i>${syncedText()}</span><span class="ver" data-t="mainVer">V${VERSION}</span></div>
       </div>
       ${PinGate(L, ic)}
       ${panel ? Settings() : null}

@@ -16,6 +16,7 @@
  *
  * Helpers you can run from the editor: setDriveKey(), removeDriveKey(), showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 3.17.1 · Main page: one-line greeting, bigger cards, sync and version at the bottom. App only.
  * 3.17.0 · Lookbook main page + 6-digit PIN for Pocket and Lens. App only; same server code.
  * 3.16.0 · New main page (Maison). App only; same server code.
  * 3.15.1 · Viewer: bigger picture, ⋯ menu, pinch zoom (app only; same server code).
@@ -100,7 +101,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.17.0';
+var EW_VERSION = '3.17.1';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
