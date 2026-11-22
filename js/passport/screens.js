@@ -79,27 +79,14 @@ export const scrPpJourneys = {
     const list = all.filter(t => (!l.yr || P.yearOf(t.TrStart) === Number(l.yr)) && (!l.ctry || P.isosOf(t.TrId).includes(l.ctry)) && (!l.with || P.withList(t).includes(l.with)));
     const byYear = []; for (const t of list) { const y = P.yearOf(t.TrStart); let g = byYear.find(x => x.y === y); if (!g) byYear.push(g = { y, ts: [] }); g.ts.push(t); }
     const sel = (v, set, opts, all0, id) => html`<select class=${'pchip' + (v ? ' on' : '')} style="border:0;font-family:inherit;-webkit-appearance:none;appearance:none" onChange=${e => { set(e.target.value); rerender(); }} data-t=${id}><option value="">${all0}</option>${opts.map(([k, t]) => html`<option value=${k} selected=${String(k) === String(v)}>${t}</option>`)}</select>`;
-    // summary strip, quick filters, the latest journey as a big cover, then a timeline by year (one smart figure per row)
-    const kmOf = t => { const x = LB.lbTotals(t.TrId); return x ? x.km : 0; };
-    const fig = t => { const x = LB.lbTotals(t.TrId) || {}; return x.overall ? ['★ ' + x.overall.toFixed(1), 'SCORE'] : x.spent ? ['RM' + (x.spent >= 1000 ? (x.spent / 1000).toFixed(1) + 'k' : Math.round(x.spent)), 'SPENT'] : x.km ? [Math.round(x.km).toLocaleString('en-US'), 'KM'] : ['', '']; };
-    const totKm = list.reduce((s, t) => s + kmOf(t), 0), totD = list.reduce((s, t) => s + P.daysOf(t), 0), totC = new Set(list.flatMap(t => P.isosOf(t.TrId))).size;
-    const hero = list[0], rest = list.slice(1);
-    const byYear2 = []; for (const t of rest) { const y = P.yearOf(t.TrStart); let g = byYear2.find(x => x.y === y); if (!g) byYear2.push(g = { y, ts: [] }); g.ts.push(t); }
-    const yStat = y => { const ts = list.filter(t => P.yearOf(t.TrStart) === y), cs = new Set(ts.flatMap(t => P.isosOf(t.TrId))); return plural(ts.length, 'JOURNEY') + ' · ' + ts.reduce((s, t) => s + P.daysOf(t), 0) + ' DAYS · ' + plural(cs.size, 'COUNTRY'); };
-    const hx = hero && (LB.lbTotals(hero.TrId) || {});
     return Page(l, 1, html`
       ${Sect('Journeys', '+ New journey', () => openTripEdit(l, null), 'jNew')}
-      ${all.length ? html`<div class="jsum" data-t="jSum"><div><b>${list.length}</b><span>${list.length === 1 ? 'JOURNEY' : 'JOURNEYS'}</span></div><div><b>${totD}</b><span>DAYS</span></div><div><b>${totC}</b><span>${totC === 1 ? 'COUNTRY' : 'COUNTRIES'}</span></div><div><b>${Math.round(totKm).toLocaleString('en-US')}</b><span>KM</span></div></div>
-        <div class="pchips">${sel(l.with, v => { l.with = v; }, P.WITH.map(w => [w, w]), 'Everyone ▾', 'jWith')}${sel(l.yr, v => { l.yr = v; }, yrs.map(y => [y, String(y)]), 'All years ▾', 'jYear')}${sel(l.ctry, v => { l.ctry = v; }, ctry.map(i => [i, P.BY[i].name]), 'Country ▾', 'jCtry')}</div>` : null}
+      ${all.length ? html`<div class="pchips">${sel(l.yr, v => { l.yr = v; }, yrs.map(y => [y, String(y)]), 'All years ▾', 'jYear')}${sel(l.ctry, v => { l.ctry = v; }, ctry.map(i => [i, P.BY[i].name]), 'Country ▾', 'jCtry')}${sel(l.with, v => { l.with = v; }, P.WITH.map(w => [w, w]), 'Who with ▾', 'jWith')}</div>` : null}
       ${!all.length ? html`<div class="lc lempty" data-t="jEmpty">No journeys yet. Add the first one: name, countries, dates and who you went with. Photos come after.<div style="margin-top:12px"><button class="lbtn o on" onClick=${() => openTripEdit(l, null)}>+ Add a journey</button></div></div>`
         : !list.length ? html`<div class="lc lempty">No journeys match these filters.</div>`
-        : html`<div class="jhero" onClick=${() => openTrip(hero.TrId)} data-t=${'jTrip-' + hero.TrId}><div class="ph" style=${coverHd(hero)}></div>
-            <span class="fl">${tripFlags(hero.TrId, 14)}</span>${hx.overall ? html`<span class="sc">★ ${hx.overall.toFixed(1)}</span>` : null}
-            <div class="tx"><div class="k">${l.yr || l.ctry || l.with ? 'MOST RECENT MATCH' : 'LATEST'} · ${P.range(hero.TrStart, hero.TrEnd).toUpperCase()}</div><b>${hero.TrName}</b>
-              <div class="m"><span>${plural(P.daysOf(hero), 'day')}</span>${hero.TrWith ? html`<span>${P.withTxt(hero)}</span>` : null}${P.isosOf(hero.TrId).length > 1 ? html`<span>${countries(P.isosOf(hero.TrId).length)}</span>` : null}${hx.km ? html`<span>${Math.round(hx.km).toLocaleString('en-US')} km</span>` : null}</div></div></div>
-          ${rest.length ? html`<div class="jtl">${byYear2.map(g => html`<div class="jyr" data-t=${'jYr-' + g.y}><b>${g.y}</b><span>${yStat(g.y)}</span></div>
-            ${g.ts.map(t => { const [v, u] = fig(t); return html`<div class="jrow" onClick=${() => openTrip(t.TrId)} data-t=${'jTrip-' + t.TrId}><span class="th" style=${coverHd(t)}></span>
-              <span class="t"><b>${t.TrName}</b><span>${tripLine(t)}</span><span class="f">${tripFlags(t.TrId, 12)}</span></span>${v ? html`<span class="r"><b>${v}</b><span>${u}</span></span>` : null}</div>`; })}`)}</div>` : null}`}
+        : byYear.map(g => { const cs = new Set(g.ts.flatMap(t => P.isosOf(t.TrId))); return html`<div class="pyr" data-t=${'jYr-' + g.y}><b>${g.y}</b><span>${plural(g.ts.length, 'JOURNEY')} · ${g.ts.reduce((s, t) => s + P.daysOf(t), 0)} DAYS · ${plural(cs.size, 'COUNTRY')}</span></div>
+          ${g.ts.map(t => html`<div class="ptrip" onClick=${() => openTrip(t.TrId)} data-t=${'jTrip-' + t.TrId}><div class="ph" style=${coverHd(t)}><span class="fl">${tripFlags(t.TrId, 15)}</span></div>
+            <div class="tx"><b>${t.TrName}</b><div class="s">${tripLine(t)}${P.isosOf(t.TrId).length > 1 ? ' · ' + countries(P.isosOf(t.TrId).length) : ''}</div></div></div>`)}`; })}
     `, 'ppJourneys');
   }
 };

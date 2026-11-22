@@ -1,4 +1,7 @@
-# MansWell · v4.0.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v4.0.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 4.0.1 · Journeys page as before
+- The Journeys main page is back to its earlier look (filters, year groups, cover cards). Everything else from 4.0.0 stays.
 
 ## 4.0.0 · The big update
 Needs the new Code.gs (paste it, then Deploy › New version): highlight photos are saved in a new column LB_Finds.FdPhoto.
