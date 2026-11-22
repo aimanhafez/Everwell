@@ -1,4 +1,9 @@
-# MansWell · v3.17.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.18.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.18.0 · Detailed maps
+- Atlas maps (Odyssey, Wanderlist, pick a country): the light map shows at once, then the detailed 1:50m map (real coasts, islands, fjords; Singapore, Bahrain and other small countries as real shapes) loads in the background and stays on the phone.
+- Voyage and Atlas journey route maps: detailed 1:10m coasts and borders for the trip's continent, loaded with the map.
+- Corners are drawn rounded. England, Scotland, Wales and Northern Ireland come from the same detailed source.
 
 ## 3.17.1 · Main page polish
 - Greeting on one line in a smaller serif.

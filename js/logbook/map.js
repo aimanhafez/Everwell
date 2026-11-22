@@ -4,8 +4,9 @@ import { html, K, rerender } from '../core.js';
 import * as L from './engine.js';
 
 /* ───────── map data, loaded on first use ───────── */
-const GEO = { land: null, prov: {}, loading: {} };
+const GEO = { land: null, prov: {}, hd: {}, loading: {} }; // hd: detailed 1:10m coasts per continent, drawn over the 1:50m world
 const CK = { Africa: 'af', Asia: 'as', Europe: 'eu', 'North America': 'na', 'South America': 'sa', Oceania: 'oc' };
+const decodeK = (d, s) => { const o = new Float64Array(d.length); let x = 0, y = 0; for (let i = 0; i < d.length; i += 2) { x += d[i]; y += d[i + 1]; o[i] = x / s; o[i + 1] = y / s; } return o; };
 const decode = d => { const o = new Float64Array(d.length); let x = 0, y = 0; for (let i = 0; i < d.length; i += 2) { x += d[i]; y += d[i + 1]; o[i] = x / 100; o[i + 1] = y / 100; } return o; };
 const bbOf = a => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (let i = 0; i < a.length; i += 2) { if (a[i] < x0) x0 = a[i]; if (a[i] > x1) x1 = a[i]; if (a[i + 1] < y0) y0 = a[i + 1]; if (a[i + 1] > y1) y1 = a[i + 1]; } return [x0, y0, x1, y1]; };
 function need(conts) {
@@ -15,6 +16,10 @@ function need(conts) {
   for (const c of conts) {
     const k = CK[c]; if (!k || GEO.prov[k] || GEO.loading[k]) continue;
     GEO.loading[k] = import('./geo/prov-' + k + '.js').then(m => { GEO.prov[k] = m.LINES.map(r => { const a = decode(r); return { a, bb: bbOf(a) }; }); rerender(); }).catch(() => { GEO.loading[k] = null; });
+  }
+  for (const c of conts) {
+    const k = CK[c], h = 'hd-' + k; if (!k || GEO.loading[h]) continue;
+    GEO.loading[h] = import('./geo/land10-' + k + '.js').then(m => { for (const [iso, rings] of Object.entries(m.HD)) GEO.hd[iso] = rings.map(r => { const a = decodeK(r, 1000); return { a, bb: bbOf(a) }; }); rerender(); }).catch(() => { GEO.loading[h] = null; });
   }
 }
 export const geoReady = () => !!GEO.land;
@@ -39,7 +44,7 @@ function geoPaths(v, conts, home = []) {
   const hit = bb => bb[2] >= lon0 && bb[0] <= lon1 && bb[3] >= la0 && bb[1] <= la1;
   const ring = (a, close) => { let s = ''; let px = -1e9, py = -1e9; for (let i = 0; i < a.length; i += 2) { const x = (a[i] - v.x0) * v.k, y = (v.y0 - my(a[i + 1])) * v.k; if (i && Math.abs(x - px) < 0.6 && Math.abs(y - py) < 0.6 && i < a.length - 2) continue; s += (i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1); px = x; py = y; } return s + (close ? 'Z' : ''); };
   let land = '', lit = '', prov = '';
-  if (GEO.land) for (const c of GEO.land) for (const r of c.rings) if (hit(r.bb)) { if (home.includes(c.iso)) lit += ring(r.a, true); else land += ring(r.a, true); }
+  if (GEO.land) for (const c of GEO.land) for (const r of (GEO.hd[c.iso] || c.rings)) if (hit(r.bb)) { if (home.includes(c.iso)) lit += ring(r.a, true); else land += ring(r.a, true); }
   for (const cn of conts) { const ls = GEO.prov[CK[cn]]; if (ls) for (const r of ls) if (hit(r.bb)) prov += ring(r.a, false); }
   return { land, lit, prov, ready: !!GEO.land };
 }
@@ -129,7 +134,7 @@ export function RouteMap(o) {
     return html`<g key=${'p' + i} style=${o.onPin ? 'cursor:pointer' : ''} onClick=${o.onPin ? () => o.onPin(p.d, p.s) : null} data-t=${'pin-' + p.s.LpId}>
       <circle cx=${x} cy=${y} r=${r * 1.9} fill=${c} opacity=".25" filter=${`url(#${fid}b)`} /><circle cx=${x} cy=${y} r=${r} fill=${c} stroke="rgba(255,255,255,.92)" stroke-width=${1.5 * s1} /><circle cx=${x} cy=${y} r=${r * 0.36} fill="#fff" /></g>`;
   });
-  const svg = html`<svg viewBox=${`0 0 ${w} ${h}`} width=${w} height=${h} style="display:block;width:100%;height:auto" data-t=${o.key || 'routeMap'}>
+  const svg = html`<svg viewBox=${`0 0 ${w} ${h}`} width=${w} height=${h} style="display:block;width:100%;height:auto" stroke-linejoin="round" data-t=${o.key || 'routeMap'}>
     <defs><filter id=${fid} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation=${4.5 * s1} /></filter><filter id=${fid + 'b'}><feGaussianBlur stdDeviation=${2.5 * s1} /></filter>
       <radialGradient id=${fid + 'v'} cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#11141A" /><stop offset="1" stop-color="#07080B" /></radialGradient></defs>
     <rect width=${w} height=${h} fill=${`url(#${fid}v)`} />

@@ -4,7 +4,11 @@ import { html, K, DB, NAV, I, Brand, Navigate, rerender, save, Notify, guard, To
 import { syncNow, PasswordDialog, askPassword } from '../shared.js';
 import { css as lensCss, Sheet, openSheet, closeSheet, oa, ta, Cap, newId } from '../lens/ui.js';
 import * as P from './engine.js';
-import { MAP_W, MAP_H, SHAPES, OTHER, DOTS } from './geo.js';
+import { MAP_W, MAP_H, SHAPES as SHAPES0, OTHER as OTHER0, DOTS } from './geo.js';
+/* The light map draws at once; the detailed one (1:50m, real coasts and islands) loads in the background on first use and replaces it. */
+let SHAPES = SHAPES0, OTHER = OTHER0, hdAsk = false;
+function needHD() { if (hdAsk) return; hdAsk = true; import('./geo-hd.js').then(m => { SHAPES = { ...SHAPES0, ...m.SHAPES }; OTHER = m.OTHER; rerender(); }).catch(() => { hdAsk = false; }); }
+export const mapDetailed = () => SHAPES !== SHAPES0;
 import * as PH from './photos.js';
 
 export { openSheet, closeSheet, Cap, newId, oa, ta };
@@ -310,10 +314,11 @@ export function WorldMap(key, o = {}) {
   const wheel = e => { if (!o.live) return; e.preventDefault(); st.z *= e.deltaY < 0 ? 1.25 : 0.8; clampV(st); rerender(); };
   const zoom = f => { st.z *= f; clampV(st); rerender(); };
   const tapStatic = e => { if (o.live || !o.onTap) return; o.onTap(); };
+  needHD();
   const dots = Object.entries(DOTS).filter(([iso]) => P.BY[iso]);
   const selC = K.light ? K.text : '#FFE2B8';
   return html`<div class=${'pmap' + (o.live ? ' live' : '')} data-t=${'map-' + key} onClick=${tapStatic} style=${`height:${o.h || 180}px`}>
-    <svg viewBox=${vbOf(st)} preserveAspectRatio="xMidYMid meet" onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onPointerCancel=${up} onWheel=${wheel}>
+    <svg viewBox=${vbOf(st)} preserveAspectRatio="xMidYMid meet" stroke-linejoin="round" onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onPointerCancel=${up} onWheel=${wheel}>
       <defs><pattern id=${'ph-' + key} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill=${wc + '30'}/><line x1="0" y1="0" x2="0" y2="5" stroke=${wc} stroke-width="2.2"/></pattern>
         <filter id=${'gl-' + key} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation=${5 / st.z} result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
       <path d=${OTHER} fill=${none} stroke=${K.light ? '#FFFDF8' : K.bg} stroke-width=${0.4 / Math.sqrt(st.z)} />
