@@ -16,8 +16,8 @@ const PRI = { H: 'High', M: 'Medium', L: 'Low' };
 
 /* ───────── Odyssey ───────── */
 function Stamp(l, x) {
-  const s = P.stampOf(x.c.iso), at = x.at !== '9999' ? x.at : '';
-  return html`<div class=${'pstp' + (s.sq ? ' sq' : '')} style=${`--s:${s.color};--r:${s.rot}deg`} onClick=${() => openCountry(l, x.c.iso)} data-t=${'stamp-' + x.c.iso + (x.trip ? '-' + x.trip.TrId : '')} title=${x.c.name + (x.trip ? ' · ' + x.trip.TrName : '')}>
+  const s = P.stampOf(x.c.iso, x.i), at = x.at !== '9999' ? x.at : '';
+  return html`<div class=${'pstp ' + s.shape} style=${`--s:${s.color};--r:${s.rot}deg`} onClick=${() => openCountry(l, x.c.iso)} data-t=${'stamp-' + x.c.iso + (x.trip ? '-' + x.trip.TrId : '')} title=${x.c.name + (x.trip ? ' · ' + x.trip.TrName : '')}>
     <div>${Flag(x.c.iso, 14)}<b>${x.c.iso}</b><span>${at ? MONS[Number(at.slice(5, 7)) - 1] + ' ' + at.slice(0, 4) : 'VISITED'}</span></div></div>`;
 }
 const StPillSm = iso => { const st = iso === P.homeIso() ? 'home' : P.status(iso), n = st === 'visited' ? P.tripsIn(iso).length : 0; return html`<span class=${'pst ' + st} data-t=${'st-' + iso}>${{ visited: 'Visited', wish: 'Wanderlist', none: 'Not yet', home: 'Home' }[st]}${n > 1 ? ' ×' + n : ''}</span>`; };
@@ -59,7 +59,7 @@ export const scrPpOverview = {
       <style>${S.css()}</style>
       ${S.StatCards()}
       ${fv.length ? html`${Sect('Borderless', plural(fv.length, 'stamp'))}
-        <div class="lc" data-t="oStamps"><div class="pstamps">${shownSt.map(x => Stamp(l, x))}${fv.length < 8 ? html`<div class="pstp lock" style="--r:0deg"><div><b>+</b><span>NEXT ONE</span></div></div>` : null}</div>
+        <div class="lc" data-t="oStamps"><div class="pstamps">${shownSt.map((x, i) => Stamp(l, { ...x, i }))}${fv.length < 8 ? html`<div class="pstp lock" style="--r:0deg"><div><b>+</b><span>NEXT ONE</span></div></div>` : null}</div>
           ${fv.length > 8 ? html`<div class="lsub" style="text-align:center;margin-top:10px"><span class="lor" style="cursor:pointer;font-weight:600" onClick=${() => { l.allSt = !l.allSt; rerender(); }} data-t="oAllSt">${l.allSt ? 'Show fewer' : '+' + (fv.length - 8) + ' more · show all'}</span></div>` : null}</div>` : null}
       ${S.Favourites()}
       ${S.MostSpent(id => openTrip(id))}
@@ -79,14 +79,27 @@ export const scrPpJourneys = {
     const list = all.filter(t => (!l.yr || P.yearOf(t.TrStart) === Number(l.yr)) && (!l.ctry || P.isosOf(t.TrId).includes(l.ctry)) && (!l.with || P.withList(t).includes(l.with)));
     const byYear = []; for (const t of list) { const y = P.yearOf(t.TrStart); let g = byYear.find(x => x.y === y); if (!g) byYear.push(g = { y, ts: [] }); g.ts.push(t); }
     const sel = (v, set, opts, all0, id) => html`<select class=${'pchip' + (v ? ' on' : '')} style="border:0;font-family:inherit;-webkit-appearance:none;appearance:none" onChange=${e => { set(e.target.value); rerender(); }} data-t=${id}><option value="">${all0}</option>${opts.map(([k, t]) => html`<option value=${k} selected=${String(k) === String(v)}>${t}</option>`)}</select>`;
+    // summary strip, quick filters, the latest journey as a big cover, then a timeline by year (one smart figure per row)
+    const kmOf = t => { const x = LB.lbTotals(t.TrId); return x ? x.km : 0; };
+    const fig = t => { const x = LB.lbTotals(t.TrId) || {}; return x.overall ? ['★ ' + x.overall.toFixed(1), 'SCORE'] : x.spent ? ['RM' + (x.spent >= 1000 ? (x.spent / 1000).toFixed(1) + 'k' : Math.round(x.spent)), 'SPENT'] : x.km ? [Math.round(x.km).toLocaleString('en-US'), 'KM'] : ['', '']; };
+    const totKm = list.reduce((s, t) => s + kmOf(t), 0), totD = list.reduce((s, t) => s + P.daysOf(t), 0), totC = new Set(list.flatMap(t => P.isosOf(t.TrId))).size;
+    const hero = list[0], rest = list.slice(1);
+    const byYear2 = []; for (const t of rest) { const y = P.yearOf(t.TrStart); let g = byYear2.find(x => x.y === y); if (!g) byYear2.push(g = { y, ts: [] }); g.ts.push(t); }
+    const yStat = y => { const ts = list.filter(t => P.yearOf(t.TrStart) === y), cs = new Set(ts.flatMap(t => P.isosOf(t.TrId))); return plural(ts.length, 'JOURNEY') + ' · ' + ts.reduce((s, t) => s + P.daysOf(t), 0) + ' DAYS · ' + plural(cs.size, 'COUNTRY'); };
+    const hx = hero && (LB.lbTotals(hero.TrId) || {});
     return Page(l, 1, html`
       ${Sect('Journeys', '+ New journey', () => openTripEdit(l, null), 'jNew')}
-      ${all.length ? html`<div class="pchips">${sel(l.yr, v => { l.yr = v; }, yrs.map(y => [y, String(y)]), 'All years ▾', 'jYear')}${sel(l.ctry, v => { l.ctry = v; }, ctry.map(i => [i, P.BY[i].name]), 'Country ▾', 'jCtry')}${sel(l.with, v => { l.with = v; }, P.WITH.map(w => [w, w]), 'Who with ▾', 'jWith')}</div>` : null}
+      ${all.length ? html`<div class="jsum" data-t="jSum"><div><b>${list.length}</b><span>${list.length === 1 ? 'JOURNEY' : 'JOURNEYS'}</span></div><div><b>${totD}</b><span>DAYS</span></div><div><b>${totC}</b><span>${totC === 1 ? 'COUNTRY' : 'COUNTRIES'}</span></div><div><b>${Math.round(totKm).toLocaleString('en-US')}</b><span>KM</span></div></div>
+        <div class="pchips">${sel(l.with, v => { l.with = v; }, P.WITH.map(w => [w, w]), 'Everyone ▾', 'jWith')}${sel(l.yr, v => { l.yr = v; }, yrs.map(y => [y, String(y)]), 'All years ▾', 'jYear')}${sel(l.ctry, v => { l.ctry = v; }, ctry.map(i => [i, P.BY[i].name]), 'Country ▾', 'jCtry')}</div>` : null}
       ${!all.length ? html`<div class="lc lempty" data-t="jEmpty">No journeys yet. Add the first one: name, countries, dates and who you went with. Photos come after.<div style="margin-top:12px"><button class="lbtn o on" onClick=${() => openTripEdit(l, null)}>+ Add a journey</button></div></div>`
         : !list.length ? html`<div class="lc lempty">No journeys match these filters.</div>`
-        : byYear.map(g => { const cs = new Set(g.ts.flatMap(t => P.isosOf(t.TrId))); return html`<div class="pyr" data-t=${'jYr-' + g.y}><b>${g.y}</b><span>${plural(g.ts.length, 'JOURNEY')} · ${g.ts.reduce((s, t) => s + P.daysOf(t), 0)} DAYS · ${plural(cs.size, 'COUNTRY')}</span></div>
-          ${g.ts.map(t => html`<div class="ptrip" onClick=${() => openTrip(t.TrId)} data-t=${'jTrip-' + t.TrId}><div class="ph" style=${coverHd(t)}><span class="fl">${tripFlags(t.TrId, 15)}</span></div>
-            <div class="tx"><b>${t.TrName}</b><div class="s">${tripLine(t)}${P.isosOf(t.TrId).length > 1 ? ' · ' + countries(P.isosOf(t.TrId).length) : ''}</div></div></div>`)}`; })}
+        : html`<div class="jhero" onClick=${() => openTrip(hero.TrId)} data-t=${'jTrip-' + hero.TrId}><div class="ph" style=${coverHd(hero)}></div>
+            <span class="fl">${tripFlags(hero.TrId, 14)}</span>${hx.overall ? html`<span class="sc">★ ${hx.overall.toFixed(1)}</span>` : null}
+            <div class="tx"><div class="k">${l.yr || l.ctry || l.with ? 'MOST RECENT MATCH' : 'LATEST'} · ${P.range(hero.TrStart, hero.TrEnd).toUpperCase()}</div><b>${hero.TrName}</b>
+              <div class="m"><span>${plural(P.daysOf(hero), 'day')}</span>${hero.TrWith ? html`<span>${P.withTxt(hero)}</span>` : null}${P.isosOf(hero.TrId).length > 1 ? html`<span>${countries(P.isosOf(hero.TrId).length)}</span>` : null}${hx.km ? html`<span>${Math.round(hx.km).toLocaleString('en-US')} km</span>` : null}</div></div></div>
+          ${rest.length ? html`<div class="jtl">${byYear2.map(g => html`<div class="jyr" data-t=${'jYr-' + g.y}><b>${g.y}</b><span>${yStat(g.y)}</span></div>
+            ${g.ts.map(t => { const [v, u] = fig(t); return html`<div class="jrow" onClick=${() => openTrip(t.TrId)} data-t=${'jTrip-' + t.TrId}><span class="th" style=${coverHd(t)}></span>
+              <span class="t"><b>${t.TrName}</b><span>${tripLine(t)}</span><span class="f">${tripFlags(t.TrId, 12)}</span></span>${v ? html`<span class="r"><b>${v}</b><span>${u}</span></span>` : null}</div>`; })}`)}</div>` : null}`}
     `, 'ppJourneys');
   }
 };
@@ -131,6 +144,7 @@ export const scrPpTrip = {
       ${S.JourneyNumbers(t.TrId)}
       ${S.JourneyRoute(t.TrId)}
       ${S.Highlights(t.TrId)}
+      ${S.JourneyElevation(l, t.TrId)}
       ${S.DailySpending(t.TrId)}
       ${S.ExpenseSplit(t.TrId)}
       ${I.journey(t.TrId).has ? null : html`<div class="lc" data-t="tVoyageHint"><b style=${`color:${K.text}`}>The rest comes from Voyage</b><div class="lnote" style="margin-top:4px">Add this journey's itinerary, expenses and score in Voyage to see the route map, daily spending and expenses here.</div>
@@ -182,9 +196,11 @@ const UpCard = (l, t) => {
       <span class="lor" style="font-weight:700;cursor:pointer" onClick=${plan} data-t=${'upPlan-' + t.TrId}>Plan in Voyage ›</span></div></div>`;
 };
 /** Going from before 3.11.1 (a year and days, no dates): shown as it was; remove only. */
-const GRow = (l, p) => { const c = P.BY[p.PlIso]; return html`<div class="pwl" data-t=${'wl-' + p.PlIso} onClick=${() => confirmAsk(l, 'Remove ' + c.name + ' from Going?', 'It goes back to Dreaming.', 'Remove', () => psave({ up: { PP_Places: [{ ...p, PlGo: '', PlGoYear: 0, PlGoDays: 0 }] } }, 'Back to dreaming', c.name))} style="cursor:pointer">
-  <div>${Flag(p.PlIso, 25)}</div><div style="min-width:0"><div class="t">${c.name}</div><div class="s">${p.PlGoYear} · ${plural(p.PlGoDays, 'day')}${P.isTier(p.PlTier) ? ' · ' + P.tierText(p.PlTier) : ''}</div></div>
-  <div>${TierBadge(p.PlTier)}</div></div>`; };
+/** Going (simple): one row per trip, flags on one line, the year and days, and the indicator. Tap to put it back to Dreaming. */
+const GRow = (l, ps) => { const h = ps[0], names = ps.map(p => P.BY[p.PlIso].name).join(' · ');
+  return html`<div class="pdr" data-t=${'wl-' + ps.map(p => p.PlIso).join('-')} style="cursor:pointer" onClick=${() => confirmAsk(l, 'Remove ' + names + ' from Going?', 'It goes back to Dreaming.', 'Remove', () => psave({ up: { PP_Places: ps.map(p => ({ ...p, PlGo: '', PlGoYear: 0, PlGoDays: 0 })) } }, 'Back to dreaming', names))}>
+    <div style="min-width:0"><div class="pfls">${ps.map(p => Flag(p.PlIso, 20))}</div><div class="t">${names}</div><div class="s" data-t=${'goLine-' + h.PlIso}>${[h.PlGoYear || '', h.PlGoDays ? plural(h.PlGoDays, 'day') : ''].filter(Boolean).join(' · ')}</div></div>
+    <div>${TierBadge(h.PlTier)}</div></div>`; };
 /** A dream: flags on one line, the country names below. */
 const DRow = (l, d, extra) => { const tags = String(d.see || '').split('|').filter(Boolean); return html`<div class="pdr" data-t=${'wl-' + d.isos.join('-')}>
   <div onClick=${() => wishActions(l, d)} style="cursor:pointer;min-width:0">
@@ -200,15 +216,18 @@ export const scrPpWishlist = {
     const list = sort === 'order' ? base : base.slice().sort(sort === 'pri' ? (a, b) => (PR[a.pri] ?? 1) - (PR[b.pri] ?? 1) || a.seq - b.seq
       : sort === 'tier' ? (a, b) => P.tierRank(a.tier) - P.tierRank(b.tier) || a.seq - b.seq : (a, b) => a.cont.localeCompare(b.cont) || a.seq - b.seq);
     const addNew = () => openDream(l, null);
-    const tally = P.TIER_LETTERS.map(x => [x, all.filter(p => P.isTier(p.PlTier) && p.PlTier[0] === x).length]), noTier = all.filter(p => !P.isTier(p.PlTier)).length;
-    const nGo = gw.length + ups.length;
+    // counted by trip: a dream or a going trip with several countries is one destination
+    const gGroups = []; for (const p of gw) { const k = p.PlDream || 'c:' + p.PlIso; let g = gGroups.find(x => x.k === k); if (!g) gGroups.push(g = { k, ps: [] }); g.ps.push(p); }
+    const tripTiers = [...base.map(d => d.tier), ...gGroups.map(g => g.ps[0].PlTier), ...ups.map(() => '')], nTrips = tripTiers.length;
+    const tally = P.TIER_LETTERS.map(x => [x, tripTiers.filter(c => P.isTier(c) && c[0] === x).length]), noTier = tripTiers.filter(c => !P.isTier(c)).length;
+    const nGo = gGroups.length + ups.length;
     return Page(l, 2, html`
       ${Sect('Wanderlist', '+ Add', addNew, 'wlAdd')}
-      ${all.length ? html`<div class="lc" data-t="wlTally"><span class="lcap">${plural(all.length, 'destination')} · ${gw.length + all.filter(p => P.upIsos().has(p.PlIso)).length} confirmed</span>
-        <div class="ptiers">${tally.filter(([, n]) => n).map(([x, n]) => html`<i style=${`width:${n / all.length * 100}%;background:${P.TIER_COLOR[x]}`}></i>`)}${noTier ? html`<i style=${`width:${noTier / all.length * 100}%;background:${K.line2}`}></i>` : null}</div>
+      ${nTrips ? html`<div class="lc" data-t="wlTally"><span class="lcap">${plural(nTrips, 'destination')} · ${nGo} going</span>
+        <div class="ptiers">${tally.filter(([, n]) => n).map(([x, n]) => html`<i style=${`width:${n / nTrips * 100}%;background:${P.TIER_COLOR[x]}`}></i>`)}${noTier ? html`<i style=${`width:${noTier / nTrips * 100}%;background:${K.line2}`}></i>` : null}</div>
         <div class="ptl">${tally.map(([x, n]) => html`<span style=${`--c:${P.TIER_COLOR[x]}`}>${x} ${n}</span>`)}${noTier ? html`<span style=${`--c:${K.line2}`}>No tier ${noTier}</span>` : null}</div></div>` : null}
-      ${!all.length && !ups.length ? html`<div class="lc lempty" data-t="wlEmpty">Places you dream of go here, one or more countries at a time, with a tier for budget and length. Confirm when you're going to plan it in Voyage.<div style="margin-top:12px"><button class="lbtn o on" onClick=${addNew}>+ Add a destination</button></div></div>` : null}
-      ${nGo ? html`${Sect('Going', String(nGo))}${ups.map(t => UpCard(l, t))}${gw.length ? html`<div class="lc" data-t="wlGoing">${gw.map(p => GRow(l, p))}</div>` : null}` : null}
+      ${!all.length && !ups.length ? html`<div class="lc lempty" data-t="wlEmpty">Places you dream of go here, one or more countries at a time, with a tier for budget and length. Confirm when you're going.<div style="margin-top:12px"><button class="lbtn o on" onClick=${addNew}>+ Add a destination</button></div></div>` : null}
+      ${nGo ? html`${Sect('Going', String(nGo))}${ups.map(t => UpCard(l, t))}${gGroups.length ? html`<div class="lc" data-t="wlGoing">${gGroups.map(g => GRow(l, g.ps))}</div>` : null}` : null}
       ${base.length ? html`${Sect('Dreaming', String(base.length))}
         <div class="pchips">${[['order', 'My order'], ['pri', 'Priority'], ['tier', 'Tier'], ['cont', 'Continent']].map(([k, t]) => html`<span class=${'pchip' + (sort === k ? ' on' : '')} onClick=${() => { l.sort = k; rerender(); }} data-t=${'wlSort-' + k}>${t}</span>`)}</div>
         <div class="lc" data-t="wlList">${list.map((d, i) => DRow(l, d, sort === 'order' ? html`<div class="pord"><span onClick=${() => move(list, i, -1)} data-t=${'wlUp-' + d.isos[0]} style=${i ? '' : 'opacity:.3'}>▲</span><span onClick=${() => move(list, i, 1)} data-t=${'wlDn-' + d.isos[0]} style=${i < list.length - 1 ? '' : 'opacity:.3'}>▼</span></div>` : null))}</div>

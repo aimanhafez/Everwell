@@ -71,7 +71,7 @@ select.lin{padding-right:30px;background-image:linear-gradient(45deg,transparent
 .ltbl{border-collapse:separate;border-spacing:0;font-size:11.5px;color:${K.text}}
 .ltbl td,.ltbl th{padding:6px 7px;text-align:right;white-space:nowrap;border-top:1px solid ${K.sep}}
 .ltbl th{font-size:10px;font-weight:600;letter-spacing:1px;color:${K.sub};border-top:0;padding-bottom:8px;text-transform:uppercase}
-.ltbl td:first-child,.ltbl th:first-child{text-align:left;padding-left:16px;position:sticky;left:0;z-index:1;background:${K.card};max-width:136px;min-width:136px;overflow:hidden;text-overflow:ellipsis;box-shadow:6px 0 8px -6px ${K.light ? "rgba(60,40,20,.12)" : "rgba(0,0,0,.7)"}}
+.ltbl td:first-child,.ltbl th:first-child{text-align:left;padding-left:16px;position:sticky;left:0;z-index:1;background:${K.card};max-width:136px;min-width:136px;white-space:normal;line-height:1.2;overflow-wrap:anywhere;box-shadow:6px 0 8px -6px ${K.light ? "rgba(60,40,20,.12)" : "rgba(0,0,0,.7)"}}
 .ltbl td:last-child,.ltbl th:last-child{padding-right:16px}
 .ltbl .sec td{font-size:9.5px;font-weight:700;letter-spacing:1.2px;color:${K.or};padding-top:14px;border-top:0;text-transform:uppercase}
 .ltbl .tot td{font-weight:700;border-top:1px solid ${K.line2}}.ltbl .gp td{font-weight:600}

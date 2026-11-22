@@ -5,7 +5,7 @@ import * as P from './engine.js';
 import * as I from './insights.js';
 import * as L from '../logbook/engine.js';
 import { Ico } from '../logbook/icons.js';
-import { RouteCard, RouteMap, routeCardCss, fit } from '../logbook/map.js';
+import { RouteCard, RouteMap, routeCardCss, fit, Profile } from '../logbook/map.js';
 import * as PH from './photos.js';
 
 const oa = a => `rgba(${K.accRGB || '255,106,0'},${a})`;
@@ -17,7 +17,7 @@ const Stars = v => html`<span class="asst">${[1, 2, 3, 4, 5].map(i => html`<span
 export const css = () => routeCardCss() + `
 .asg2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 12px 10px}
 .askc{border-radius:14px;background:${K.surface || K.card};box-shadow:inset 0 0 0 1px ${K.hair || K.line};overflow:hidden;min-width:0}.askc .h{font:800 10.5px Georgia,serif;letter-spacing:.6px;padding:10px 12px 0;text-transform:uppercase;color:${K.text}}
-.askc .m{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px 12px 11px}.askc .m b{font-size:26px;font-weight:700;color:${K.text}}.askc .m b.sm{font-size:18px;white-space:nowrap}
+.askc .m{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px 12px 11px}.askc .m b{font-size:26px;font-weight:700;color:${K.text}}.askc .m b.sm{font-size:18px;white-space:nowrap}.askc .m.c{display:grid;grid-template-columns:auto 1fr}.askc .m.c b{text-align:center}.askc .f.fw{display:grid;grid-template-columns:repeat(3,1fr);padding:6px 6px 7px}.askc .f.fw span{display:grid;justify-items:center;gap:1px;grid-template-columns:auto auto;align-items:center;column-gap:4px}.askc .f.fw em{grid-column:1/3;font-size:7px;letter-spacing:.5px}
 .askc .f{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-top:1px solid ${K.sep};font-size:11.5px;font-weight:700;color:${K.text}}.askc .f span{display:inline-flex;align-items:center;gap:3px}.askc .f em{font-style:normal;color:${K.or};font-size:8.5px;font-weight:800;letter-spacing:.4px}
 .asrk{display:grid;grid-template-columns:14px 26px 1fr auto;gap:9px;align-items:center;padding:8px 0;border-top:1px solid ${K.sep};font-size:13px;color:${K.text}}.asrk:first-of-type{border-top:0}.asrk .r{text-align:right}.asrk .r b{display:block;color:${K.or};font-size:16px}
 .asst{display:inline-flex;gap:1px;font-size:10px;color:${K.line2}}.asst span{position:relative}.asst i{position:absolute;left:0;top:0;overflow:hidden;color:${K.or};font-style:normal}
@@ -26,7 +26,7 @@ export const css = () => routeCardCss() + `
 .asbd{display:grid;grid-template-columns:1fr 1fr;gap:8px}.asbg{border-radius:14px;padding:12px 8px 10px;text-align:center;background:linear-gradient(180deg,${oa(.1)},${K.card2});box-shadow:inset 0 0 0 1.5px ${oa(.7)};border-top:4px solid ${K.or}}
 .asbg.off{opacity:.5;filter:saturate(.5)}.asbg .ci{width:34px;height:34px;border-radius:50%;margin:0 auto 6px;display:grid;place-items:center;background:${oa(.16)}}.asbg .k{font-size:9.5px;font-weight:800;letter-spacing:.6px;color:${K.or}}.asbg b{display:block;font-size:16px;margin:4px 0 5px;color:${K.text}}
 .astb{font-size:12px}
-.astb.ast5 .hd,.astb.ast5 .tr{grid-template-columns:1.6fr .5fr .5fr 1.1fr 1.15fr;align-items:start}.astb.ast5 .hd{align-items:center}.astb.ast5 .tr .cn{padding-top:1px}.astb.ast5 .tr b{display:block;font-weight:600;white-space:nowrap}.astb.ast5 .tr i{display:block;font-style:normal;font-size:9.5px;color:${K.sub};margin-top:2px;white-space:nowrap}
+.astb.ast5 .hd,.astb.ast5 .tr{grid-template-columns:1.7fr .45fr .45fr 1.05fr 1.1fr;align-items:center}.astb.ast5 .hd{align-items:center}.astb.ast5 .tr{padding:12px 7px}.astb.ast5 .tr .cn{font-size:13px;white-space:normal;line-height:1.2;gap:8px;overflow:visible}.astb.ast5 .tr .cn .pfl{flex:none}.astb.ast5 .tr .cn span{text-align:left}.astb.ast5 .tr b{display:block;font-weight:600;white-space:nowrap}.astb.ast5 .tr i{display:block;font-style:normal;font-size:9.5px;color:${K.sub};margin-top:2px;white-space:nowrap}
 .ashl{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:8px -2px 0;padding:0 2px 2px}.ashl::-webkit-scrollbar{display:none}.ashl .c{flex:none;width:148px;border-radius:14px;overflow:hidden;background:${K.card2};box-shadow:inset 0 0 0 1px ${K.line};cursor:pointer}.ashl .c.on{box-shadow:inset 0 0 0 2px ${K.or}}
 .ashl .im{height:84px;position:relative}.ashl .k{position:absolute;left:7px;top:7px;font-size:8px;font-weight:800;letter-spacing:.8px;color:#fff;background:rgba(0,0,0,.42);border-radius:99px;padding:3px 7px}.ashl .pn{position:absolute;right:7px;bottom:6px;line-height:0}.ashl .tx{padding:8px 9px 9px}.ashl .tx b{display:block;font-size:12.5px;color:${K.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ashl .tx small{display:block;font-size:10.5px;color:${K.sub};margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ashm{margin-top:10px;border-radius:14px;overflow:hidden;background:#07080B}.ashv{margin-top:10px;padding-top:10px;border-top:1px solid ${K.sep}}.ashv .q{font:italic 400 14px Georgia,serif;color:${K.text}}.ashv .b{font-size:11.5px;color:${K.sub};margin-top:5px}.ashv .b b{color:${K.or}}
@@ -37,10 +37,12 @@ export const css = () => routeCardCss() + `
 .astb .hd span:not(:first-child),.astb .tr span:not(:first-child){text-align:right}.astb .tr{padding:10px 7px;border-bottom:1px solid ${K.sep};font-weight:700;color:${K.text};font-size:11.5px}.astb .tr:last-child{border-bottom:0}.astb .tr small{color:${K.sub};font-size:8px;font-weight:500}.astb .cn{display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden;white-space:nowrap}
 .ask6{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:6px;margin:0 12px 10px}.ask6 div{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:13px;background:${K.surface || K.card};box-shadow:inset 0 0 0 1px ${K.hair || K.line};text-align:center;padding:11px 4px 9px;min-width:0}
 .ask6 b{display:block;font:700 17px Georgia,serif;margin-top:5px;color:${K.text};white-space:nowrap}.ask6 span{display:block;font-size:8.5px;font-weight:800;letter-spacing:.8px;color:${K.sub};margin-top:5px}.ask6 em{display:block;font-style:normal;font-size:9px;font-weight:700;color:${K.or};margin-top:3px}
+.asel .lbm{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}.asel .lbm div{border-radius:11px;background:${K.card2 || K.field};box-shadow:inset 0 0 0 1px ${K.line};padding:8px 9px;min-width:0}.asel .lbm span{display:block;font-size:8px;font-weight:800;letter-spacing:.6px;color:${K.sub};text-transform:uppercase}.asel .lbm b{display:block;font-size:14px;font-weight:700;color:${K.text};margin-top:2px;white-space:nowrap}
+.asel .h2{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}.asel .h2 em{font:400 13px Georgia,serif;font-style:normal;color:${K.or}}
 .asro{margin:0 12px 10px;border-radius:14px;background:${K.surface || K.card};box-shadow:inset 0 0 0 1px ${K.hair || K.line};padding:11px 10px;overflow-x:auto;scrollbar-width:none}.asro::-webkit-scrollbar{display:none}
 .asro .ln{position:relative;display:flex;gap:2px;margin-top:10px;min-width:max-content}.asro .ln:before{content:'';position:absolute;left:18px;right:18px;top:7px;height:2px;background:${K.or}}
 .asro .d{position:relative;text-align:center;width:44px;flex:none}.asro .d i{display:block;width:14px;height:14px;border-radius:50%;margin:0 auto 5px;background:${K.or};box-shadow:0 0 0 3px ${K.card}}.asro .d i.s{background:#57C23A}.asro .d i.e{background:#E8343B}
-.asro .d{width:50px!important}.asro .d b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:8.5px;line-height:1.15;min-height:19.5px;color:${K.text};overflow:hidden;word-break:break-word}.asro .d span{display:block;font-size:7.5px;color:${K.sub};margin-top:1px}
+.asro .ln{min-width:100%}.asro .d{flex:1 1 0!important;min-width:56px;width:auto!important;padding:0 2px}.asro .d b{display:block;font-size:9.5px;line-height:1.2;min-height:23px;color:${K.text};overflow-wrap:break-word;hyphens:none}.asro .d span{display:block;font-size:7.5px;color:${K.sub};margin-top:1px}
 .askc .f2{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid ${K.sep}}.askc .f2 div{padding:7px 11px;font-size:12px;font-weight:700;color:${K.text};white-space:nowrap;min-width:0}.askc .f2 div+div{border-left:1px solid ${K.sep}}.askc .f2 em{display:block;font-style:normal;font-size:8px;font-weight:800;letter-spacing:.6px;color:${K.or};margin-top:1px}
 .astop .r{display:grid;grid-template-columns:14px 1fr auto;gap:8px;padding:6px 0;font-size:12.5px;font-weight:700;color:${K.text}}.astop .r span:first-child{color:${K.or}}.astop .r .mu{color:${K.mute}}
 .astop .ft{border-top:1px solid ${K.sep};margin-top:8px;padding-top:9px;display:flex;justify-content:space-between;align-items:flex-end}.astop .ft .k{font-size:9px;font-weight:800;letter-spacing:.5px;color:${K.text}}.astop .ft .s{font-size:9px;color:${K.sub};margin-top:3px}.astop .ft b{display:block;font-size:22px;margin-top:3px;color:${K.text}}
@@ -57,9 +59,9 @@ const Card = (title, kids, id, extra = '') => html`<div class="lc" data-t=${id}>
 export function StatCards() {
   const t = I.totals();
   return html`<div class="asg2" data-t="oStats">
-    <div class="askc"><div class="h">Total trips</div><div class="m">${Ico('trips', 40)}<b data-t="oTrips">${t.trips}</b></div>
-      <div class="f"><span>${t.solo} ${Ico('solo', 14)}</span><span>${t.family} ${Ico('family', 14)}</span><span>${t.friends || '–'} ${Ico('group', 14)}</span></div></div>
-    <div class="askc"><div class="h">Travel days</div><div class="m">${Ico('cal', 40)}<b data-t="oDays">${t.days}</b></div>
+    <div class="askc"><div class="h">Total trips</div><div class="m c">${Ico('trips', 40)}<b data-t="oTrips">${t.trips}</b></div>
+      <div class="f fw"><span title="Solo">${Ico('solo1', 15)}${t.solo}<em>SOLO</em></span><span title="Family">${Ico('family1', 15)}${t.family}<em>FAMILY</em></span><span title="Friends">${Ico('friends1', 15)}${t.friends || 0}<em>FRIENDS</em></span></div></div>
+    <div class="askc"><div class="h">Travel days</div><div class="m c">${Ico('cal', 40)}<b data-t="oDays">${t.days}</b></div>
       <div class="f"><span data-t="oWork">${t.work} <em>WORKING</em></span><span>${t.off} <em>OFF DAYS</em></span></div></div>
     <div class="askc"><div class="h">Total expenses</div><div class="m">${Ico('wallet', 38)}<b class="sm" data-t="oSpent">${L.RM(t.spent)}</b></div>
       <div class="f2"><div data-t="oSpentTrip">${L.RM(t.perTrip)}<em>PER TRIP</em></div><div data-t="oSpentDay">${L.RM(t.perDay)}<em>PER DAY</em></div></div></div>
@@ -116,7 +118,7 @@ export function Rides(l) {
 export function CountryTable() {
   const rows = I.countryOverview(); if (!rows.length) return null;
   return Card('COUNTRY EXPERIENCE OVERVIEW', html`<div class="astb ast5"><div class="hd"><span>COUNTRY</span><span>TRIPS</span><span>DAYS</span><span>DISTANCE</span><span>GROUND COST</span></div>
-    ${rows.map(r => html`<div class="tr" data-t=${'cx-' + r.iso}><span class="cn">${Flag(r.iso, 13)}${P.BY[r.iso].name}</span><span>${r.trips}</span><span>${r.days}</span><span><b>${L.n0(r.km)}<small>km</small></b><i>${r.days ? L.n0(r.km / r.days) : 0} km / day</i></span><span><b><small>RM</small>${L.n0(r.cost)}</b><i>RM ${r.days ? L.n0(r.cost / r.days) : 0} / day</i></span></div>`)}</div>`, 'jCountries');
+    ${rows.map(r => html`<div class="tr" data-t=${'cx-' + r.iso}><span class="cn">${Flag(r.iso, 19)}<span>${P.BY[r.iso].name}</span></span><span>${r.trips}</span><span>${r.days}</span><span><b>${L.n0(r.km)}<small>km</small></b><i>${r.days ? L.n0(r.km / r.days) : 0} km / day</i></span><span><b><small>RM</small>${L.n0(r.cost)}</b><i>RM ${r.days ? L.n0(r.cost / r.days) : 0} / day</i></span></div>`)}</div>`, 'jCountries');
 }
 
 /* ───────── one journey ───────── */
@@ -136,13 +138,21 @@ export function JourneyRoute(id) {
     <div class="asro" data-t="tRouteOv"><span class="lcap" style=${`color:${K.text};font-weight:800;letter-spacing:.8px`}>ROUTE OVERVIEW</span>
       <div class="ln">${j.days.map(d => html`<div class="d" data-t=${'ro-' + d.n}><i class=${d.first ? 's' : d.last ? 'e' : ''}></i><b>${d.end || '—'}</b><span>Day ${d.n}</span><span>${d.km ? L.n0(d.km) + ' km' : '–'}</span></div>`)}</div></div>`;
 }
+/** Elevation for the whole journey: all days joined, like the route map. */
+export function JourneyElevation(l, id) {
+  const m = L.journeyMeters(id); if (!m) return null;
+  return html`<div class="lc asel" style="margin:0 12px 10px" data-t="tElev"><div class="h2"><span class="lcap" style=${`color:${K.text};font-weight:800;letter-spacing:.8px`}>ELEVATION · WHOLE JOURNEY</span><em>${L.n0(m.max)} m top</em></div>
+    ${Profile(l, 'trip-' + id, m.ele, m.km, m.days > 1 ? m.starts : [], { marks: m.marks })}
+    <div class="lbm"><div><span>Route km</span><b data-t="teKm">${L.n0(m.km)}</b></div><div><span>Climb</span><b>↑ ${L.n0(m.up)}</b></div><div><span>Descent</span><b>↓ ${L.n0(m.down)}</b></div><div><span>Highest</span><b>Day ${m.hiDay}</b></div></div>
+    <div class="lnote" style="margin-top:8px">Drag along the profile to read any point.</div></div>`;
+}
 /** Highlights: the journey's Discovery finds as cards (only when it has some). Tap one → the map shows where it is. */
 const hlSel = {};
 export function Highlights(id) {
   const fs = L.finds(id); if (!fs.length) return null;
   const t = P.trip(id), r = L.result(id) || {}, back = (L.BACK.find(b => b[0] === r.RsBack) || [])[1] || '';
   const dayDate = n => { const d = new Date(String(t.TrStart).slice(0, 10) + 'T00:00:00'); d.setDate(d.getDate() + Number(n) - 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
-  const photoOf = f => { const ps = P.photosOf(id).filter(p => p.PhKind !== 'video'); const m = f.FdDay ? ps.find(p => p.PhTaken === dayDate(f.FdDay)) : null; return m ? m.PhId : ''; };
+  const photoOf = f => (f.FdPhoto && P.photosOf(id).some(p => p.PhId === f.FdPhoto) ? f.FdPhoto : ''); // only the photo chosen in Voyage
   const sel = fs.find(f => f.FdId === hlSel[id] && (Number(f.FdLat) || Number(f.FdLng)));
   const pin = sel ? [Number(sel.FdLat), Number(sel.FdLng)] : null;
   return Card('HIGHLIGHTS', html`<div class="ashl">${fs.map(f => { const ph = photoOf(f), on = sel && sel.FdId === f.FdId, has = Number(f.FdLat) || Number(f.FdLng);
@@ -150,7 +160,7 @@ export function Highlights(id) {
         <div class="im" style=${PH.bg(ph, f.FdId)}><span class="k">${L.FIND[f.FdKind].n.toUpperCase()}</span>${has ? html`<span class="pn">${Ico('pin', 13, '#fff')}</span>` : null}</div>
         <div class="tx"><b>${f.FdName}</b><small>${[f.FdWhere, f.FdDay ? 'Day ' + f.FdDay : ''].filter(Boolean).join(' · ')}</small></div></div>`; })}</div>
     ${pin ? html`<div class="ashm" data-t="hlMap">${RouteMap({ id, days: L.days(t).map(d => d.n), w: 366, h: 210, view: fit([pin], 366, 210, 0.2, 0.6), labels: false, key: 'hlMapSvg', mark: { lat: pin[0], lng: pin[1], label: sel.FdName } }).svg}</div>` : null}
-    ${r.RsVerdict || back ? html`<div class="ashv">${r.RsVerdict ? html`<div class="q">“${r.RsVerdict}”</div>` : null}${back ? html`<div class="b">Would go back: <b>${back}</b></div>` : null}</div>` : null}`, 'tHighlights');
+`, 'tHighlights');
 }
 /** Travel insights: your Trail Marks from Voyage › Discovery, view only. */
 export function TravelInsights(id) {

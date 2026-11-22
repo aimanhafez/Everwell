@@ -5,6 +5,7 @@ import { html, K, G, rerender, Notify } from '../core.js';
 import { Page, Sect, Switcher, Empty, Ring, cur, setCur, go, openStop, openPins, openExpense, openRate, openBudget, confirmAsk, lbsave, call, download, LimitNote, Stars, openFind, PlacesBar, Ico, Tile, makeAll, saveDay,
   canWrite, Seg, Flag, plural, oa, L } from './ui.js';
 import { RouteMap, Profile } from './map.js';
+import * as PH from '../passport/photos.js';
 
 const P = L.P;
 const dayOf = (t) => { const m = G.lbDayOf || (G.lbDayOf = {}); const n = L.days(t).length; let d = Number(m[t.TrId]) || 1; if (d > n) d = n || 1; return d; };
@@ -203,19 +204,16 @@ export const scrLbResults = {
       <div class="lbhero" data-t="lbDiscHero"><div class="k">THE JOURNEY'S SCORE · YOUR RATING</div>
         <div class="v"><b data-t="lbScore">${ov ? (ov % 1 ? ov.toFixed(1) : ov) : '—'}</b><span>/ 5</span></div>
         <div class="s">${Stars(id, 'RsOverall', ov, { big: true, c: K.heroText || '#fff' })}</div>
-        ${r.RsVerdict ? html`<div class="q">“${r.RsVerdict}”</div>` : null}</div>
+</div>
       ${Sect('Trail Marks')}
       <div class="lc lbmt" data-t="lbRate"><div class="hh"><span>METRIC</span><span>RATE</span></div>
         ${L.RATINGS.map(([k, n, ic]) => html`<div class="mr">${Ico(ic, 22)}<span class="n">${n.toUpperCase()}</span>${Stars(id, k, Number(r[k]) || 0)}</div>`)}</div>
       ${Sect('Hidden Treasures', fs.length ? fs.length + ' found' : '')}
       ${fs.length ? html`<div class="lc" data-t="lbFinds">${fs.map(f => { const k = L.FIND[f.FdKind]; return html`<div class="lbex" onClick=${() => openFind(l, id, f)} data-t=${'find-' + f.FdId}>
-        ${Tile(k.i, 34)}<div style="min-width:0"><div class="kk">${k.n.toUpperCase()}</div><div class="t">${f.FdName}</div>
+        ${f.FdPhoto ? html`<span class="lbfph" style=${PH.bg(f.FdPhoto, f.FdPhoto)}></span>` : Tile(k.i, 34)}<div style="min-width:0"><div class="kk">${k.n.toUpperCase()}</div><div class="t">${f.FdName}</div>
           <div class="s">${[f.FdWhere, f.FdProv, f.FdDay ? 'Day ' + f.FdDay : '', f.FdNote].filter(Boolean).join(' · ')}</div></div><div class="r">${Number(f.FdLat) ? Ico('view', 14, K.sub) : null}</div></div>`; })}</div>` : null}
       <div class="pchips" style="flex-wrap:wrap;overflow:visible" data-t="lbFindKinds">${left.map(k => html`<span class="pchip lbadd" onClick=${() => canWrite() && openFind(l, id, null, k.k)} data-t=${'addFind-' + k.k}>${Ico(k.i, 15)} + ${k.n}</span>`)}
         ${fs.length ? html`<span class="pchip lbadd" onClick=${() => canWrite() && openFind(l, id, null)} data-t="addFind">+ Another</span>` : null}</div>
-      ${Sect('The Last Word')}
-      <div class="lc" data-t="lbVerdictCard"><div class="llab" style="margin-top:0">In a few words</div><input class="lin" value=${r.RsVerdict} onChange=${e => saveR('RsVerdict', e.target.value.trim())} data-t="lbVerdict" />
-        <div class="llab">Would you go back?</div>${Seg(L.BACK, r.RsBack, k => saveR('RsBack', r.RsBack === k ? '' : k), 'lbBack')}</div>
       ${Sect('Trail File')}
       <div class="lbgx" data-t="lbGpx"><div class="f">GPX</div><div class="t">${g.name}.gpx<span data-t="lbGpxInfo">${plural(g.trks, 'day')} · ${plural(g.wpts, 'stop')}${x.tracks ? ' · with heights' : ''}</span></div>
         ${g.trks || g.wpts ? html`<button class="lbtnf" onClick=${() => download(g.name + '.gpx', g.xml, 'application/gpx+xml')} data-t="lbGpxDl">Download</button>

@@ -16,6 +16,7 @@
  *
  * Helpers you can run from the editor: setDriveKey(), removeDriveKey(), showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 4.0.0 · Big update: highlight photos (LB_Finds gets FdPhoto). Paste this Code.gs and Deploy › New version.
  * 3.18.1 · New Wanderlist tier amounts and day ranges. App only.
  * 3.18.0 · Detailed maps in Atlas (1:50m) and Voyage (1:10m coasts). App only.
  * 3.17.1 · Main page: one-line greeting, bigger cards, sync and version at the bottom. App only.
@@ -103,7 +104,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '3.18.1';
+var EW_VERSION = '4.0.0';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
@@ -140,7 +141,7 @@ var TABLES = {
   LB_Rates: { key: 'RtKey', cols: { RtKey: 's', RtTrip: 's', RtCur: 's', RtRate: 'n', RtDate: 'd' } },
   LB_Results: { key: 'RsTrip', cols: { RsTrip: 's', RsRoads: 'n', RsScenery: 'n', RsComfort: 'n', RsFood: 'n', RsValue: 'n', RsVerdict: 's', RsBack: 's', RsKmMode: 's', RsBadges: 's', RsOverall: 'n' } },
   LB_Days: { key: 'DyKey', cols: { DyKey: 's', DyTrip: 's', DyDay: 'n', DyStory: 's', DyMood: 's' } },
-  LB_Finds: { key: 'FdId', cols: { FdId: 's', FdTrip: 's', FdKind: 's', FdName: 's', FdWhere: 's', FdDay: 'n', FdNote: 's', FdLat: 'n', FdLng: 'n', FdSeq: 'n', FdProv: 's' } }
+  LB_Finds: { key: 'FdId', cols: { FdId: 's', FdTrip: 's', FdKind: 's', FdName: 's', FdWhere: 's', FdDay: 'n', FdNote: 's', FdLat: 'n', FdLng: 'n', FdSeq: 'n', FdProv: 's', FdPhoto: 's' } }
 };
 var WRITE_ACTIONS = ['commit', 'startFresh', 'ppPhotoDel', 'lbRoute', 'lbGpxSave']; // photo and video uploads lock only around the Sheet (Drive saves run side by side)
 

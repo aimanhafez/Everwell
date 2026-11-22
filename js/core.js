@@ -3,7 +3,7 @@
 import { html, render } from './vendor/preact-htm.js';
 export { html };
 
-export const VERSION = '3.18.1';
+export const VERSION = '4.0.0';
 
 /* ───────────── Colours (same values as the Power App) ───────────── */
 export const K = {
@@ -506,7 +506,20 @@ export function rerender() {
     const s = NAV.screens[name];
     if (themeHook) themeHook(name);
     render(s ? s.view(loc(name)) : html``, root);
+    requestAnimationFrame(fitText);
   }, 0);
+}
+/** Full words and numbers, never "Swe…": text that does not fit its box is shrunk (down to 60%) until it does. */
+const FIT = '.lbl > span, [data-fit], .lmt em, .lfit';
+export function fitText() {
+  if (!root) return;
+  root.querySelectorAll(FIT).forEach(el => {
+    if (el.dataset.fs0) el.style.fontSize = ''; const w = el.clientWidth; if (!w) return;
+    if (el.scrollWidth <= w + 0.5) return;
+    const base = parseFloat(getComputedStyle(el).fontSize); el.dataset.fs0 = base;
+    let fs = Math.max(base * 0.6, base * w / el.scrollWidth - 0.2); el.style.fontSize = fs + 'px';
+    for (let i = 0; i < 6 && el.scrollWidth > el.clientWidth + 0.5 && fs > base * 0.6; i++) { fs -= 0.5; el.style.fontSize = fs + 'px'; }
+  });
 }
 
 /* ───────────── Drawing primitives (absolute, in canvas pixels) ───────────── */

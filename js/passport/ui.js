@@ -69,9 +69,24 @@ ul.pmom li:before{content:'';position:absolute;left:0;top:14px;width:6px;height:
 .pord{display:flex;flex-direction:column;gap:4px;align-items:flex-end}.pord span{width:26px;height:22px;border-radius:7px;display:grid;place-items:center;color:${K.sub};box-shadow:inset 0 0 0 1px ${K.line2};cursor:pointer;font-size:11px}
 .ppri{font-size:9.5px;font-weight:700;letter-spacing:.5px;padding:4px 8px;border-radius:99px}.ppri.H{color:${K.red};background:rgba(229,72,77,.12)}.ppri.M{color:${K.gold};background:rgba(233,185,73,.13)}.ppri.L{color:${K.sub};background:${ta(.07)}}
 .pwall{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:0 12px 12px}.pwall div{aspect-ratio:1;border-radius:9px;cursor:pointer}.pwall div:first-child{grid-column:span 2;grid-row:span 2}
+.pstep{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:14px;background:${K.field}}.pstep b{font:400 26px Georgia,serif;color:${K.text}}.pstep span{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:20px;cursor:pointer;background:${K.card};box-shadow:inset 0 0 0 1px ${K.line};color:${K.text};user-select:none}
 .pstamps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.jsum{display:grid;grid-template-columns:repeat(4,1fr);margin:2px 14px 0;border-radius:18px;background:${K.surface || K.card};box-shadow:inset 0 0 0 1px ${K.hair || K.line}}
+.jsum div{padding:11px 2px;text-align:center;min-width:0}.jsum div+div{border-left:1px solid ${K.sep}}.jsum b{display:block;font:400 21px Georgia,serif;color:${K.text}}.jsum span{font-size:7.5px;letter-spacing:1.4px;font-weight:800;color:${K.sub}}
+.jhero{position:relative;margin:12px 14px 4px;height:206px;border-radius:24px;overflow:hidden;cursor:pointer;color:#fff;box-shadow:0 14px 30px rgba(0,0,0,${K.light ? '.16' : '.4'})}
+.jhero .ph{position:absolute;inset:0;background-size:cover;background-position:center}.jhero:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 32%,rgba(15,8,12,.8))}
+.jhero .fl{position:absolute;top:14px;left:16px;z-index:2;display:flex;gap:4px}.jhero .sc{position:absolute;top:12px;right:12px;z-index:2;padding:5px 10px;border-radius:14px;background:rgba(255,255,255,.2);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font:400 14px Georgia,serif}
+.jhero .tx{position:absolute;left:16px;right:16px;bottom:14px;z-index:2}.jhero .k{font-size:8.5px;letter-spacing:2px;font-weight:700;opacity:.85}.jhero b{display:block;font:400 25px/1.1 Georgia,serif;margin-top:5px}
+.jhero .m{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}.jhero .m span{font-size:10.5px;padding:4px 9px;border-radius:12px;background:rgba(255,255,255,.18);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.jtl{position:relative;margin:2px 14px 0;padding-left:22px}.jtl:before{content:"";position:absolute;left:6px;top:14px;bottom:10px;width:1.5px;background:linear-gradient(180deg,${K.or},${oa(.12)})}
+.jyr{position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:16px 0 8px}.jyr:before{content:"";position:absolute;left:-21px;top:6px;width:11px;height:11px;border-radius:50%;background:${K.bg};box-shadow:inset 0 0 0 2.5px ${K.or}}
+.jyr b{font:400 20px Georgia,serif;color:${K.text}}.jyr span{font-size:8px;letter-spacing:1.4px;font-weight:800;color:${K.sub};text-align:right}
+.jrow{display:flex;gap:12px;align-items:center;padding:8px;border-radius:18px;background:${K.surface || K.card};box-shadow:inset 0 0 0 1px ${K.hair || K.line};margin-bottom:8px;cursor:pointer}
+.jrow .th{width:64px;height:64px;border-radius:13px;flex:none;background-size:cover;background-position:center}
+.jrow .t{flex:1;min-width:0}.jrow .t b{display:block;font:400 16px/1.2 Georgia,serif;color:${K.text}}.jrow .t>span{display:block;font-size:11px;color:${K.sub};margin-top:3px;line-height:1.35}.jrow .t .f{display:flex;gap:3px;margin-top:6px}
+.jrow .r{text-align:right;padding-right:4px;flex:none}.jrow .r b{display:block;font:400 16px Georgia,serif;color:${K.text};white-space:nowrap}.jrow .r span{font-size:7.5px;letter-spacing:1.3px;font-weight:800;color:${K.sub}}
 .pstp{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;text-align:center;position:relative;border:2px solid var(--s);color:var(--s);transform:rotate(var(--r));cursor:pointer}
-.pstp:before{content:'';position:absolute;inset:4px;border-radius:50%;border:1px dashed var(--s);opacity:.7}.pstp.sq{border-radius:13px}.pstp.sq:before{border-radius:9px}
+.pstp:before{content:'';position:absolute;inset:4px;border-radius:50%;border:1px dashed var(--s);opacity:.7}.pstp.sq{border-radius:13px}.pstp.sq:before{border-radius:9px}.pstp.ar{border-radius:46% 46% 12px 12px}.pstp.ar:before{border-radius:44% 44% 8px 8px}
 .pstp b{font:800 16px Inter,system-ui;letter-spacing:1px;display:block}.pstp span{font-size:7.5px;font-weight:700;letter-spacing:.8px;display:block}
 .pstp.lock{--s:${K.line2};color:${K.mute}}
 body.pvland #stage{overflow:visible}.pview{position:fixed;inset:0;z-index:60;background:#050507;overflow:hidden;color:#fff;outline:0;font-family:inherit}
@@ -636,34 +651,30 @@ export function openDream(l, d) {
 export const CLEAR = { PlStatus: '', PlWhy: '', PlSee: '', PlNote: '', PlYear: 0, PlTier: '', PlGo: '', PlGoYear: 0, PlGoDays: 0, PlDream: '' };
 /** Confirm I'm going: the dream's countries stay as they are; give the trip a name, dates and who with.
  *  It becomes an upcoming trip (Going + Voyage) and a journey after its end date. */
+/** I'm going (simple): the year, how many days and the indicator. It stays in Wanderlist under Going; nothing is created in Voyage. */
+export const lenOfDays = n => (n >= 22 ? '1' : n >= 15 ? '2' : n >= 8 ? '3' : '4');
 export function openGoing(l, d) {
   if (!d) return;
-  const f = { name: '', start: '', end: '', with: ['Solo'] };
-  const dur = () => (f.start && f.end && f.end >= f.start ? P.daysOf({ TrStart: f.start, TrEnd: f.end }) : 0);
-  openSheet(l, { title: 'I\'m going', body: () => { const n = dur(); return html`<div data-t="goingForm">
+  const y0 = new Date().getFullYear(), t0 = P.isTier(d.tier) ? d.tier : '';
+  const mid = { 1: 24, 2: 18, 3: 10, 4: 5 };
+  const f = { year: y0 + 1, days: Number((d.places.find(p => Number(p.PlGoDays)) || {}).PlGoDays) || (t0 && t0[0] !== 'S' ? mid[t0[1]] : 7), L: t0 ? t0[0] : '', s: t0 && t0[0] === 'S' ? t0 : 'S2' };
+  const tier = () => (!f.L ? '' : f.L === 'S' ? f.s : f.L + lenOfDays(f.days));
+  openSheet(l, { title: 'I\'m going', body: () => { const tr = tier(); return html`<div data-t="goingForm">
       <div class="llab" style="margin-top:4px">Countries</div>
       <div class="pgw">${d.isos.map(x => html`<span class="pgoc" data-t=${'goC-' + x}>${Flag(x, 16)}${P.BY[x].name}</span>`)}</div>
-      ${P.srvAtLeast('3.11.0') ? null : html`<div class="lwarn" style="margin:10px 0 0" data-t="goOldGs">Update the Apps Script to MansWell 3.11 (paste the new Code.gs, then Deploy › New version) to confirm trips.</div>`}
-      <div class="llab">Trip name</div><input class="lin" value=${f.name} onInput=${e => { f.name = e.target.value; }} data-t="goName" />
-      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px">
-        <div><div class="llab">From</div><input class="lin" style="min-width:0;width:100%" type="date" value=${f.start} min=${Today()} onInput=${e => { f.start = e.target.value; if (!f.end || f.end < f.start) f.end = f.start; rerender(); }} data-t="goStart" /></div>
-        <div><div class="llab">To</div><input class="lin" style="min-width:0;width:100%" type="date" value=${f.end} min=${f.start || Today()} onInput=${e => { f.end = e.target.value; rerender(); }} data-t="goEnd" /></div></div>
-      <div class="llab">Who with · pick one or more</div><div class="pseg" style="grid-template-columns:repeat(5,1fr)">${P.WITH.map(w => html`<span class=${f.with.includes(w) ? 'on' : ''} data-t=${'goWith-' + w} onClick=${() => { f.with = f.with.includes(w) ? f.with.filter(x => x !== w) : P.WITH.filter(x => x === w || f.with.includes(x)); rerender(); }}>${w}</span>`)}</div>
-      <div class="lnote" style="margin-top:10px" data-t="goDur">${n ? plural(n, 'day') + '. ' : ''}It moves to <b>Going</b> and opens in <b>Voyage</b> for the itinerary and expenses. After the last day it becomes a journey by itself.</div>
+      <div class="llab">Year</div>${Seg([y0, y0 + 1, y0 + 2, y0 + 3].map(y => [y, String(y)]), f.year, y => { f.year = y; rerender(); }, 'goYear')}
+      <div class="llab">How many days</div>
+      <div class="pstep" data-t="goDays"><span onClick=${() => { f.days = Math.max(1, f.days - 1); rerender(); }} data-t="goDaysMinus">−</span><b data-t="goDaysN">${f.days}</b><span onClick=${() => { f.days = Math.min(90, f.days + 1); rerender(); }} data-t="goDaysPlus">+</span></div>
+      <div class="llab">Indicator</div>
+      <div class="pband">${P.TIER_LETTERS.map(x => html`<div class=${f.L === x ? 'on' : ''} style=${`--c:${P.TIER_COLOR[x]}`} onClick=${() => { f.L = f.L === x ? '' : x; rerender(); }} data-t=${'goTier-' + x}><b>${x}</b><span>${P.TIER_SHORT[x]}</span></div>`)}</div>
+      ${f.L === 'S' ? html`<div class="llab">Budget level</div>${Seg(Object.keys(P.S_LEVELS).map(k => [k, k]), f.s, k => { f.s = k; rerender(); }, 'goS')}` : null}
+      ${tr ? html`<div class="ptres" style=${`--c:${P.TIER_COLOR[tr[0]]}`} data-t="goTierRes">${TierBadge(tr, true)}<div><b>${P.tierText(tr)}</b><span>${f.L === 'S' ? 'S is set by budget only.' : 'Length comes from the days you pick.'}</span></div></div>` : null}
+      <div class="lnote" style="margin-top:10px">It moves to <b>Going</b> in your Wanderlist.</div>
     </div>`; },
   saveLabel: 'Confirm · I\'m going',
   onSave: () => {
-    if (!P.srvAtLeast('3.11.0')) return Notify('Update the Apps Script to MansWell 3.11 first.', 'error');
-    const name = f.name.trim(); if (!name) return Notify('Give the trip a name.', 'error');
-    if (!f.start || !f.end) return Notify('Choose the dates.', 'error');
-    if (f.end < f.start) return Notify('The trip ends before it starts.', 'error');
-    if (f.end < Today()) return Notify('That trip has already ended. Add it as a journey instead.', 'error');
-    if (!f.with.length) return Notify('Choose who you are going with.', 'error');
-    const id = newId('TR');
-    const row = { TrId: id, TrName: name, TrStart: f.start, TrEnd: f.end, TrWith: f.with.join(', '), TrDesc: '', TrMoments: '', TrNotes: '', TrRoute: '', TrCover: '', TrAdded: new Date().toISOString(), TrPlan: 'going' };
-    const keep = d.isos.map((x, i) => ({ StKey: id + '|' + x, StTrip: id, StIso: x, StDays: 0, StSeq: i + 1, StRoute: '' }));
-    const old = d.places.filter(p => P.isGoing(p)).map(p => ({ ...p, PlGo: '', PlGoYear: 0, PlGoDays: 0 })); // a year-only "going" is replaced by the dated trip
-    psave({ up: { PP_Trips: [row], PP_Stops: keep, ...(old.length ? { PP_Places: old } : {}) } }, 'Going', name + ' · ' + d.isos.join(', ') + ' · ' + f.start);
+    const tr = tier();
+    psave({ up: { PP_Places: d.places.map(p => ({ ...p, PlGo: 'going', PlGoYear: f.year, PlGoDays: f.days, PlTier: tr || p.PlTier || '' })) } }, 'Going', P.dreamName(d) + ' · ' + f.year + ' · ' + f.days + ' days');
     closeSheet(l);
   } });
 }

@@ -137,7 +137,9 @@ export function milestones() {
 
 /** A stamp's look comes from the country code, so it never changes. */
 const STAMP_C = ['#FF8A1F', '#F06AA0', '#B48CFF', '#5ED1C9', '#E9B949', '#FF6F61', '#7FB3FF'];
-export function stampOf(iso) { let h = 0; for (const ch of iso) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return { color: STAMP_C[h % STAMP_C.length], sq: h % 3 === 0, rot: ((h >> 3) % 21) - 10 }; }
+/** Stamp look: colour and tilt from the country; shape from its place in the 4-wide grid so no two neighbours (side by side or above) match. */
+const SHAPES3 = ['ci', 'sq', 'ar'];
+export function stampOf(iso, i = 0) { let h = 0; for (const ch of iso) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return { color: STAMP_C[h % STAMP_C.length], shape: SHAPES3[(i + Math.floor(i / 4)) % 3], sq: SHAPES3[(i + Math.floor(i / 4)) % 3] === 'sq', rot: ((h >> 3) % 21) - 10 }; }
 
 /* search */
 const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();

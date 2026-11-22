@@ -7,6 +7,7 @@ import { Sheet, openSheet, closeSheet, oa, ta, newId } from '../lens/ui.js';
 import * as L from './engine.js';
 import { RouteMap, fit, routeCardCss } from './map.js';
 import { Ico, Tile } from './icons.js';
+import * as PH from '../passport/photos.js';
 export { Ico, Tile };
 
 export { openSheet, closeSheet, oa, ta, newId, Seg, Flag, plural, L };
@@ -37,6 +38,8 @@ export const css = () => atlasCss() + routeCardCss() + `
 .lbex{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid ${K.sep};cursor:pointer}.lbex:first-child{border-top:0;padding-top:2px}.lbex:last-child{padding-bottom:2px}
 .lbex .e{font-size:19px;text-align:center}.lbex .t{font-size:13.5px;font-weight:600;color:${K.text}}.lbex .s{font-size:11px;color:${K.sub};margin-top:2px}.lbex .r{text-align:right}.lbex .r b{display:block;font-size:13.5px;color:${K.text}}.lbex .r span{font-size:10.5px;color:${K.sub}}
 .lbpay{font-size:8.5px;font-weight:800;letter-spacing:.6px;padding:2px 5px;border-radius:4px;margin-left:6px;vertical-align:1px}.lbpay.cash{color:#34C77B;background:rgba(52,199,123,.13)}.lbpay.card{color:#6AA8FF;background:rgba(106,168,255,.14)}
+.lbfph{width:34px;height:34px;border-radius:10px;flex:none;background-size:cover;background-position:center;box-shadow:inset 0 0 0 1px ${K.line}}
+.lbpk{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.lbpk>*{aspect-ratio:1;border-radius:11px;background-size:cover;background-position:center;cursor:pointer;position:relative}.lbpk .on{box-shadow:0 0 0 2.5px ${K.card},0 0 0 4.5px ${K.or}}.lbpk .on:after{content:'✓';position:absolute;right:5px;top:4px;width:18px;height:18px;border-radius:50%;background:${K.or};color:${K.onAcc || '#fff'};font-size:11px;display:grid;place-items:center}.lbpk .add{display:grid;place-items:center;text-align:center;font-size:10.5px;font-weight:700;color:${K.or};background:${K.field};box-shadow:inset 0 0 0 1px ${K.line};line-height:1.25}.lbpk .add.none{box-shadow:inset 0 0 0 1.5px ${K.or}}
 .lbcat{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.lbcat div{border-radius:11px;padding:9px 4px;text-align:center;font-size:11px;font-weight:600;color:${K.sub};background:${K.field};box-shadow:inset 0 0 0 1px ${ta(.07)};cursor:pointer}
 .lbcat div i{display:block;font-style:normal;font-size:18px;margin-bottom:3px}.lbcat div.on{color:${K.text};box-shadow:inset 0 0 0 1.5px var(--c);background:color-mix(in srgb,var(--c) 14%,${K.field})}
 .lbmode{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.lbmode span{border-radius:10px;padding:7px 2px;text-align:center;font-size:11px;font-weight:600;color:${K.sub};background:${K.field};box-shadow:inset 0 0 0 1px ${ta(.07)};cursor:pointer}
@@ -356,7 +359,10 @@ const PLAIN = [];
 export function openFind(l, id, fd, kind) {
   const t = L.journey(id), isos = P.isosOf(id);
   const f = { kind: fd ? fd.FdKind : kind || 'cafe', place: fd ? fd.FdName : '', city: fd ? fd.FdWhere : '', prov: fd ? fd.FdProv || '' : '', country: isos.find(x => x !== P.homeIso()) || isos[0] || '',
-    pin: fd && (Number(fd.FdLat) || Number(fd.FdLng)) ? { lat: Number(fd.FdLat), lng: Number(fd.FdLng), addr: [fd.FdWhere, fd.FdProv].filter(Boolean).join(', ') || 'Saved pin' } : null, sug: [], look: false, day: fd ? Number(fd.FdDay) : 0, note: fd ? fd.FdNote : '' };
+    pin: fd && (Number(fd.FdLat) || Number(fd.FdLng)) ? { lat: Number(fd.FdLat), lng: Number(fd.FdLng), addr: [fd.FdWhere, fd.FdProv].filter(Boolean).join(', ') || 'Saved pin' } : null, sug: [], look: false, day: fd ? Number(fd.FdDay) : 0, note: fd ? fd.FdNote : '', photo: fd ? fd.FdPhoto || '' : '', up: '' };
+  const tr = P.trip(id), phs = () => P.photosOf(id).filter(p => !PH.isVideo(p));
+  const addPh = async e => { const files = [...(e.target.files || [])].slice(0, 1); e.target.value = ''; if (!files.length || !canWrite()) return; f.up = 'Saving the photo to Drive…'; rerender();
+    try { const rows = await PH.upload(files, { trip: id, folder: P.yearOf(tr.TrStart) + ' · ' + tr.TrName, seq: P.photosOf(id).reduce((m, p) => Math.max(m, p.PhSeq || 0), 0), onStep: () => {} }); if (rows && rows[0]) f.photo = rows[0].PhId; } finally { f.up = ''; rerender(); } };
   openSheet(l, { title: fd ? 'Edit find' : 'Add a find', body: () => html`<div data-t="findForm">
     <div class="llab" style="margin-top:4px">What it is</div><div class="lbcat" style="grid-template-columns:repeat(3,1fr)">${L.FINDS.map(x => html`<div class=${f.kind === x.k ? 'on' : ''} style=${'--c:' + K.or} onClick=${() => { f.kind = x.k; rerender(); }} data-t=${'fKind-' + x.k}><i>${Ico(x.i, 20)}</i>${x.n}</div>`)}</div>
     <div class="llab">Name</div>${PLAIN.includes(f.kind) ? html`<input class="lin" value=${f.place} onInput=${e => { f.place = e.target.value; }} data-t="fName" />` : PlaceField(f, { id: 'fName', near: f.day ? nearOf(id, f.day, 99) : nearOf(id, 1, 0) })}
@@ -364,12 +370,17 @@ export function openFind(l, id, fd, kind) {
     <div class="lbg2">
       <div><div class="llab">Day</div><select class="lin" value=${String(f.day)} onChange=${e => { f.day = Number(e.target.value); }} data-t="fDay"><option value="0">—</option>${L.days(t).map(d => html`<option value=${String(d.n)}>Day ${d.n}</option>`)}</select></div>
       <div><div class="llab">Why · optional</div><input class="lin" value=${f.note} onInput=${e => { f.note = e.target.value; }} data-t="fNote" /></div></div>
+    <div class="llab">Picture · from this journey</div>
+    <div class="lbpk" data-t="fPhotos">${phs().map(p => html`<span class=${f.photo === p.PhId ? 'on' : ''} style=${PH.bg(p.PhId, p.PhId)} onClick=${() => { f.photo = f.photo === p.PhId ? '' : p.PhId; rerender(); }} data-t=${'fPh-' + p.PhId}></span>`)}
+      <label class="add">${f.up ? '…' : html`+ From<br/>phone`}<input type="file" accept="image/*" style="display:none" onChange=${addPh} data-t="fPhAdd" /></label>
+      <span class=${'add' + (!f.photo ? ' none' : '')} onClick=${() => { f.photo = ''; rerender(); }} data-t="fPhNone">No<br/>picture</span></div>
+    ${f.up ? html`<div class="lnote" style="margin-top:6px">${f.up}</div>` : null}
   </div>`,
   onSave: () => {
     const name = f.place.trim(); if (!name) return Notify('Type what you found.', 'error');
     const plain = PLAIN.includes(f.kind), seq = fd ? fd.FdSeq : L.finds(id).filter(x => x.FdKind === f.kind).reduce((m, x) => Math.max(m, x.FdSeq || 0), 0) + 1;
     lbsave({ up: { LB_Finds: [{ FdId: fd ? fd.FdId : newId('FD'), FdTrip: id, FdKind: f.kind, FdName: name, FdWhere: plain ? '' : f.city.trim(), FdProv: plain ? '' : (f.prov || '').trim(), FdDay: Number(f.day) || 0, FdNote: f.note.trim(),
-      FdLat: f.pin && !plain ? Math.round(f.pin.lat * 1e6) / 1e6 : 0, FdLng: f.pin && !plain ? Math.round(f.pin.lng * 1e6) / 1e6 : 0, FdSeq: seq }] } }, fd ? 'Find edited' : 'Find added', t.TrName + ' · ' + L.FIND[f.kind].n + ' · ' + name);
+      FdLat: f.pin && !plain ? Math.round(f.pin.lat * 1e6) / 1e6 : 0, FdLng: f.pin && !plain ? Math.round(f.pin.lng * 1e6) / 1e6 : 0, FdSeq: seq, FdPhoto: f.photo || '' }] } }, fd ? 'Find edited' : 'Find added', t.TrName + ' · ' + L.FIND[f.kind].n + ' · ' + name);
     closeSheet(l);
   },
   extra: fd ? () => html`<button class="lbtn" style="padding:13px 14px;color:${K.red}" data-t="fDel" onClick=${() => confirmAsk(l, 'Delete this find?', fd.FdName, 'Delete', () => { lbsave({ del: { LB_Finds: [fd.FdId] } }, 'Find deleted', fd.FdName); closeSheet(l); })}>Delete</button>` : null });

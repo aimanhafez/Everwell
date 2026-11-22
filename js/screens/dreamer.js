@@ -30,7 +30,7 @@ const ICON = {
 const ic = (n, c, s, w) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="${c}" stroke-width="${w || 1.9}" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`;
 /* The lookbook: one tall glass card per room. Colours come only from the theme: a deep stage, its accent and gold. */
 const LOOKS = {
-  rose: { dark: 1, bg: 'linear-gradient(175deg,#1e0a14 0%,#3d1328 55%,#1a0910 100%)', glow: 'rgba(240,138,174,.30)', gold: '#E2C28A', acc: '#F2B8CD', tx: '#FFFFFF', sub: 'rgba(255,255,255,.62)', err: '#F4A3BF' },
+  rose: { dark: 0, bg: 'linear-gradient(175deg,#FFF7F8 0%,#FBE7EC 50%,#F5D8E0 100%)', glow: 'rgba(214,92,140,.16)', gold: '#B9787A', acc: '#B83A6B', tx: '#3A1F2B', sub: 'rgba(58,31,43,.58)', err: '#C2364B' },
   ember: { dark: 1, bg: 'linear-gradient(175deg,#0D0F12 0%,#1c130b 55%,#0D0F12 100%)', glow: 'rgba(255,106,0,.26)', gold: '#E7C08A', acc: '#FF8A3D', tx: '#FFFFFF', sub: 'rgba(255,255,255,.6)', err: '#FF9A86' },
   ivory: { dark: 0, bg: 'linear-gradient(175deg,#F8F3EA 0%,#EFE5D3 60%,#F6F1E8 100%)', glow: 'rgba(140,47,42,.14)', gold: '#A8761E', acc: '#8C2F2A', tx: '#2A1A14', sub: 'rgba(42,26,20,.6)', err: '#B3261E' },
   sapphire: { dark: 1, bg: 'linear-gradient(175deg,#070c1a 0%,#12204a 55%,#070c1a 100%)', glow: 'rgba(90,130,220,.30)', gold: '#D4B676', acc: '#D4B676', tx: '#FFFFFF', sub: 'rgba(255,255,255,.6)', err: '#F4A3A3' },
@@ -61,18 +61,18 @@ const RMx = v => (v < 0 ? '−' : '') + 'RM ' + n2(Math.abs(v));
 const car = { at: null, dx: 0, x0: null, moved: false };
 
 const css = L => `
-.mw{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;color:${L.tx};${L.style}}.mw::-webkit-scrollbar{display:none}
+.mw{position:absolute;inset:0;overflow:hidden;scrollbar-width:none;color:${L.tx};${L.style}}.mw::-webkit-scrollbar{display:none}
 .mw:after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
-.mw .fl{position:relative;min-height:100%;display:flex;flex-direction:column}
-.mw .top{display:flex;justify-content:space-between;align-items:center;padding:22px 22px 0}
+.mw .fl{position:relative;height:100%;display:flex;flex-direction:column}
+.mw .top{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 0}
 .mw .lg{display:flex;align-items:center;gap:11px}.mw .lg>span:last-child{font:400 22px/1 Georgia,'Times New Roman',serif;letter-spacing:-.2px}.mw .lg i{color:${L.acc};font-style:normal}
 .mw .gear{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:${L.chip};box-shadow:inset 0 0 0 1px ${L.chipLine}}
 .mw .k{font-size:9.5px;font-weight:600;letter-spacing:2.6px;text-transform:uppercase}
-.mw .hero{padding:30px 26px 0}.mw .dt{color:${L.sub}}
+.mw .hero{padding:16px 26px 0}.mw .dt{color:${L.sub}}
 .mw h1{margin:10px 0 0;font:400 25px/1.1 Georgia,'Times New Roman',serif;letter-spacing:-.2px;white-space:nowrap}.mw h1 i{color:${L.acc}}
-.mw .tag{font:italic 14px Georgia,serif;color:${L.sub};margin-top:10px}
-.mw .car{position:relative;height:536px;margin-top:auto;padding-top:28px;touch-action:pan-y;user-select:none;-webkit-user-select:none}
-.mw .cd{position:absolute;left:58px;top:6px;width:274px;height:518px;border-radius:30px;padding:24px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;cursor:pointer;
+.mw .tag{font:italic 13px Georgia,serif;color:${L.sub};margin-top:6px}
+.mw .car{position:relative;flex:1 1 auto;min-height:300px;margin-top:14px;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.mw .cd{position:absolute;left:58px;top:6px;width:274px;top:6px;bottom:6px;height:auto;border-radius:30px;padding:24px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;cursor:pointer;
   background:${L.glass};box-shadow:inset 0 0 0 1px ${L.goldLine},0 30px 60px rgba(0,0,0,${L.dark ? '.42' : '.14'});transition:transform .5s cubic-bezier(.2,.75,.2,1),opacity .5s;will-change:transform}
 .mw .cd:before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,${L.dark ? '.18' : '.7'}),transparent 40%);pointer-events:none}
 .mw .car.drag .cd{transition:none}

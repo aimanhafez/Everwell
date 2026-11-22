@@ -136,6 +136,20 @@ export function meters(id, day) {
   if (e.length > 2 && km) { const step = km * 1000 / (e.length - 1); for (let i = 2; i < e.length; i++) steep = Math.max(steep, Math.abs(e[i] - e[i - 2]) / (2 * step) * 100); }
   return { km, up: Number(tk.TkUp) || 0, down: Number(tk.TkDown) || 0, max: Number(tk.TkMax) || 0, steep: Math.min(steep, 40), ele: e };
 }
+/** The whole journey's heights: every day's track joined, each day's share by its km. Day starts as fractions (0..1). */
+export function journeyMeters(id) {
+  const t = journey(id); if (!t) return null;
+  const ds = days(t).map(d => ({ n: d.n, m: meters(id, d.n) })).filter(x => x.m && x.m.ele.length > 1 && x.m.km > 0);
+  if (!ds.length) return null;
+  const km = ds.reduce((s, x) => s + x.m.km, 0), N = Math.min(600, Math.max(120, ds.length * 80)), ele = [], starts = [], marks = [];
+  let at = 0, hiDay = 0, hi = -1e9;
+  for (const x of ds) {
+    const n = Math.max(2, Math.round(N * x.m.km / km)), e = x.m.ele; starts.push(at / km); marks.push('D' + x.n);
+    for (let i = 0; i < n; i++) { const f = i / (n - 1) * (e.length - 1), j = Math.floor(f); ele.push(e[j] + ((e[j + 1] ?? e[j]) - e[j]) * (f - j)); }
+    if (x.m.max > hi) { hi = x.m.max; hiDay = x.n; } at += x.m.km;
+  }
+  return { km, ele, starts, marks, up: ds.reduce((s, x) => s + x.m.up, 0), down: ds.reduce((s, x) => s + x.m.down, 0), max: hi, hiDay, days: ds.length };
+}
 /** Where each stop falls along the day's elevation profile (0..1). */
 export function stopFractions(id, day) {
   const legs = legsOf(track(id, day)), tot = legs.reduce((s, l) => s + (l.km || 0), 0); if (!tot) return [];

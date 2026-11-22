@@ -1,4 +1,14 @@
-# MansWell · v3.18.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v4.0.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 4.0.0 · The big update
+Needs the new Code.gs (paste it, then Deploy › New version): highlight photos are saved in a new column LB_Finds.FdPhoto.
+- Main page fits the screen with no scrolling; shorter top; Rosé is now soft blush and berry (light).
+- Pocket and Lens: names and numbers are never cut with "…": long names wrap or shrink to fit.
+- Odyssey: numbers centred in Total trips / Travel days; Solo · Family · Friends icons with labels; Borderless stamps in three shapes, never the same shape side by side or above; country overview rows centred with bigger flags and names.
+- Journeys: summary strip, quick filters, the latest journey as a big cover, then a timeline by year with one smart figure per journey (score, spent or km).
+- One journey: route overview with full place names; highlights show the photo chosen in Voyage; new elevation for the whole journey (all days joined).
+- Voyage Discovery: every highlight (hidden gem too) can have a photo: from the journey's photos, from the phone, or none. The Last Word section is removed.
+- Wanderlist: destinations counted by trip; Going shows the year, days and indicator (no amount); I'm going asks only year, days and indicator and no longer creates a trip in Voyage.
 
 ## 3.18.1 · New tier amounts
 - Wanderlist tiers (all-in total): S1 above RM20,000 · S2 RM16,501–20,000 · S3 RM12,001–16,500 · A RM8,001–12,000 · B RM5,001–8,000 · C RM2,001–5,000 · D RM2,000 & below.
