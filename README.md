@@ -1,4 +1,8 @@
-# MansWell · v3.18.0 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v3.18.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 3.18.1 · New tier amounts
+- Wanderlist tiers (all-in total): S1 above RM20,000 · S2 RM16,501–20,000 · S3 RM12,001–16,500 · A RM8,001–12,000 · B RM5,001–8,000 · C RM2,001–5,000 · D RM2,000 & below.
+- Lengths: 1 = 22+ days · 2 = 15–21 · 3 = 8–14 · 4 = 7 days or less. Same badges and layout as before.
 
 ## 3.18.0 · Detailed maps
 - Atlas maps (Odyssey, Wanderlist, pick a country): the light map shows at once, then the detailed 1:50m map (real coasts, islands, fjords; Singapore, Bahrain and other small countries as real shapes) loads in the background and stays on the phone.

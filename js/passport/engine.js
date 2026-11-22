@@ -152,13 +152,13 @@ export function search(q, f = {}) {
 /* ───────── Wanderlist: tiers and "I'm going" ───────── */
 export const TIER_LETTERS = ['S', 'A', 'B', 'C', 'D'];
 export const TIER_COLOR = { S: '#E9B949', A: '#FF8A3D', B: '#B48CFF', C: '#5ED1C9', D: '#8A9099' };
-export const TIER_BUDGET = { A: 'RM6,500 – 10,000', B: 'RM4,000 – 6,500', C: 'RM1,500 – 4,000', D: 'Below RM1,500' };
-export const TIER_SHORT = { S: 'RM10k+', A: '6.5k–10k', B: '4k–6.5k', C: '1.5k–4k', D: '< 1.5k' };
-export const S_LEVELS = { S1: 'Above RM20,000', S2: 'RM15,000 – 20,000', S3: 'RM10,000 – 15,000' };
-export const LENGTHS = { 1: '21–30 days', 2: '13–20 days', 3: '6–12 days', 4: 'Below 5 days' };
-export const LEN_SHORT = { 1: '21–30 d', 2: '13–20 d', 3: '6–12 d', 4: '≤ 5 d' };
+export const TIER_BUDGET = { A: 'RM8,001 – 12,000', B: 'RM5,001 – 8,000', C: 'RM2,001 – 5,000', D: 'RM2,000 & below' };
+export const TIER_SHORT = { S: 'RM12k+', A: '8k–12k', B: '5k–8k', C: '2k–5k', D: '≤ 2k' };
+export const S_LEVELS = { S1: 'Above RM20,000', S2: 'RM16,501 – 20,000', S3: 'RM12,001 – 16,500' };
+export const LENGTHS = { 1: '22+ days', 2: '15–21 days', 3: '8–14 days', 4: '7 days or less' };
+export const LEN_SHORT = { 1: '22+ d', 2: '15–21 d', 3: '8–14 d', 4: '≤ 7 d' };
 export const isTier = c => /^(S[1-3]|[ABCD][1-4])$/.test(String(c || ''));
-/** "B2" → "13–20 days · RM4,000 – 6,500"; "S2" → "RM15,000 – 20,000" */
+/** "B2" → "15–21 days · RM5,001 – 8,000"; "S2" → "RM16,501 – 20,000" */
 export const tierText = c => !isTier(c) ? '' : c[0] === 'S' ? S_LEVELS[c] : LENGTHS[c[1]] + ' · ' + TIER_BUDGET[c[0]];
 export const tierRank = c => (isTier(c) ? TIER_LETTERS.indexOf(c[0]) * 10 + Number(c[1]) : 999);
 export const isGoing = p => !!p && p.PlGo === 'going';
