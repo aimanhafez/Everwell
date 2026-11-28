@@ -29,9 +29,10 @@ export const scrTransactions = {
       if (t.TxType === 'Transfer') { if (l.locTxAcc) { if (t.TxDir === 'In') inV += t.TxAmt; else outV += t.TxAmt; } continue; }
       // a split counts by its lines (each line has its own category)
       const parts = t.TxIsSplit ? DB.txns.filter(x => x.TxParent === t.TxnId && (l.locTxCat === 'All' || x.TxCat === l.locTxCat || t.TxCat === l.locTxCat)) : [t];
+      // cash flow goes by the money's direction (what came in, what went out), not by the category; P&L in Lens still nets by category
       for (const x of parts) {
-        const f = flowOf(x); if (!f) continue;
-        if (f.side === 'In') inV += f.v; else outV += f.v;
+        if (x.TxIsSplit || (x.TxType !== 'Income' && x.TxType !== 'Expense' && x.TxType !== 'Refund')) continue;
+        if (x.TxType === 'Expense') outV += x.TxAmt; else inV += x.TxAmt;
       }
     }
     inV = round2(inV); outV = round2(outV);

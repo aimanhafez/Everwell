@@ -1,4 +1,7 @@
-# MansWell · v4.0.1 (Pocket + Payslip + Lens + Atlas + Voyage)
+# MansWell · v4.0.2 (Pocket + Payslip + Lens + Atlas + Voyage)
+
+## 4.0.2 · Cash flow on Transactions
+- Money in / Money out on the Transactions page now follow the money's direction (what came in, what went out), whatever the category. Net is unchanged. Lens P&L still nets by category.
 
 ## 4.0.1 · Journeys page as before
 - The Journeys main page is back to its earlier look (filters, year groups, cover cards). Everything else from 4.0.0 stays.

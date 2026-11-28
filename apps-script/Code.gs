@@ -16,6 +16,7 @@
  *
  * Helpers you can run from the editor: setDriveKey(), removeDriveKey(), showApiKey(), resetApiKey(), backupNow(), turnOnWeeklyBackup(), setupPassport(), setupVoyage()
  *
+ * 4.0.2 · Transactions cash flow follows the money's direction. App only.
  * 4.0.1 · Journeys main page back to its earlier look. App only (same server code as 4.0.0).
  * 4.0.0 · Big update: highlight photos (LB_Finds gets FdPhoto). Paste this Code.gs and Deploy › New version.
  * 3.18.1 · New Wanderlist tier amounts and day ranges. App only.
@@ -105,7 +106,7 @@
  *     Deploying this version asks Google for permission to use your Drive and triggers: approve it.
  */
 
-var EW_VERSION = '4.0.1';
+var EW_VERSION = '4.0.2';
 
 // Column layout of each tab. The first column is the unique key.
 var TABLES = {
